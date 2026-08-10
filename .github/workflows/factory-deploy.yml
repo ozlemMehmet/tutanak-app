@@ -1,0 +1,27 @@
+name: Factory Production Deployment
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Exact source commit SHA
+        required: true
+        type: string
+      artifact_sha:
+        description: Immutable build artifact SHA-256
+        required: true
+        type: string
+      environment:
+        description: Protected GitHub Environment
+        required: true
+        type: string
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Fail closed until provider is configured
+        run: |
+          echo "Factory deployment provider is not configured."
+          echo "Requested source SHA: ${{ inputs.sha }}"
+          echo "Requested artifact SHA: ${{ inputs.artifact_sha }}"
+          exit 1

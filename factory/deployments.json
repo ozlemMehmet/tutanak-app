@@ -1,0 +1,9 @@
+{
+  "operations": {
+    "production": {
+      "workflow": "factory-deploy.yml",
+      "environment": "production",
+      "allowed_inputs": ["artifact_sha"]
+    }
+  }
+}
