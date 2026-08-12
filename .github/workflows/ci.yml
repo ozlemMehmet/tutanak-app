@@ -1,6 +1,3 @@
-# T-001 kabul kriteri 2 icin hazirlanmis CI tanimi.
-# NOT: dev-agent'in `.github/**` altina yazma izni yok (factory policy: "blocked write path for dev-agent").
-# Bu dosya `.github/workflows/ci.yml` olarak BIREBIR kurulmalidir (control-plane/devops-agent).
 name: CI
 
 on:
