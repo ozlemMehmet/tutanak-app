@@ -40,7 +40,11 @@ services:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
-    command: npm run start:dev --workspace @tutanak/api
+    # Acilista once migration + sablon seed, sonra watch modunda sunucu (CLAUDE.md §10).
+    command: >-
+      sh -c "npm run migrate:deploy --workspace @tutanak/api &&
+      npm run seed --workspace @tutanak/api &&
+      npm run start:dev --workspace @tutanak/api"
     environment:
       DATABASE_URL: postgresql://tutanak:tutanak@db:5432/tutanak
     ports:

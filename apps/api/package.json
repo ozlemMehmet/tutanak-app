@@ -10,12 +10,19 @@
     "start:dev": "nest start --watch",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "jest --config jest.config.mjs",
-    "test:e2e": "jest --config test/jest-e2e.config.mjs"
+    "test:e2e": "jest --config test/jest-e2e.config.mjs",
+    "postinstall": "prisma generate",
+    "prisma:generate": "prisma generate",
+    "prisma:validate": "prisma validate",
+    "migrate:deploy": "prisma migrate deploy",
+    "migrate:down": "prisma db execute --schema prisma/schema.prisma --file prisma/migrations/20260812000000_init/down.sql",
+    "seed": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON prisma/seed.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
+    "@prisma/client": "^6.19.3",
     "helmet": "^8.0.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
@@ -25,6 +32,7 @@
     "@nestjs/testing": "^11.0.1",
     "@types/express": "^5.0.0",
     "@types/supertest": "^6.0.2",
+    "prisma": "^6.19.3",
     "supertest": "^7.0.0"
   }
 }
