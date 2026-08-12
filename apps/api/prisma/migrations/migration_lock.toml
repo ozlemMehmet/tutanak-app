@@ -1,0 +1,2 @@
+# Prisma Migrate tarafindan uretilir; saglayici degistirilirse migration gecmisi yeniden kurulmalidir.
+provider = "postgresql"

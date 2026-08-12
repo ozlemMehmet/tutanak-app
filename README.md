@@ -43,12 +43,29 @@ API'nin sagligini dogrulamak icin:
 curl http://localhost:3000/health   # {"status":"ok"}
 ```
 
+## Veritabani (Prisma)
+
+Sema: `apps/api/prisma/schema.prisma` (mimarinin `data-model.sql` dosyasiyla birebir uyumlu).
+Migration'lar: `apps/api/prisma/migrations/`. Komutlar `DATABASE_URL` ortam degiskenini kullanir.
+
+```bash
+npm run prisma:generate --workspace @tutanak/api   # Prisma istemcisini uret (npm install sonrasi otomatik)
+npm run migrate:deploy --workspace @tutanak/api    # migration'lari uygula
+npm run seed --workspace @tutanak/api              # 3 sabit sablonu yaz (idempotent)
+npm run migrate:down --workspace @tutanak/api      # geri alma: tum tablo/tip/fonksiyonlari kaldirir
+```
+
+`docker compose up` ile ayaga kalkan `api` servisi acilista migration + seed adimlarini kendisi kosar.
+
 ## Testleri Calistirma
 
 ```bash
 npm run test        # tum workspace'lerin birim testleri (kapsam esikleri dahil)
-npm run test:e2e    # HTTP seviyesi entegrasyon testleri (supertest)
+npm run test:e2e    # HTTP seviyesi entegrasyon testleri (supertest + gercek Postgres)
 ```
+
+`test:e2e` calisan bir Postgres ister (`DATABASE_URL`); migration testi kendi izole
+veritabanini olusturup sonunda dusurur, gelistirme veritabanina dokunmaz.
 
 Tek bir workspace'i kosmak icin:
 
@@ -80,5 +97,8 @@ npm run verify:pwa    # build ciktisinda manifest + service worker dogrulamasi
 ## Surekli Entegrasyon (CI)
 
 CI her `push` ve `pull_request` olayinda su adimlari calistirir:
-`format:check` -> `lint` -> `typecheck` -> `test` -> `test:e2e` -> `build` -> `verify:pwa` -> `npm audit`.
+`prisma:generate` -> `format:check` -> `lint` -> `typecheck` -> `prisma:validate` ->
+sema-migration sapma kontrolu -> `migrate:deploy` -> `seed` -> `test` -> `test:e2e` ->
+`build` -> `verify:pwa` -> `npm audit`. Migration adimlari is icinde ayaga kalkan
+`postgres:16-alpine` servisine karsi kosar.
 Workflow tanimi: `.github/workflows/ci.yml`.

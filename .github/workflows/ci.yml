@@ -10,8 +10,28 @@ concurrency:
 
 jobs:
   quality:
-    name: lint + typecheck + test + build
+    name: lint + typecheck + migrate + test + build
     runs-on: ubuntu-latest
+
+    # T-002: migration ve entegrasyon testleri gercek bir Postgres 16 uzerinde kosar.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: tutanak
+          POSTGRES_PASSWORD: tutanak
+          POSTGRES_DB: tutanak
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U tutanak"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://tutanak:tutanak@localhost:5432/tutanak
+
     steps:
       - name: Kaynak kodu al
         uses: actions/checkout@v4
@@ -25,6 +45,9 @@ jobs:
       - name: Bagimliliklari kur
         run: npm ci
 
+      - name: Prisma istemcisini uret
+        run: npm run prisma:generate --workspace @tutanak/api
+
       - name: Bicim kontrolu
         run: npm run format:check
 
@@ -33,6 +56,26 @@ jobs:
 
       - name: Tip kontrolu
         run: npm run typecheck
+
+      - name: Prisma sema dogrulamasi
+        run: npm run prisma:validate --workspace @tutanak/api
+
+      - name: Sema-migration sapma kontrolu
+        working-directory: apps/api
+        run: |
+          # Golge veritabani prisma CLI ile olusturulur (kosucuda psql varligina bel baglanmaz).
+          echo 'CREATE DATABASE tutanak_shadow;' | npx prisma db execute --url "$DATABASE_URL" --stdin
+          npx prisma migrate diff \
+            --from-migrations prisma/migrations \
+            --to-schema-datamodel prisma/schema.prisma \
+            --shadow-database-url "postgresql://tutanak:tutanak@localhost:5432/tutanak_shadow" \
+            --exit-code
+
+      - name: Veritabani migration (deploy)
+        run: npm run migrate:deploy --workspace @tutanak/api
+
+      - name: Sablon seed
+        run: npm run seed --workspace @tutanak/api
 
       - name: Birim testleri
         run: npm run test
