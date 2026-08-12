@@ -1,0 +1,7 @@
+node_modules
+dist
+coverage
+apps/web/dev-dist
+apps/web/src/api/schema.d.ts
+factory
+package-lock.json

@@ -1,2 +1,11 @@
 
 .DS_Store
+node_modules/
+dist/
+coverage/
+apps/web/dev-dist/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+npm-debug.log*

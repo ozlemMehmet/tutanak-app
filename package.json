@@ -1,0 +1,51 @@
+{
+  "name": "tutanak-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Emlak teslim tutanagi platformu — npm workspaces koku",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "lint": "eslint . --max-warnings=0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit -p tsconfig.json && npm run typecheck --workspaces --if-present",
+    "test": "jest --config jest.config.mjs && npm run test --workspaces --if-present",
+    "test:e2e": "npm run test:e2e --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present",
+    "verify:pwa": "node scripts/verify-pwa-build.mjs",
+    "gen:api-types": "openapi-typescript factory/04-architecture/api-contract.yaml -o apps/web/src/api/schema.d.ts",
+    "prepare": "husky || true"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,mjs}": [
+      "eslint --max-warnings=0 --no-warn-ignored",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml,html,webmanifest}": [
+      "prettier --write"
+    ]
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.10.2",
+    "eslint": "^9.17.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "globals": "^15.14.0",
+    "husky": "^9.1.7",
+    "jest": "^29.7.0",
+    "lint-staged": "^15.3.0",
+    "openapi-typescript": "^7.5.0",
+    "prettier": "^3.4.2",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.2",
+    "yaml": "^2.9.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

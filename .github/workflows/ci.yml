@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: lint + typecheck + test + build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kaynak kodu al
+        uses: actions/checkout@v4
+
+      - name: Node.js kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Bagimliliklari kur
+        run: npm ci
+
+      - name: Bicim kontrolu
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Tip kontrolu
+        run: npm run typecheck
+
+      - name: Birim testleri
+        run: npm run test
+
+      - name: Entegrasyon/e2e testleri
+        run: npm run test:e2e
+
+      - name: Build
+        run: npm run build
+
+      - name: PWA build dogrulamasi (manifest + service worker)
+        run: npm run verify:pwa
+
+      - name: Bagimlilik zafiyet taramasi
+        run: npm audit --audit-level=high
