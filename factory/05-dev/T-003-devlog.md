@@ -13,6 +13,9 @@
 | Gecerli kimlik bilgisi ile giris 200 + erisim tokeni | `auth.service.login()` + `@nestjs/jwt` (`JWT_SECRET`, `JWT_EXPIRES_IN`) | e2e: `gecerli kimlik bilgileriyle 200 ve erisim tokeni doner` (+ `expiresIn = 604800`); birim: `dogru parola ile erisim tokeni, gecerlilik suresi ve kullaniciyi doner` |
 | Hatali sifre ile giris → 401 | `auth.service.login()` → `UnauthenticatedError('INVALID_CREDENTIALS')` | e2e: `hatali parola ile 401 INVALID_CREDENTIALS doner` + `kayitli olmayan e-posta ile de ayni 401 ...`; birim: 2 test |
 | Token olmadan korumali endpoint → 401 | `common/guards/jwt-auth.guard.ts` (global, APP_GUARD) + `@Public()`, `modules/auth/jwt.strategy.ts`, `GET /me` | e2e: `token olmadan 401 UNAUTHENTICATED doner`, `bozuk token ile 401`, `baska bir anahtarla imzalanmis token ile 401`, `gecerli token ile 200 ve profil bilgisi doner` |
+| **[tur 3]** `bcrypt` pini `^6.0.0` + `npm audit --audit-level=high` cikis 0 | `apps/api/package.json`, `package-lock.json` | `tools/docker-build-context.spec.ts`: `apps/api bagimliligi ^6.0.0 olarak pinlenmistir`, `lockfile 6.x surumunu cozer ...` (+ CI'daki `npm audit` kapisi) |
+| **[tur 3]** Repo kokunde `.dockerignore` + `docker compose up` sonrasi API ayakta | `.dockerignore` (yeni) | `tools/docker-build-context.spec.ts` 5 test (desenler + `Dockerfile`'in `COPY . .` yaptigi); ayrica canli `docker compose up -d --build` + `curl /health` 200 (asagida "Iade Turu 2") |
+| **[tur 3]** 6 kriterin calisan API uzerinde gercek HTTP ile dogrulanmasi | — (dogrulama adimi) | "Iade Turu 2 → Canli dogrulama" blogundaki istek/yanit dokumu |
 
 Ek olarak sozlesme geregi kapsanan davranislar: 400 VALIDATION_ERROR alan detaylari, beyaz liste disi
 alan reddi (§3.7), `GET /me` abonelik satiri OLUSTURMAZ (§3.11).
@@ -34,7 +37,7 @@ alan reddi (§3.7), `GET /me` abonelik satiri OLUSTURMAZ (§3.11).
 - e2e testleri yerelde `docker compose up -d db` ile ayaga kalkan Postgres'e karsi kosuldu.
 
 ## Anayasa (CLAUDE.md) Bosluklari / Celiskileri
-- **[CELISKI — karar architect'in] §6.1 (bcrypt 5.x pinlenmis) vs §9 (`npm audit --audit-level=high` temiz olmali).** `bcrypt@5.1.1` → `@mapbox/node-pre-gyp@1.0.11` → `tar@<=7.5.20` zinciri 2 high + 1 critical advisory uretiyor; `npm audit` bu yuzden kirmizi. Tek resmi cozum `bcrypt@6.0.0`, yani §6.1'in "major yukseltme AYRI TICKET" kuralina giren bir surum atlamasi. Anayasayi tek basima esnetmedim: 5.1.1'de kaldim ve durumu raporluyorum. Karar secenekleri: (a) bcrypt 6.x'e gecis ticket'i, (b) `@mapbox/node-pre-gyp` altinda `tar` icin npm `overrides` (native kurulum zincirini sessizce degistirir, bu yuzden kendiligimden uygulamadim), (c) §9 esiginin bilincli istisnasi.
+- **[COZULDU — tur 2] §6.1 (bcrypt 5.x) vs §9 (`npm audit --audit-level=high`) celiskisi.** Tur 1'de raporlanmisti; architect §6.1'i `bcrypt ^6.0.0` olarak guncelledi ve secimi bu ticket'in kapsamina yazdi. Bu turda uygulandi: pin `^6.0.0`, `@types/bcrypt` de `^6.0.0`, lockfile yenilendi → `npm audit --audit-level=high` cikis kodu **0** (`found 0 vulnerabilities`).
 - **[BOSLUK] `/me` controller'inin yeri.** §1 agacinda `modules/users/` altinda controller listelenmemis, ayri bir `me` modulu de yok. `users.controller.ts` icine kondu (oturum sahibinin kaynagi = user).
 - **[BOSLUK] Yapilandirma DI token'i.** `SUBSCRIPTION_CURRENCY` degerinin servise nasil verilecegi tanimli degil; `config/config.tokens.ts` (yan etkisiz) uzerinden `@Inject` token'i secildi.
 - **[BOSLUK] pino kurulumu henuz yok.** §4.4 pino istiyor ama log altyapisini kuran bir ticket bugune kadar cikmadi; filtre 5xx'leri Nest'in yerlesik `Logger`'i ile logluyor (`no-console` ihlali yok). pino'ya gecis bir log ticket'inda yapilmali; hata zarfi `traceId` uretimi zaten filtrede.
@@ -58,9 +61,64 @@ npm test              -> api: 47/47, web: 10/10, kok: 15/15  (kapsam esikleri ge
                          modules/** satir >= %80, global >= %70)
 npm run test:e2e      -> 3 suite / 30 test PASS
                          (auth.e2e-spec 16, migration.e2e-spec 12, health.e2e-spec 2)
-npm audit --audit-level=high -> 2 high + 1 critical (bcrypt 5.x -> node-pre-gyp -> tar)
-                         ayrinti ve karar secenekleri: "Anayasa Celiskileri" bolumu
+npm audit --audit-level=high -> found 0 vulnerabilities (cikis kodu 0)  [tur 2]
 ```
+
+## Iade Turu 2 (qa-agent iadesi: `docker compose up` ile API hic ayaga kalkmiyor)
+
+QA bulgusu: `.dockerignore` yoklugu → `COPY . .` host'un macOS bcrypt binary'sini imaja
+kopyaliyor, `npm ci`'nin kurdugu linux binding'i eziyor, Nest `ERR_DLOPEN_FAILED` ile
+cokuyor; port 3000 yanit vermiyor, hicbir kabul kriteri test edilemiyor.
+
+**Sistematik hata ayiklama (4 faz).**
+1. *Izole:* Bulgu hostta kanitlandi — `file node_modules/bcrypt/lib/binding/napi-v3/bcrypt_lib.node`
+   → `Mach-O 64-bit bundle arm64`. Yani host agacinda darwin binary duruyor ve build
+   context'e dahil.
+2. *Hipotez (tek):* `.gitignore` `docker build` context'ini etkilemez; context'ten
+   `node_modules` haric tutulursa `COPY . .` `npm ci` ciktisini ezmez ve API acilir.
+3. *Test:* Repo kokune `.dockerignore` eklendi (`node_modules`, `**/node_modules`,
+   `dist`, `coverage`, `.env*`, `.git`, `factory`, ...) + `docker compose down -v`
+   (eski `api-node-modules` volume'u bozuk kopyayi almisti) + `up -d --build`.
+   Dogrulama: container icinde `/app/apps/web/node_modules` ve `/app/factory` **yok**
+   (context filtreleniyor), `require('bcrypt')` calisiyor.
+4. *Regresyon testi:* `tools/docker-build-context.spec.ts` — once KIRMIZI kosuldu
+   (`.dockerignore` gecici olarak kaldirilip pin 5.1.1'e alindi → 5 test fail), sonra
+   YESIL. Testler: dosyanin varligi, `node_modules`/`**/node_modules`/`dist`/`coverage`/
+   `.git` desenleri, `.env` haric + `!.env.example`, `Dockerfile`'in hala `COPY . .`
+   yaptigi (koruma anlamsizlasirsa test uyarsin) ve bcrypt pini (`package.json` `^6.0.0`,
+   lockfile `6.x`).
+
+**bcrypt `^6.0.0`** (ticket tur 3 kriteri + guncellenen §6.1): 6.x prebuildify kullaniyor,
+paket icinde tum platformlarin prebuild'i geliyor (`prebuilds/linux-arm64/bcrypt.musl.node`
+dahil) — yani `node-pre-gyp`/`tar` zinciri ve onun 2 high + 1 critical advisory'si tamamen
+kalkti. `@types/bcrypt` de major uyumu icin `^6.0.0` yapildi (runtime major'unun dogrudan
+sonucu). `hash`/`compare` cagrilari degismedi, urun kodunda tek satir degisiklik gerekmedi.
+
+**Canli dogrulama (calisan API, gercek HTTP istekleri — onceki turda hicbiri yapilamamisti):**
+```
+docker compose down -v && docker compose up -d --build   -> 5/5 servis Up (db healthy)
+GET  /health                                             -> 200 {"status":"ok"}
+POST /api/v1/auth/register (yeni e-posta)                -> 201 + users satiri olustu
+psql: password_hash                                      -> "$2b$10$...", 60 karakter, duz metin DEGIL
+POST /api/v1/auth/register (ayni e-posta)                -> 409 EMAIL_ALREADY_REGISTERED
+                                                            details:[{field:"email", ...}]
+POST /api/v1/auth/login (dogru parola)                   -> 200 + accessToken, expiresIn 604800
+POST /api/v1/auth/login (hatali parola)                  -> 401 INVALID_CREDENTIALS
+GET  /api/v1/me (tokensiz)                               -> 401 UNAUTHENTICATED
+GET  /api/v1/me (Bearer token)                           -> 200 + profil
+http://localhost:5173 (web)                              -> 200
+```
+Not: `/health` global `/api/v1` onekinin disindadir (T-001 karari); ticket'taki
+`curl http://localhost:3000/health` adresi birebir calisiyor.
+
+**Tur 2 regresyon kosumu:** `npm run lint` 0/0, `format:check` temiz, `typecheck` cikis 0,
+`npm test` → kok 22/22 (yeni spec dahil), api 47/47, web 10/10; `npm run test:e2e` → 30/30;
+`npm audit --audit-level=high` cikis kodu 0.
+
+Kapsam notu: `.dockerignore` T-001'den beri eksikti, ama kusuru tetikleyen ilk native
+bagimliligi bu ticket getirdigi icin duzeltme T-003 kapsamindadir (ticket tur 3 kriteri).
+Bunun disinda hicbir dosyaya dokunulmadi. Ortam temizlendi: `docker compose down` +
+olusturulan `.env` silindi (`.env` zaten gitignored).
 
 ## Iade Turu 1 (dev-agent → control-plane, dal tazeleme)
 - Onceki turda is BLOKE idi: dal, T-002'nin merge'ini (`45317d8`) icermeyen bayat bir main uzerindeydi; T-002'nin prisma semasi/migration'lari/test altyapisi agacta yoktu ve tek satir urun kodu yazilmadi.
