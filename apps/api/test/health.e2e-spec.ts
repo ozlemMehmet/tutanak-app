@@ -1,7 +1,6 @@
 import type { Server } from 'node:http';
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { createApiApp } from '../src/main';
 
 describe('GET /health', () => {
   let app: INestApplication;
@@ -10,6 +9,13 @@ describe('GET /health', () => {
   const httpServer = (): Server => app.getHttpServer() as Server;
 
   beforeAll(async () => {
+    // T-003 ile uygulama acilista ortam degiskenlerini dogrular (CLAUDE.md §5) ve bu
+    // dogrulama modul YUKLENIRKEN calisir; bu yuzden main dinamik olarak import edilir.
+    // Disaridan verilmediyse yalnizca test kosumuna ait yerel degerler kullanilir.
+    process.env.JWT_SECRET ??= 'test-ortami-icin-yeterince-uzun-imzalama-anahtari';
+    process.env.DATABASE_URL ??= 'postgresql://tutanak:tutanak@localhost:5432/tutanak';
+
+    const { createApiApp } = await import('../src/main');
     app = await createApiApp();
     await app.init();
   });

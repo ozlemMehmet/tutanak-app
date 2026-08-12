@@ -3,6 +3,8 @@ import type { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { createValidationPipe } from './common/pipes/validation-pipe.factory';
 
 const API_PORT = 3000;
 const GLOBAL_API_PREFIX = 'api/v1';
@@ -18,6 +20,9 @@ export async function createApiApp(): Promise<INestApplication> {
   const app = await NestFactory.create(AppModule, { rawBody: true });
   app.use(helmet());
   app.setGlobalPrefix(GLOBAL_API_PREFIX, { exclude: PREFIX_EXCLUDED_ROUTES });
+  // Govde katiligi (CLAUDE.md §3.7) ve tek tip hata zarfi (§4.1) global olarak kurulur.
+  app.useGlobalPipes(createValidationPipe());
+  app.useGlobalFilters(new AllExceptionsFilter());
   return app;
 }
 

@@ -45,6 +45,12 @@ services:
       sh -c "npm run migrate:deploy --workspace @tutanak/api &&
       npm run seed --workspace @tutanak/api &&
       npm run start:dev --workspace @tutanak/api"
+    # JWT_SECRET gibi sirlar/ayarlar .env dosyasindan gelir (CLAUDE.md §5, §10:
+    # `cp .env.example .env` adimi bunun icindir). DATABASE_URL asagida container
+    # agina gore EZILIR; env_file'daki yerel adres host icindir.
+    env_file:
+      - path: .env
+        required: false
     environment:
       DATABASE_URL: postgresql://tutanak:tutanak@db:5432/tutanak
     ports:

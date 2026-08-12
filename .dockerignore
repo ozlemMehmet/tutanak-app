@@ -1,0 +1,28 @@
+# Docker build context'i disi birakilanlar (CLAUDE.md §10 — `docker compose up` tek komutla
+# calismali). `.gitignore` build context'i ETKILEMEZ; bu dosya olmadan `COPY . .` host'un
+# node_modules'ini imaja kopyalar ve `npm ci`'nin container icinde kurdugu linux native
+# binding'leri (bcrypt) macOS binary'siyle ezer → ERR_DLOPEN_FAILED.
+node_modules
+**/node_modules
+
+# Uretilmis ciktilar — imajda `npm run build` / watch modu yeniden uretir.
+dist
+**/dist
+coverage
+**/coverage
+apps/web/dev-dist
+*.tsbuildinfo
+
+# Sirlar imaja girmez (CLAUDE.md §5); .env.example bilincli olarak haric tutulmaz.
+.env
+.env.*
+!.env.example
+
+# Imajin ihtiyac duymadigi buyuk/alakasiz dizinler.
+.git
+.github
+.husky
+.claude
+factory
+.DS_Store
+npm-debug.log*
