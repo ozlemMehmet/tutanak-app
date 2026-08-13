@@ -1,7 +1,11 @@
 import { Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { createThrottlerOptions } from './common/guards/rate-limit.factory';
 import { AppConfigModule } from './config/config.module';
+import type { AppEnv } from './config/env.schema';
 import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
 import { ReportsModule } from './modules/reports/reports.module';
@@ -9,8 +13,28 @@ import { TemplatesModule } from './modules/templates/templates.module';
 import { UsersModule } from './modules/users/users.module';
 
 @Module({
-  imports: [AppConfigModule, HealthModule, AuthModule, UsersModule, TemplatesModule, ReportsModule],
+  imports: [
+    AppConfigModule,
+    // Hiz siniri (T-014): degerler env'den okunur, koda gomulmez (CLAUDE.md §5.1).
+    ThrottlerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService<AppEnv, true>) =>
+        createThrottlerOptions({
+          windowSeconds: config.get('RATE_LIMIT_WINDOW_SECONDS', { infer: true }),
+          defaultMaxRequests: config.get('RATE_LIMIT_MAX_REQUESTS', { infer: true }),
+          strictMaxRequests: config.get('AUTH_RATE_LIMIT_MAX_REQUESTS', { infer: true }),
+        }),
+    }),
+    HealthModule,
+    AuthModule,
+    UsersModule,
+    TemplatesModule,
+    ReportsModule,
+  ],
   providers: [
+    // SIRA BAGLAYICI (T-014): hiz siniri kimlik dogrulamasindan ONCE calisir; aksi halde
+    // kimliksiz kaba kuvvet istekleri once auth maliyetini (JWT dogrulama/bcrypt) odetirdi.
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
     // Kimlik dogrulama VARSAYILAN OLARAK KAPALI; istisnalar @Public() ile isaretlenir
     // (api-contract.yaml: /public/* disindaki her endpoint bearerAuth ister).
     { provide: APP_GUARD, useClass: JwtAuthGuard },
