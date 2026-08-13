@@ -104,6 +104,12 @@ describe('T-005 tutanak taslagi olusturma', () => {
     // T-012 ile zorunlu hale gelen yapilandirma; uygulama bunlar olmadan ACILMAZ (§5).
     process.env.SUBSCRIPTION_PRICE_AMOUNT = '199.00';
     process.env.PUBLIC_APP_URL = 'http://localhost:5173';
+    // Obje depolama yapilandirmasi T-006 ile zorunlu hale geldi; bu testler depolamayi
+    // kullanmaz, degerler yalnizca env semasini gecmek icindir (CLAUDE.md §5).
+    process.env.R2_ENDPOINT = 'http://localhost:9000';
+    process.env.R2_BUCKET = 'test-kovasi';
+    process.env.R2_ACCESS_KEY_ID = 'test-erisim';
+    process.env.R2_SECRET_ACCESS_KEY = 'test-gizli';
 
     const { createApiApp } = await import('../src/main');
     app = await createApiApp();

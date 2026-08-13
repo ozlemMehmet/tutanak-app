@@ -3,12 +3,21 @@ import { validateEnv } from './env.schema';
 const DATABASE_URL = 'postgresql://tutanak:tutanak@localhost:5432/tutanak';
 const JWT_SECRET = 'yerel-gelistirme-icin-yeterince-uzun-anahtar';
 
-// Zorunlu anahtarlarin en kucuk kumesi (T-012 ile abonelik yapilandirmasi eklendi).
+/** Obje depolama anahtarlari yerel MinIO varsayilanlaridir; gercek sir degildir. */
+const STORAGE_ENV = {
+  R2_ENDPOINT: 'http://localhost:9000',
+  R2_BUCKET: 'tutanak-photos',
+  R2_ACCESS_KEY_ID: 'minioadmin',
+  R2_SECRET_ACCESS_KEY: 'minioadmin',
+};
+
+// Zorunlu anahtarlarin en kucuk kumesi (T-012 abonelik + T-006 depolama ile buyudu).
 const REQUIRED_ENV = {
   DATABASE_URL,
   JWT_SECRET,
   SUBSCRIPTION_PRICE_AMOUNT: '199.00',
   PUBLIC_APP_URL: 'http://localhost:5173',
+  ...STORAGE_ENV,
 };
 
 const VALID_ENV = {
@@ -29,6 +38,9 @@ describe('validateEnv', () => {
       SUBSCRIPTION_CURRENCY: 'TRY',
       SUBSCRIPTION_PERIOD_DAYS: 30,
       PAYMENT_PROVIDER: 'fake',
+      PHOTO_MAX_BYTES: 10_485_760,
+      PHOTO_MAX_PER_REPORT: 30,
+      PRESIGNED_URL_TTL_SECONDS: 900,
     });
   });
 
@@ -80,6 +92,43 @@ describe('validateEnv', () => {
         /RATE_LIMIT_MAX_REQUESTS/,
       );
     });
+  });
+
+  it('fotograf sayisal ayarlarini metinden tam sayiya cevirir (T-006)', () => {
+    const parsed = validateEnv({
+      ...VALID_ENV,
+      PHOTO_MAX_BYTES: '2048',
+      PHOTO_MAX_PER_REPORT: '5',
+    });
+
+    expect(parsed.PHOTO_MAX_BYTES).toBe(2048);
+    expect(parsed.PHOTO_MAX_PER_REPORT).toBe(5);
+  });
+
+  it('pozitif olmayan fotograf ayarini reddeder (uygulama acilmaz)', () => {
+    expect(() => validateEnv({ ...VALID_ENV, PHOTO_MAX_PER_REPORT: '0' })).toThrow(
+      /PHOTO_MAX_PER_REPORT/,
+    );
+    expect(() => validateEnv({ ...VALID_ENV, PHOTO_MAX_BYTES: 'buyuk' })).toThrow(
+      /PHOTO_MAX_BYTES/,
+    );
+  });
+
+  it('obje depolama sirlari eksikse uygulama acilmasin diye hata firlatir (T-006)', () => {
+    expect(() =>
+      validateEnv({
+        DATABASE_URL,
+        JWT_SECRET,
+        SUBSCRIPTION_PRICE_AMOUNT: '199.00',
+        PUBLIC_APP_URL: 'http://localhost:5173',
+      }),
+    ).toThrow(/R2_ENDPOINT/);
+  });
+
+  it('gecersiz bicimli R2_ENDPOINT degerini reddeder', () => {
+    expect(() => validateEnv({ ...VALID_ENV, R2_ENDPOINT: 'localhost:9000' })).toThrow(
+      /R2_ENDPOINT/,
+    );
   });
 
   it('JWT_SECRET eksikse uygulama acilmasin diye hata firlatir', () => {

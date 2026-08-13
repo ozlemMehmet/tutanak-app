@@ -1,6 +1,7 @@
 // Entity -> DTO donusumu (CLAUDE.md §3.5): yanit govdesi YALNIZCA burada kurulur,
 // boylece owner_id gibi ic alanlarin sizmasi yapisal olarak engellenir.
 
+import type { PhotoDto } from '../../photos/dto/photo.dto';
 import type { ReportDetailDto, ReportDto, ReportListDto } from '../dto/report.dto';
 import type { ReportRecord } from '../reports.repository';
 
@@ -34,7 +35,6 @@ export function toReportListDto(reports: ReportRecord[], pagination: Pagination)
   };
 }
 
-export function toReportDetailDto(report: ReportRecord): ReportDetailDto {
-  // Fotograf listesi T-006'da dolar; bu ticket'ta fotograf satiri olusturan kod yolu yok.
-  return { ...toReportDto(report), photos: [] };
+export function toReportDetailDto(report: ReportRecord, photos: PhotoDto[]): ReportDetailDto {
+  return { ...toReportDto(report), photos };
 }

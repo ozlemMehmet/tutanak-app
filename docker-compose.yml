@@ -30,6 +30,16 @@ services:
     volumes:
       - minio-data:/data
 
+  # T-006: fotograf kovasi acilista bir kez olusturulur; aksi halde ilk yukleme
+  # 502 STORAGE_UNAVAILABLE ile doner ve `docker compose up` sonrasi akis tamamlanmaz.
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    entrypoint: >-
+      sh -c "until mc alias set yerel http://minio:9000 minioadmin minioadmin; do sleep 1; done;
+      mc mb --ignore-existing yerel/${R2_BUCKET:-tutanak-photos}"
+
   mailpit:
     image: axllent/mailpit:latest
     ports:
@@ -53,11 +63,15 @@ services:
         required: false
     environment:
       DATABASE_URL: postgresql://tutanak:tutanak@db:5432/tutanak
+      # .env'deki adres host icindir; container aginda servis adi kullanilir.
+      R2_ENDPOINT: http://minio:9000
     ports:
       - '3000:3000'
     depends_on:
       db:
         condition: service_healthy
+      minio:
+        condition: service_started
     volumes:
       - ./apps/api:/app/apps/api
       - api-node-modules:/app/node_modules

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ForbiddenError, NotFoundError } from '../../common/errors/app-error';
+import { PhotosService } from '../photos/photos.service';
 import type { CreateReportDto } from './dto/create-report.dto';
 import type { ListReportsQueryDto } from './dto/list-reports-query.dto';
 import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } from './dto/list-reports-query.dto';
@@ -13,7 +14,10 @@ const DEFAULT_NOTE = '';
 
 @Injectable()
 export class ReportsService {
-  constructor(private readonly reportsRepository: ReportsRepository) {}
+  constructor(
+    private readonly reportsRepository: ReportsRepository,
+    private readonly photosService: PhotosService,
+  ) {}
 
   /**
    * Yeni tutanak taslagi olusturur. Sahiplik YALNIZCA oturum kullanicisindan gelir;
@@ -53,10 +57,15 @@ export class ReportsService {
     return toReportListDto(records, { page, pageSize, total });
   }
 
-  /** Oturum sahibinin kendi tutanagini doner; sahiplik kurali is mantigindadir (§3.8). */
+  /**
+   * Oturum sahibinin kendi tutanagini doner; sahiplik kurali is mantigindadir (§3.8).
+   * Fotograf listesi T-006 ile doldurulur: sahiplik burada dogrulandigi icin fotograflar
+   * ikinci bir sahiplik sorgusu YAPILMADAN okunur (istek basina iki sorgu).
+   */
   async getReport(reportId: string, userId: string): Promise<ReportDetailDto> {
     const report = await this.assertOwnership(reportId, userId);
-    return toReportDetailDto(report);
+    const photos = await this.photosService.listOwnedPhotos(reportId);
+    return toReportDetailDto(report, photos);
   }
 
   /**
