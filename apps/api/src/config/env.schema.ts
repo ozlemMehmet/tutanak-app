@@ -7,6 +7,15 @@ import { z } from 'zod';
 const MIN_JWT_SECRET_LENGTH = 16;
 const CURRENCY_CODE_LENGTH = 3;
 
+// Hiz siniri varsayilanlari architecture.md §7 tablosundan gelir; `.env.example` ile aynidir.
+const DEFAULT_RATE_LIMIT_WINDOW_SECONDS = 60;
+const DEFAULT_RATE_LIMIT_MAX_REQUESTS = 300;
+const DEFAULT_AUTH_RATE_LIMIT_MAX_REQUESTS = 5;
+
+/** Ortam degiskenleri metin olarak gelir; pozitif tam sayiya cevrilir (deger loglanmaz). */
+const positiveIntFromEnv = (defaultValue: number): z.ZodDefault<z.ZodNumber> =>
+  z.coerce.number().int().positive().default(defaultValue);
+
 export const envSchema = z.object({
   /** Postgres baglanti adresi (CLAUDE.md §5 sir listesi). */
   DATABASE_URL: z.string().min(1),
@@ -16,6 +25,12 @@ export const envSchema = z.object({
   JWT_EXPIRES_IN: z.string().min(1).default('7d'),
   /** GET /me varsayilan abonelik yanitinin para birimi (CLAUDE.md §3.11, §5.1). */
   SUBSCRIPTION_CURRENCY: z.string().length(CURRENCY_CODE_LENGTH).default('TRY'),
+  /** Hiz siniri sayacinin sifirlandigi pencere, saniye (T-014, architecture.md §7). */
+  RATE_LIMIT_WINDOW_SECONDS: positiveIntFromEnv(DEFAULT_RATE_LIMIT_WINDOW_SECONDS),
+  /** Pencere basina genel istek ust siniri (endpoint + IP basina). */
+  RATE_LIMIT_MAX_REQUESTS: positiveIntFromEnv(DEFAULT_RATE_LIMIT_MAX_REQUESTS),
+  /** Kimlik uclari (`/auth/register`, `/auth/login`) icin sikilastirilmis ust sinir. */
+  AUTH_RATE_LIMIT_MAX_REQUESTS: positiveIntFromEnv(DEFAULT_AUTH_RATE_LIMIT_MAX_REQUESTS),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;
