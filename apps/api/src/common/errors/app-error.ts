@@ -71,6 +71,13 @@ export class UnauthenticatedError extends AppError {
   }
 }
 
+export class ForbiddenError extends AppError {
+  constructor(message = 'Bu kaynaga erisim yetkiniz yok.') {
+    // 403 yanitlari alan bazli `details` tasimaz (CLAUDE.md §4.2.3).
+    super('FORBIDDEN', 403, message);
+  }
+}
+
 type NotFoundCode = Extract<ErrorCode, 'NOT_FOUND' | 'TEMPLATE_NOT_FOUND' | 'SHARE_LINK_NOT_FOUND'>;
 
 export class NotFoundError extends AppError {
