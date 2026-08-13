@@ -42,7 +42,11 @@ const EXPECTED_RECORD = {
 };
 
 function repositoryWith(reportDelegate: unknown): ReportsRepository {
-  return new ReportsRepository({ report: reportDelegate } as unknown as PrismaService);
+  return new ReportsRepository({
+    report: reportDelegate,
+    // Prisma'nin dizi bicimli $transaction'i: verilen sorgulari tek islemde kosar.
+    $transaction: (operations: Promise<unknown>[]) => Promise.all(operations),
+  } as unknown as PrismaService);
 }
 
 function prismaError(code: string): Prisma.PrismaClientKnownRequestError {
@@ -140,5 +144,116 @@ describe('ReportsRepository.findById', () => {
     await expect(repositoryWith({ findUnique }).findById(REPORT_ID)).rejects.toThrow(
       'baglanti koptu',
     );
+  });
+});
+
+describe('ReportsRepository.findManyByOwner', () => {
+  const EXPECTED_ORDER = [{ createdAt: 'desc' }, { id: 'desc' }];
+
+  it('yalnizca sahibin kayitlarini en yeniden eskiye ve sayfali sorgular', async () => {
+    const findMany = jest.fn().mockResolvedValue([STORED_REPORT]);
+    const count = jest.fn().mockResolvedValue(1);
+
+    const result = await repositoryWith({ findMany, count }).findManyByOwner({
+      ownerId: OWNER_ID,
+      skip: 0,
+      take: 20,
+    });
+
+    expect(findMany).toHaveBeenCalledWith({
+      where: { ownerId: OWNER_ID },
+      include: EXPECTED_INCLUDE,
+      orderBy: EXPECTED_ORDER,
+      skip: 0,
+      take: 20,
+    });
+    // Toplam sayi ayni filtre ile hesaplanir (sayfa disi kayitlar da sayilir).
+    expect(count).toHaveBeenCalledWith({ where: { ownerId: OWNER_ID } });
+    expect(result).toEqual({ records: [EXPECTED_RECORD], total: 1 });
+  });
+
+  it('arama terimi verilince baslik ve notta harf buyuklugunden bagimsiz filtreler', async () => {
+    const findMany = jest.fn().mockResolvedValue([]);
+    const count = jest.fn().mockResolvedValue(0);
+
+    await repositoryWith({ findMany, count }).findManyByOwner({
+      ownerId: OWNER_ID,
+      searchTerm: 'kiraci',
+      skip: 0,
+      take: 20,
+    });
+
+    const expectedWhere = {
+      ownerId: OWNER_ID,
+      OR: [
+        { title: { contains: 'kiraci', mode: 'insensitive' } },
+        { note: { contains: 'kiraci', mode: 'insensitive' } },
+      ],
+    };
+    expect(findMany).toHaveBeenCalledWith(expect.objectContaining({ where: expectedWhere }));
+    expect(count).toHaveBeenCalledWith({ where: expectedWhere });
+  });
+
+  it('arama terimindeki LIKE joker karakterlerini kacirir (harfi harfine aranir)', async () => {
+    const findMany = jest.fn().mockResolvedValue([]);
+    const count = jest.fn().mockResolvedValue(0);
+
+    await repositoryWith({ findMany, count }).findManyByOwner({
+      ownerId: OWNER_ID,
+      searchTerm: 'a%b_c\\d',
+      skip: 0,
+      take: 20,
+    });
+
+    // `%`, `_` ve `\` harfi harfine aranmali: her biri `\` ile kacirilir.
+    const expectedWhere = {
+      ownerId: OWNER_ID,
+      OR: [
+        { title: { contains: 'a\\%b\\_c\\\\d', mode: 'insensitive' } },
+        { note: { contains: 'a\\%b\\_c\\\\d', mode: 'insensitive' } },
+      ],
+    };
+    expect(findMany).toHaveBeenCalledWith(expect.objectContaining({ where: expectedWhere }));
+    expect(count).toHaveBeenCalledWith({ where: expectedWhere });
+  });
+
+  it('eslesme yoksa bos kayit listesi ve sifir toplam doner (hata firlatmaz)', async () => {
+    const findMany = jest.fn().mockResolvedValue([]);
+    const count = jest.fn().mockResolvedValue(0);
+
+    const result = await repositoryWith({ findMany, count }).findManyByOwner({
+      ownerId: OWNER_ID,
+      searchTerm: 'bulunmayan terim',
+      skip: 0,
+      take: 20,
+    });
+
+    expect(result).toEqual({ records: [], total: 0 });
+  });
+
+  it('sayfa atlamasini ve sayfa boyutunu verildigi gibi sorguya tasir', async () => {
+    const findMany = jest.fn().mockResolvedValue([]);
+    const count = jest.fn().mockResolvedValue(0);
+
+    await repositoryWith({ findMany, count }).findManyByOwner({
+      ownerId: OWNER_ID,
+      skip: 40,
+      take: 20,
+    });
+
+    expect(findMany).toHaveBeenCalledWith(expect.objectContaining({ skip: 40, take: 20 }));
+  });
+
+  it('beklenmeyen veritabani hatasini yutmaz', async () => {
+    const findMany = jest.fn().mockRejectedValue(new Error('baglanti koptu'));
+    const count = jest.fn().mockResolvedValue(0);
+
+    const promise = repositoryWith({ findMany, count }).findManyByOwner({
+      ownerId: OWNER_ID,
+      skip: 0,
+      take: 20,
+    });
+
+    await expect(promise).rejects.toThrow('baglanti koptu');
   });
 });

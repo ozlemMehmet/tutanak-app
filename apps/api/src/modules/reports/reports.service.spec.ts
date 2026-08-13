@@ -114,3 +114,69 @@ describe('ReportsService.getReport', () => {
     expect(findById).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('ReportsService.listReports', () => {
+  const OTHER_REPORT: ReportRecord = {
+    ...STORED_REPORT,
+    id: '55555555-5555-4555-8555-555555555555',
+  };
+
+  it('sayfa verilmediginde ilk sayfayi varsayilan sayfa boyutuyla ister', async () => {
+    const findManyByOwner = jest.fn().mockResolvedValue({ records: [STORED_REPORT], total: 1 });
+
+    const result = await serviceWith({ findManyByOwner }).listReports(OWNER_ID, {});
+
+    expect(findManyByOwner).toHaveBeenCalledWith({
+      ownerId: OWNER_ID,
+      searchTerm: undefined,
+      skip: 0,
+      take: 20,
+    });
+    expect(result).toEqual({
+      items: [expect.objectContaining({ id: STORED_REPORT.id })],
+      page: 1,
+      pageSize: 20,
+      total: 1,
+    });
+  });
+
+  it('listeyi yalnizca oturum sahibinin kimligiyle sorgular (istemci sahiplik secemez)', async () => {
+    const findManyByOwner = jest.fn().mockResolvedValue({ records: [], total: 0 });
+
+    await serviceWith({ findManyByOwner }).listReports(OTHER_USER_ID, {});
+
+    expect(findManyByOwner).toHaveBeenCalledWith(
+      expect.objectContaining({ ownerId: OTHER_USER_ID }),
+    );
+  });
+
+  it('sayfa numarasini ve sayfa boyutunu atlama degerine cevirir', async () => {
+    const findManyByOwner = jest.fn().mockResolvedValue({ records: [], total: 45 });
+
+    const result = await serviceWith({ findManyByOwner }).listReports(OWNER_ID, {
+      page: 3,
+      pageSize: 5,
+    });
+
+    expect(findManyByOwner).toHaveBeenCalledWith(expect.objectContaining({ skip: 10, take: 5 }));
+    expect(result.page).toBe(3);
+    expect(result.pageSize).toBe(5);
+    expect(result.total).toBe(45);
+  });
+
+  it('arama terimini depoya oldugu gibi gecirir', async () => {
+    const findManyByOwner = jest.fn().mockResolvedValue({ records: [OTHER_REPORT], total: 1 });
+
+    await serviceWith({ findManyByOwner }).listReports(OWNER_ID, { q: 'kiraci' });
+
+    expect(findManyByOwner).toHaveBeenCalledWith(expect.objectContaining({ searchTerm: 'kiraci' }));
+  });
+
+  it('eslesen kayit yoksa hata firlatmadan bos liste doner', async () => {
+    const findManyByOwner = jest.fn().mockResolvedValue({ records: [], total: 0 });
+
+    const result = await serviceWith({ findManyByOwner }).listReports(OWNER_ID, { q: 'yok' });
+
+    expect(result).toEqual({ items: [], page: 1, pageSize: 20, total: 0 });
+  });
+});

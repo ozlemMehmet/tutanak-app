@@ -32,11 +32,44 @@ export interface CreateReportInput {
   note: string;
 }
 
+export interface FindReportsByOwnerInput {
+  ownerId: string;
+  /** Baslik/notta aranacak terim; verilmezse filtre uygulanmaz. */
+  searchTerm?: string;
+  skip: number;
+  take: number;
+}
+
+export interface ReportPage {
+  records: ReportRecord[];
+  /** Sayfalamadan bagimsiz, ayni filtreye uyan toplam satir sayisi. */
+  total: number;
+}
+
 /** Sablon adi ve fotograf sayisi tek sorguda gelir (ek gidis-donus yok). */
 const REPORT_INCLUDE = {
   template: { select: { name: true } },
   _count: { select: { photos: true } },
 } as const;
+
+/**
+ * Liste siralamasi (sozlesme: created_at DESC). Ikincil `id` anahtari yalnizca
+ * deterministiklik icindir: ayni mikrosaniyede olusan iki kayit sayfalar arasinda
+ * tekrarlanmasin/kaybolmasin. Birincil anahtar `reports_owner_created_at_idx` ile ayni.
+ */
+const REPORT_LIST_ORDER: Prisma.ReportOrderByWithRelationInput[] = [
+  { createdAt: 'desc' },
+  { id: 'desc' },
+];
+
+/**
+ * LIKE/ILIKE joker karakterlerini kacirir: kullanicinin yazdigi `%` ve `_` harfi harfine
+ * aranir (Postgres'te LIKE varsayilan kacis karakteri `\`). Prisma `contains` degeri
+ * parametre olarak tasir — bu kacis enjeksiyon icin degil, arama dogrulugu icindir.
+ */
+function escapeLikeWildcards(term: string): string {
+  return term.replace(/[\\%_]/g, (character) => `\\${character}`);
+}
 
 interface PrismaReportLike {
   id: string;
@@ -99,6 +132,45 @@ export class ReportsRepository {
       }
       throw error;
     }
+  }
+
+  /**
+   * Sahibin tutanaklarini sayfali ve `created_at` azalan sirada doner; arama terimi
+   * verilirse baslik VEYA notta ILIKE ile filtreler (`contains` + `insensitive` →
+   * `pg_trgm` GIN index'leri kullanilir, architecture.md §4 "Arama").
+   * Sayfa ve toplam sayi tek transaction icinde okunur: aksi halde iki sorgu arasina
+   * giren bir yazma `total` ile sayfayi celiskiye dusururdu.
+   */
+  async findManyByOwner(input: FindReportsByOwnerInput): Promise<ReportPage> {
+    const where = this.buildOwnerFilter(input.ownerId, input.searchTerm);
+
+    const [reports, total] = await this.prisma.$transaction([
+      this.prisma.report.findMany({
+        where,
+        include: REPORT_INCLUDE,
+        orderBy: REPORT_LIST_ORDER,
+        skip: input.skip,
+        take: input.take,
+      }),
+      this.prisma.report.count({ where }),
+    ]);
+
+    return { records: reports.map(toReportRecord), total };
+  }
+
+  /** Sahiplik filtresi her zaman uygulanir; arama terimi yalnizca varsa eklenir. */
+  private buildOwnerFilter(ownerId: string, searchTerm?: string): Prisma.ReportWhereInput {
+    if (searchTerm === undefined) {
+      return { ownerId };
+    }
+    const pattern = escapeLikeWildcards(searchTerm);
+    return {
+      ownerId,
+      OR: [
+        { title: { contains: pattern, mode: 'insensitive' } },
+        { note: { contains: pattern, mode: 'insensitive' } },
+      ],
+    };
   }
 
   /**

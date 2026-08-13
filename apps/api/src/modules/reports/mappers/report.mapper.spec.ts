@@ -1,5 +1,5 @@
 import type { ReportRecord } from '../reports.repository';
-import { toReportDetailDto, toReportDto } from './report.mapper';
+import { toReportDetailDto, toReportDto, toReportListDto } from './report.mapper';
 
 const STORED_REPORT: ReportRecord = {
   id: '22222222-2222-4222-8222-222222222222',
@@ -45,5 +45,25 @@ describe('toReportDetailDto', () => {
     const detail = toReportDetailDto(STORED_REPORT);
 
     expect(detail).toEqual({ ...toReportDto(STORED_REPORT), photos: [] });
+  });
+});
+
+describe('toReportListDto', () => {
+  it('sozlesmedeki ReportListResponse alanlarini kurar ve ogeleri Report tipine cevirir', () => {
+    const list = toReportListDto([STORED_REPORT], { page: 2, pageSize: 10, total: 11 });
+
+    expect(list).toEqual({
+      items: [toReportDto(STORED_REPORT)],
+      page: 2,
+      pageSize: 10,
+      total: 11,
+    });
+    expect(Object.keys(list.items[0] ?? {})).not.toContain('ownerId');
+  });
+
+  it('kayit yoksa bos oge listesi ve sifir toplam doner', () => {
+    const list = toReportListDto([], { page: 1, pageSize: 20, total: 0 });
+
+    expect(list).toEqual({ items: [], page: 1, pageSize: 20, total: 0 });
   });
 });

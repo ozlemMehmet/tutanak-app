@@ -39,3 +39,15 @@ describe('ReportsController.getById', () => {
     expect(result).toEqual({ id: REPORT_ID, photos: [] });
   });
 });
+
+describe('ReportsController.list', () => {
+  it('sorgu parametrelerini ve oturum sahibinin kimligini servise gecirir', async () => {
+    const listReports = jest.fn().mockResolvedValue({ items: [], page: 1, pageSize: 20, total: 0 });
+    const query = { q: 'kiraci', page: 1, pageSize: 20 };
+
+    const result = await controllerWith({ listReports }).list(CURRENT_USER, query);
+
+    expect(listReports).toHaveBeenCalledWith(CURRENT_USER.userId, query);
+    expect(result).toEqual({ items: [], page: 1, pageSize: 20, total: 0 });
+  });
+});
