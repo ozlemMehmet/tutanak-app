@@ -71,6 +71,15 @@ export class UnauthenticatedError extends AppError {
   }
 }
 
+type NotFoundCode = Extract<ErrorCode, 'NOT_FOUND' | 'TEMPLATE_NOT_FOUND' | 'SHARE_LINK_NOT_FOUND'>;
+
+export class NotFoundError extends AppError {
+  constructor(code: NotFoundCode = 'NOT_FOUND', message = 'Kaynak bulunamadi.') {
+    // 404 yanitlari alan bazli `details` tasimaz (CLAUDE.md §4.2.3).
+    super(code, 404, message);
+  }
+}
+
 type ConflictCode = Extract<
   ErrorCode,
   | 'EMAIL_ALREADY_REGISTERED'
