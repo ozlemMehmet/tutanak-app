@@ -21,6 +21,14 @@ const BCRYPT_COST = 10;
  */
 const DEFAULT_ACCESS_TOKEN_TTL_SECONDS = parseAccessTokenTtlSeconds(DEFAULT_JWT_EXPIRES_IN);
 
+/**
+ * T-015: kullanici bulunamadiginda da bcrypt maliyeti odemek icin kullanilan sabit dummy
+ * hash. Bir defalik uretilen rastgele 32 baytin (girdi atildi, hicbir gercek kullanici
+ * sifresinden turetilmedi) cost 10 bcrypt hash'idir; compare sonucu her zaman atilir.
+ * Sir DEGILDIR: bilinen bir sifreye karsilik gelmez, yalnizca zamanlama esitler.
+ */
+export const DUMMY_PASSWORD_HASH = '$2b$10$NtEviXCkx9pvweP70kTG6uyC88kNUO5bKeS1t1tfcUft.9xphfs4i';
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -40,11 +48,15 @@ export class AuthService {
   /**
    * Kullanici bulunamadi ile parola yanlis AYNI hatayi doner (kullanici sizdirma yok);
    * sozlesmede her iki durum da 401 INVALID_CREDENTIALS'tir.
+   * T-015: bcrypt.compare her iki dalda da kosulsuz calisir — kullanici yoksa dummy
+   * hash'e karsi kosulur ve sonuc atilir; yanit suresi e-posta varligini sizdirmaz.
    */
   async login(input: LoginDto): Promise<LoginResponseDto> {
     const user = await this.usersRepository.findByEmail(input.email);
-    const isPasswordValid =
-      user !== null && (await bcrypt.compare(input.password, user.passwordHash));
+    const isPasswordValid = await bcrypt.compare(
+      input.password,
+      user?.passwordHash ?? DUMMY_PASSWORD_HASH,
+    );
 
     if (user === null || !isPasswordValid) {
       throw new UnauthenticatedError('INVALID_CREDENTIALS', 'E-posta veya parola hatali.');

@@ -1,8 +1,17 @@
 import * as bcrypt from 'bcrypt';
 import type { JwtService } from '@nestjs/jwt';
+
+// T-015: bcrypt.compare cagrilarini gozlemlemek icin gercek implementasyonu saran mock
+// (modul ozellikleri yeniden tanimlanamadigi icin jest.spyOn kullanilamiyor).
+jest.mock('bcrypt', () => {
+  const actual = jest.requireActual<typeof bcrypt>('bcrypt');
+  const compareImpl = (data: string | Buffer, encrypted: string): Promise<boolean> =>
+    actual.compare(data, encrypted);
+  return { ...actual, compare: jest.fn(compareImpl) };
+});
 import { ConflictError, UnauthenticatedError } from '../../common/errors/app-error';
 import type { UserRecord, UsersRepository } from '../users/users.repository';
-import { AuthService } from './auth.service';
+import { AuthService, DUMMY_PASSWORD_HASH } from './auth.service';
 
 // Testlerde kullanilan sabit parola; gercek bir sir degildir (CLAUDE.md §5).
 const PASSWORD = 'gizli-parola-123';
@@ -153,5 +162,71 @@ describe('AuthService.login', () => {
     expect(error).toBeInstanceOf(UnauthenticatedError);
     expect((error as UnauthenticatedError).code).toBe('INVALID_CREDENTIALS');
     expect((error as UnauthenticatedError).details).toBeUndefined();
+  });
+});
+
+// T-015: sabit-zamanli dogrulama — bcrypt maliyeti her iki basarisizlik dalinda da odenir.
+describe('AuthService.login sabit-zamanli dogrulama (T-015)', () => {
+  const jwtService = {
+    signAsync: jest.fn().mockResolvedValue('imzali.jwt.token'),
+    decode: jest.fn().mockReturnValue({ iat: 1_000, exp: 605_800 }),
+  } as unknown as JwtService;
+
+  // bcrypt.compare overload'lu (callback + promise); mock tipi promise overload'ina sabitlenir.
+  const compareMock = bcrypt.compare as jest.MockedFunction<
+    (data: string | Buffer, encrypted: string) => Promise<boolean>
+  >;
+
+  beforeEach(() => {
+    compareMock.mockClear();
+  });
+
+  it("kayitli olmayan e-postada da bcrypt.compare dummy hash'e karsi cagrilir (numaralandirma kapali)", async () => {
+    const repository = {
+      create: jest.fn(),
+      findByEmail: jest.fn().mockResolvedValue(null),
+    } as unknown as UsersRepository;
+    const service = new AuthService(repository, jwtService);
+
+    await expect(service.login({ email: 'yok@ornek.test', password: PASSWORD })).rejects.toBeInstanceOf(
+      UnauthenticatedError,
+    );
+
+    expect(compareMock).toHaveBeenCalledTimes(1);
+    expect(compareMock).toHaveBeenCalledWith(PASSWORD, DUMMY_PASSWORD_HASH);
+  });
+
+  it("kayitli kullanicida bcrypt.compare kullanicinin gercek hash'ine karsi cagrilir", async () => {
+    const passwordHash = await bcrypt.hash(PASSWORD, 10);
+    compareMock.mockClear(); // hazirlik asamasindaki hash cagrisiyla karismasin
+    const repository = {
+      create: jest.fn(),
+      findByEmail: jest.fn().mockResolvedValue(userRecord({ passwordHash })),
+    } as unknown as UsersRepository;
+    const service = new AuthService(repository, jwtService);
+
+    await service.login({ email: 'selin@ornek.test', password: PASSWORD });
+
+    expect(compareMock).toHaveBeenCalledTimes(1);
+    expect(compareMock).toHaveBeenCalledWith(PASSWORD, passwordHash);
+  });
+
+  it("dummy hash sabiti cost 10 bcrypt onekine sahiptir (maliyet gercek dogrulamayla esit)", () => {
+    expect(DUMMY_PASSWORD_HASH.startsWith(BCRYPT_COST_PREFIX)).toBe(true);
+    expect(DUMMY_PASSWORD_HASH).toHaveLength(60); // gecerli bir bcrypt hash uzunlugu
+  });
+
+  it('dummy compare sonucu atilir: kayitli olmayan e-posta yine INVALID_CREDENTIALS ile reddedilir', async () => {
+    // compare true donse bile kullanici yoksa giris ASLA basarili olmamali.
+    compareMock.mockResolvedValueOnce(true);
+    const repository = {
+      create: jest.fn(),
+      findByEmail: jest.fn().mockResolvedValue(null),
+    } as unknown as UsersRepository;
+    const service = new AuthService(repository, jwtService);
+
+    await expect(
+      service.login({ email: 'yok@ornek.test', password: PASSWORD }),
+    ).rejects.toMatchObject({ code: 'INVALID_CREDENTIALS', httpStatus: 401 });
   });
 });
