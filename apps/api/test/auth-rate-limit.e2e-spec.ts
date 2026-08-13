@@ -55,6 +55,9 @@ describe('T-014 /auth/* hiz siniri', () => {
     process.env.RATE_LIMIT_WINDOW_SECONDS = WINDOW_SECONDS.toString();
     process.env.RATE_LIMIT_MAX_REQUESTS = GENERAL_LIMIT.toString();
     process.env.AUTH_RATE_LIMIT_MAX_REQUESTS = AUTH_LIMIT.toString();
+    // T-012 ile zorunlu hale gelen yapilandirma; uygulama bunlar olmadan ACILMAZ (§5).
+    process.env.SUBSCRIPTION_PRICE_AMOUNT = '199.00';
+    process.env.PUBLIC_APP_URL = 'http://localhost:5173';
 
     const { createApiApp } = await import('../src/main');
     app = await createApiApp();

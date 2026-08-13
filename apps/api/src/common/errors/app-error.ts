@@ -100,3 +100,12 @@ export class ConflictError extends AppError {
     super(code, 409, message, details);
   }
 }
+
+type ExternalServiceCode = Extract<ErrorCode, 'PAYMENT_PROVIDER_ERROR' | 'STORAGE_UNAVAILABLE'>;
+
+/** Dis sistem (odeme saglayicisi, obje depolama) erisilemez/hatali yanit verdi (§4.2). */
+export class ExternalServiceError extends AppError {
+  constructor(code: ExternalServiceCode, message: string) {
+    super(code, 502, message);
+  }
+}

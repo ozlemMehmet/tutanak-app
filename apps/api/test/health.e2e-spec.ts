@@ -14,6 +14,9 @@ describe('GET /health', () => {
     // Disaridan verilmediyse yalnizca test kosumuna ait yerel degerler kullanilir.
     process.env.JWT_SECRET ??= 'test-ortami-icin-yeterince-uzun-imzalama-anahtari';
     process.env.DATABASE_URL ??= 'postgresql://tutanak:tutanak@localhost:5432/tutanak';
+    // T-012 ile zorunlu hale gelen yapilandirma; uygulama bunlar olmadan ACILMAZ (§5).
+    process.env.SUBSCRIPTION_PRICE_AMOUNT ??= '199.00';
+    process.env.PUBLIC_APP_URL ??= 'http://localhost:5173';
 
     const { createApiApp } = await import('../src/main');
     app = await createApiApp();

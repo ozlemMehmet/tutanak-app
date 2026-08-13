@@ -15,6 +15,8 @@ export default {
     '!src/**/*.module.ts',
     '!src/config/**',
     '!src/**/dto/**',
+    // Tip bildirimleri calisan kod uretmez (iyzipay.d.ts).
+    '!src/**/*.d.ts',
   ],
   coverageThreshold: {
     global: { lines: 70 },

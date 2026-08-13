@@ -7,6 +7,7 @@ import { createThrottlerOptions } from './common/guards/rate-limit.factory';
 import { AppConfigModule } from './config/config.module';
 import type { AppEnv } from './config/env.schema';
 import { AuthModule } from './modules/auth/auth.module';
+import { BillingModule } from './modules/billing/billing.module';
 import { HealthModule } from './modules/health/health.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { TemplatesModule } from './modules/templates/templates.module';
@@ -30,6 +31,7 @@ import { UsersModule } from './modules/users/users.module';
     UsersModule,
     TemplatesModule,
     ReportsModule,
+    BillingModule,
   ],
   providers: [
     // SIRA BAGLAYICI (T-014): hiz siniri kimlik dogrulamasindan ONCE calisir; aksi halde
