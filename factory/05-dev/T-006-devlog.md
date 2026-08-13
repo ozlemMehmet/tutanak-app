@@ -66,8 +66,40 @@ Rapordaki iki madde de dogrulandi ve duzeltildi; rapordaki "DOKUNMA" listesine h
 
 **Regresyon kosumu (kod degisikligi yalnizca CSS oldugu icin tam paket yeniden kosuldu):** `npm run format:check` temiz, `npm run lint` (--max-warnings=0) 0 hata/0 uyari, `npm run typecheck` temiz, `npm test` 22 (kok) + 137 (api) + 53 (web) = 212 test gecti, `npm run test:e2e` (gercek Postgres) 82 test / 6 suite gecti. Kirmizi test yok.
 
+## Iade turu 2 (code-reviewer CHANGES — 1 blokleyici bulgu: `npm run test:e2e` kirmizi)
+
+Bulgu dogruydu: `env.schema.ts` bu ticket'ta `R2_ENDPOINT`, `R2_BUCKET`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` anahtarlarini **zorunlu** yaptigi icin, uygulamayi gercekten ayaga kaldiran her e2e spec'inin bu degerleri atamasi gerekiyor. Ilk turda 4 spec'e telafi blogu eklenmis, 2 spec atlanmisti.
+
+**Sistematik hata ayiklama (kural 3).**
+1. *Izole:* Raporun kosum komutu birebir tekrarlandi (Postgres :55432, yalnizca `DATABASE_URL` set — CI ile ayni). Hata `validateEnv` icinde, `AppModule` import edilirken, uygulama daha ayaga kalkmadan olusuyor.
+2. *Hipotez A:* "Eksik olan tek sey, iki spec'in `R2_*` atamasi." — Kanit: `env.schema.ts` diff'inde `R2_*` `+` satiri; iki spec'in `beforeAll` env bloklarinda karsiligi yok.
+3. *Test:* `billing.e2e-spec.ts` ve `auth-rate-limit.e2e-spec.ts` icine, `reports.e2e-spec.ts:107-112` desenindeki dort atama + ayni gerekce yorumu, `await import('../src/main')` satirindan ONCE eklendi. Sema **gevsetilmedi**: depolama sert bagimliliktir, `R2_*` zorunlu kalmalidir (CLAUDE.md §5 sir listesi).
+4. *Dogrula:* Iki suite artik kosuyor. Ama tam paket hala kirmiziydi — **hipotez A eksikti**, ikinci bir kok neden ortaya cikti (asagida). Yeni kanitla yeni hipotez kuruldu; rastgele deneme yapilmadi.
+
+**Ikinci kok neden — `photos.e2e-spec.ts`'te sirali baginti (kendi dosyam, ayni ticket).**
+- *Kanit:* Iki suite duzeltilince paket 8 suite kosar hale geldi ve bu kez **photos** suite'i 24/24 patladi: `Ortam degiskenleri gecersiz: SUBSCRIPTION_PRICE_AMOUNT (Required), PUBLIC_APP_URL (Required)`.
+- *Kok neden:* `photos.e2e-spec.ts` bu iki (T-012 ile zorunlu olan) anahtari **hic atamiyordu**; `--runInBand` tek surecte kostugu icin degerler daha once kosan bir spec'ten `process.env`'e **siziyor**du. Ilk turda "photos yesil" gorunmesinin sebebi buydu: gercek bir gecis degil, suite sirasinin sansiydi. Iki olu suite canlanip sira degisince baginti gorunur hale geldi. Yani bu, ilk turumda zaten var olan gizli bir kirilganlikti; raporun tarif ettigi duzeltme onu ortaya cikardi.
+- *Duzeltme:* photos spec'i kendi kendine yeterli hale getirildi (`SUBSCRIPTION_PRICE_AMOUNT`, `PUBLIC_APP_URL` kendi `beforeAll`'unda atanir), nedenini anlatan yorum birakildi.
+- *Regresyon korumasi:* Duzeltme "tam paket yesil" ile degil, **her spec'in tek basina ve temiz ortamla kosmasiyla** kanitlandi (`env -i` ile yalnizca `DATABASE_URL` verilerek) — bu, env sizintisinin sessizce geri gelmesini yakalayan kosum bicimidir; sirali baginti bir daha yesil gorunerek saklanamaz.
+
+**Kosum sonucu (Postgres :55432, yalnizca `DATABASE_URL` — CI ile ayni):**
+```
+# Tam paket (rapordaki komut):  npx jest --config test/jest-e2e.config.mjs --runInBand
+Test Suites: 8 passed, 8 total          # <- suite SAYISI kontrol edildi (rapor uyarisi)
+Tests:       105 passed, 105 total
+
+# Sira bagimsizligi: her spec tek basina, temiz ortamda (env -i ... DATABASE_URL=...)
+photos 24 | billing 18 | auth-rate-limit 5 | auth 16 | health 2 | reports 19 | templates 9 | migration 12   -> 8/8 yesil
+
+# Kapilar: lint (--max-warnings=0) 0/0, typecheck temiz, format:check temiz,
+# npm test: 25 (kok) + 206 (api) + 53 (web) = 284 test gecti.
+```
+
+Kapsam: yalnizca uc test dosyasinin env bloklari degisti; urun kodu, sema ve rapordaki "eylem gerekmez" listesindeki hicbir sey degistirilmedi.
+
 ## Bilinen Sinirlamalar
 
+- **E2E spec'leri env'i `process.env` uzerinden kurar; `--runInBand` altinda anahtarlar suite'ler arasi sizabilir.** Bu turda uc spec kendi kendine yeterli hale getirildi, ama yapisal koruma yok: zorunlu bir env anahtari eklendiginde onu ayaga kalkan TUM spec'lere eklemek hala elle yapilan bir istir (bu bulgunun kok nedeni). Anayasa boslugu / retrospektif adayi: e2e icin ortak bir `setupTestEnv()` yardimcisi (ya da jest `setupFiles`) — tek yerde tanimlanir, yeni zorunlu anahtar tum suite'lere otomatik iner. Bu ticket'in kapsami disinda oldugu icin YAPILMADI.
 - **`ReportDetailPage` bu ticket'ta yalnizca fotograf bolumunu icerir.** Baslik/durum rozeti, PDF indirme (T-007), paylasim paneli (T-008) yok. Bunun sonucu: `canAddPhoto` su an sabit `true`; **onaylanmis** tutanakta ekleme arayuzunun gizlenmesi (design.md success durumu) tutanak detayini ceken cagri bu sayfaya eklendiginde baglanacak. Guvenlik/kanit butunlugu tarafi sunucuda **zaten** zorunlu: onaylanmis tutanakta yukleme `409 REPORT_ALREADY_APPROVED` ile reddedilir ve bu e2e'de testli (§3.10).
 - **Playwright E2E senaryolari (§8.3) hala yok** — repoda Playwright kurulu degil ve kritik akisin diger halkalari (giris ekrani, tutanak olusturma ekrani) henuz yazilmadi. K7 icin oznitelik+akis bilesen testleriyle ve yukaridaki manuel senaryoyla dogrulanir; §8.3'un 4. senaryosu ekranlar tamamlandiginda kurulmalidir.
 - Fotograf ust siniri UI'da **proaktif** olarak degil, sunucudan `PHOTO_LIMIT_REACHED` dondukten sonra kapatilir (esigi istemciye gommemek icin).
