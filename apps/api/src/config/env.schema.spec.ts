@@ -3,11 +3,19 @@ import { validateEnv } from './env.schema';
 const DATABASE_URL = 'postgresql://tutanak:tutanak@localhost:5432/tutanak';
 const JWT_SECRET = 'yerel-gelistirme-icin-yeterince-uzun-anahtar';
 
-const VALID_ENV = {
+// Zorunlu anahtarlarin en kucuk kumesi (T-012 ile abonelik yapilandirmasi eklendi).
+const REQUIRED_ENV = {
   DATABASE_URL,
   JWT_SECRET,
+  SUBSCRIPTION_PRICE_AMOUNT: '199.00',
+  PUBLIC_APP_URL: 'http://localhost:5173',
+};
+
+const VALID_ENV = {
+  ...REQUIRED_ENV,
   JWT_EXPIRES_IN: '7d',
   SUBSCRIPTION_CURRENCY: 'TRY',
+  PAYMENT_PROVIDER: 'fake',
 };
 
 describe('validateEnv', () => {
@@ -16,9 +24,11 @@ describe('validateEnv', () => {
   });
 
   it('istege bagli anahtarlar yoksa .env.example ile ayni varsayilanlari uygular', () => {
-    expect(validateEnv({ DATABASE_URL, JWT_SECRET })).toMatchObject({
+    expect(validateEnv(REQUIRED_ENV)).toMatchObject({
       JWT_EXPIRES_IN: '7d',
       SUBSCRIPTION_CURRENCY: 'TRY',
+      SUBSCRIPTION_PERIOD_DAYS: 30,
+      PAYMENT_PROVIDER: 'fake',
     });
   });
 
@@ -74,21 +84,21 @@ describe('validateEnv', () => {
   });
 
   it('JWT_SECRET eksikse uygulama acilmasin diye hata firlatir', () => {
-    expect(() => validateEnv({ DATABASE_URL })).toThrow(/JWT_SECRET/);
+    expect(() => validateEnv({ ...REQUIRED_ENV, JWT_SECRET: undefined })).toThrow(/JWT_SECRET/);
   });
 
   it('DATABASE_URL eksikse hata firlatir', () => {
-    expect(() => validateEnv({ JWT_SECRET })).toThrow(/DATABASE_URL/);
+    expect(() => validateEnv({ ...REQUIRED_ENV, DATABASE_URL: undefined })).toThrow(/DATABASE_URL/);
   });
 
   it('kisa JWT_SECRET degerini reddeder', () => {
-    expect(() => validateEnv({ DATABASE_URL, JWT_SECRET: 'kisa' })).toThrow(/JWT_SECRET/);
+    expect(() => validateEnv({ ...REQUIRED_ENV, JWT_SECRET: 'kisa' })).toThrow(/JWT_SECRET/);
   });
 
   it('hata mesajinda gecersiz degerin kendisini yazmaz (sir sizintisi olmasin)', () => {
     let message = '';
     try {
-      validateEnv({ DATABASE_URL, JWT_SECRET: 'sir-degeri' });
+      validateEnv({ ...REQUIRED_ENV, JWT_SECRET: 'sir-degeri' });
     } catch (error: unknown) {
       message = error instanceof Error ? error.message : '';
     }
@@ -99,5 +109,78 @@ describe('validateEnv', () => {
 
   it('bilinmeyen ortam degiskenlerini yok sayar (process.env tumuyle gelir)', () => {
     expect(() => validateEnv({ ...VALID_ENV, PATH: '/usr/bin', HOME: '/root' })).not.toThrow();
+  });
+
+  describe('T-012 abonelik yapilandirmasi', () => {
+    it('SUBSCRIPTION_PRICE_AMOUNT eksikse hata firlatir (fiyat koda gomulmez)', () => {
+      expect(() => validateEnv({ ...REQUIRED_ENV, SUBSCRIPTION_PRICE_AMOUNT: undefined })).toThrow(
+        /SUBSCRIPTION_PRICE_AMOUNT/,
+      );
+    });
+
+    it('SUBSCRIPTION_PRICE_AMOUNT ondalikli metin bicimine uymuyorsa reddeder', () => {
+      expect(() => validateEnv({ ...REQUIRED_ENV, SUBSCRIPTION_PRICE_AMOUNT: '199' })).toThrow(
+        /SUBSCRIPTION_PRICE_AMOUNT/,
+      );
+    });
+
+    it('SUBSCRIPTION_PRICE_AMOUNT degerini METIN olarak birakir (float parse YOK)', () => {
+      const env = validateEnv({ ...REQUIRED_ENV, SUBSCRIPTION_PRICE_AMOUNT: '1249.90' });
+
+      expect(env.SUBSCRIPTION_PRICE_AMOUNT).toBe('1249.90');
+    });
+
+    it('SUBSCRIPTION_PERIOD_DAYS degerini pozitif tam sayiya cevirir', () => {
+      expect(validateEnv({ ...REQUIRED_ENV, SUBSCRIPTION_PERIOD_DAYS: '45' })).toMatchObject({
+        SUBSCRIPTION_PERIOD_DAYS: 45,
+      });
+    });
+
+    it('SUBSCRIPTION_PERIOD_DAYS pozitif degilse reddeder', () => {
+      expect(() => validateEnv({ ...REQUIRED_ENV, SUBSCRIPTION_PERIOD_DAYS: '0' })).toThrow(
+        /SUBSCRIPTION_PERIOD_DAYS/,
+      );
+    });
+
+    it('PUBLIC_APP_URL mutlak bir adres degilse reddeder', () => {
+      expect(() => validateEnv({ ...REQUIRED_ENV, PUBLIC_APP_URL: 'localhost:5173' })).toThrow(
+        /PUBLIC_APP_URL/,
+      );
+    });
+
+    it('PAYMENT_PROVIDER yalnizca iyzico veya fake olabilir', () => {
+      expect(() => validateEnv({ ...REQUIRED_ENV, PAYMENT_PROVIDER: 'stripe' })).toThrow(
+        /PAYMENT_PROVIDER/,
+      );
+    });
+
+    it('PAYMENT_PROVIDER=fake iken IYZICO_* sirlarini ISTEMEZ (yerel kosum dis hesapsiz)', () => {
+      expect(() => validateEnv({ ...REQUIRED_ENV, PAYMENT_PROVIDER: 'fake' })).not.toThrow();
+    });
+
+    it('PAYMENT_PROVIDER=iyzico iken eksik IYZICO_* sirlarini anahtar adiyla raporlar', () => {
+      let message = '';
+      try {
+        validateEnv({ ...REQUIRED_ENV, PAYMENT_PROVIDER: 'iyzico' });
+      } catch (error: unknown) {
+        message = error instanceof Error ? error.message : '';
+      }
+
+      expect(message).toContain('IYZICO_API_KEY');
+      expect(message).toContain('IYZICO_SECRET_KEY');
+      expect(message).toContain('IYZICO_WEBHOOK_SECRET');
+    });
+
+    it('PAYMENT_PROVIDER=iyzico iken sirlar doluysa dogrulamayi gecer', () => {
+      expect(() =>
+        validateEnv({
+          ...REQUIRED_ENV,
+          PAYMENT_PROVIDER: 'iyzico',
+          IYZICO_API_KEY: 'api-anahtari',
+          IYZICO_SECRET_KEY: 'gizli-anahtar',
+          IYZICO_WEBHOOK_SECRET: 'webhook-sirri',
+        }),
+      ).not.toThrow();
+    });
   });
 });
