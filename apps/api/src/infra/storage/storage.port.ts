@@ -13,6 +13,12 @@ export interface StoragePort {
   putObject(input: StorageObjectInput): Promise<void>;
   /** Kisa omurlu (PRESIGNED_URL_TTL_SECONDS) on-imzali okuma URL'si uretir. */
   createReadUrl(key: string): Promise<string>;
+  /**
+   * Objenin baytlarini SUNUCUDA okur (PDF uretimi fotografi belgeye gomer, T-007).
+   * Okuma basarisizsa ExternalServiceError(STORAGE_UNAVAILABLE) firlatir; yarim icerik
+   * dondurulmez (§4.2.1).
+   */
+  getObject(key: string): Promise<Buffer>;
 }
 
 /**

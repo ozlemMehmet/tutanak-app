@@ -3,6 +3,7 @@
 // saglayicisi bu sinifla degistirilir.
 
 import { Injectable } from '@nestjs/common';
+import { ExternalServiceError } from '../../common/errors/app-error';
 import type { StorageObjectInput, StoragePort } from './storage.port';
 
 /** Gercek bir adres degildir; testler yalnizca anahtarin URL'ye tasindigini dogrular. */
@@ -20,6 +21,18 @@ export class FakeStorageAdapter implements StoragePort {
 
   createReadUrl(key: string): Promise<string> {
     return Promise.resolve(`${FAKE_URL_PREFIX}${key}${FAKE_SIGNATURE_QUERY}`);
+  }
+
+  /** Yazilmamis anahtar, gercek depolamadaki erisilemezlik ile ayni hatayi uretir (§4.2.1). */
+  getObject(key: string): Promise<Buffer> {
+    const stored = this.objects.get(key);
+    if (stored === undefined) {
+      throw new ExternalServiceError(
+        'STORAGE_UNAVAILABLE',
+        'Fotograf deposuna su anda erisilemiyor, tekrar deneyin.',
+      );
+    }
+    return Promise.resolve(stored.body);
   }
 
   /** Testlerin "depolamaya gercekten yazildi mi" sorusunu sorabilmesi icin. */

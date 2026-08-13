@@ -171,3 +171,52 @@ describe('R2StorageAdapter on-imzali URL adresi (ic ag vs. tarayici)', () => {
     expect(sendEndpoints).toEqual([ENV.R2_PUBLIC_ENDPOINT]);
   });
 });
+
+// T-007: PDF uretimi fotograf baytlarini SUNUCUDA okur (on-imzali URL ile degil).
+describe('R2StorageAdapter.getObject', () => {
+  it('objenin baytlarini yapilandirilmis kovadan verilen anahtarla okur', async () => {
+    send.mockResolvedValue({
+      Body: { transformToByteArray: () => Promise.resolve(new Uint8Array(OBJECT.body)) },
+    });
+
+    const result = await adapter().getObject(OBJECT.key);
+
+    expect((callArg(send, 0, 0) as { input: unknown }).input).toEqual({
+      Bucket: ENV.R2_BUCKET,
+      Key: OBJECT.key,
+    });
+    expect(result.equals(OBJECT.body)).toBe(true);
+  });
+
+  it('okuma ic ag endpoint"i uzerinden yapilir (sunucudan sunucuya yol)', async () => {
+    send.mockResolvedValue({
+      Body: { transformToByteArray: () => Promise.resolve(new Uint8Array(OBJECT.body)) },
+    });
+
+    await adapter({
+      R2_ENDPOINT: 'http://minio:9000',
+      R2_PUBLIC_ENDPOINT: 'http://localhost:9000',
+    }).getObject(OBJECT.key);
+
+    expect(sendEndpoints).toEqual(['http://minio:9000']);
+  });
+
+  it('depolama erisilemezse 502 STORAGE_UNAVAILABLE firlatir', async () => {
+    send.mockRejectedValue(new Error('ECONNREFUSED 127.0.0.1:9000'));
+
+    const error = await adapter()
+      .getObject(OBJECT.key)
+      .catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(ExternalServiceError);
+    expect((error as ExternalServiceError).code).toBe('STORAGE_UNAVAILABLE');
+    // Saglayici ham hata metni istemciye sizmaz (CLAUDE.md §4.3).
+    expect((error as ExternalServiceError).message).not.toContain('ECONNREFUSED');
+  });
+
+  it('yanit govdesi bos gelirse 502 STORAGE_UNAVAILABLE firlatir (yarim icerik kullanilmaz)', async () => {
+    send.mockResolvedValue({});
+
+    await expect(adapter().getObject(OBJECT.key)).rejects.toBeInstanceOf(ExternalServiceError);
+  });
+});
