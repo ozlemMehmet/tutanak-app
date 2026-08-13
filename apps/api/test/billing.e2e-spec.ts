@@ -137,6 +137,12 @@ describe('T-012 abonelik odeme akisi', () => {
     process.env.SUBSCRIPTION_PERIOD_DAYS = PERIOD_DAYS.toString();
     process.env.PAYMENT_PROVIDER = 'fake';
     process.env.PUBLIC_APP_URL = PUBLIC_APP_URL;
+    // Obje depolama yapilandirmasi T-006 ile zorunlu hale geldi; bu testler depolamayi
+    // kullanmaz, degerler yalnizca env semasini gecmek icindir (CLAUDE.md §5).
+    process.env.R2_ENDPOINT = 'http://localhost:9000';
+    process.env.R2_BUCKET = 'test-kovasi';
+    process.env.R2_ACCESS_KEY_ID = 'test-erisim';
+    process.env.R2_SECRET_ACCESS_KEY = 'test-gizli';
 
     const { createApiApp } = await import('../src/main');
     app = await createApiApp();

@@ -1,3 +1,4 @@
+import type { PhotoDto } from '../../photos/dto/photo.dto';
 import type { ReportRecord } from '../reports.repository';
 import { toReportDetailDto, toReportDto, toReportListDto } from './report.mapper';
 
@@ -40,11 +41,28 @@ describe('toReportDto', () => {
   });
 });
 
-describe('toReportDetailDto', () => {
-  it('Report alanlarina ek olarak bos fotograf listesi tasir (fotograf yukleme T-006)', () => {
-    const detail = toReportDetailDto(STORED_REPORT);
+const PHOTO: PhotoDto = {
+  id: '55555555-5555-4555-8555-555555555555',
+  reportId: STORED_REPORT.id,
+  capturedAt: '2026-08-13T10:02:00.000Z',
+  contentType: 'image/jpeg',
+  sizeBytes: 2048,
+  widthPx: 800,
+  heightPx: 600,
+  url: 'https://depolama.test/reports/abc.jpg?imza=sahte',
+};
 
-    expect(detail).toEqual({ ...toReportDto(STORED_REPORT), photos: [] });
+describe('toReportDetailDto', () => {
+  it('Report alanlarina ek olarak verilen fotograf listesini tasir (T-006)', () => {
+    const detail = toReportDetailDto(STORED_REPORT, [PHOTO]);
+
+    expect(detail).toEqual({ ...toReportDto(STORED_REPORT), photos: [PHOTO] });
+  });
+
+  it('fotograf yokken bos dizi tasir (alan yanittan cikarilmaz)', () => {
+    const detail = toReportDetailDto(STORED_REPORT, []);
+
+    expect(detail.photos).toEqual([]);
   });
 });
 

@@ -9,6 +9,24 @@ const CURRENCY_CODE_LENGTH = 3;
 const DEFAULT_SUBSCRIPTION_PERIOD_DAYS = 30;
 /** Para degeri ondalikli METIN olarak tasinir; float'a cevrilmez (CLAUDE.md §5.1). */
 const MONEY_AMOUNT_PATTERN = /^\d+\.\d{2}$/;
+const DEFAULT_PHOTO_MAX_BYTES = 10_485_760;
+const DEFAULT_PHOTO_MAX_PER_REPORT = 30;
+const DEFAULT_PRESIGNED_URL_TTL_SECONDS = 900;
+
+/** `.env` degerleri her zaman metindir; sayisal anahtarlar tek yerde cevrilir. */
+function positiveInt(defaultValue: number) {
+  return z
+    .string()
+    .default(String(defaultValue))
+    .transform((value, ctx) => {
+      const parsed = Number(value);
+      if (!Number.isSafeInteger(parsed) || parsed <= 0) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'pozitif tam sayi olmalidir' });
+        return z.NEVER;
+      }
+      return parsed;
+    });
+}
 
 // Hiz siniri varsayilanlari architecture.md §7 tablosundan gelir; `.env.example` ile aynidir.
 const DEFAULT_RATE_LIMIT_WINDOW_SECONDS = 60;
@@ -20,6 +38,17 @@ const positiveIntFromEnv = (defaultValue: number): z.ZodDefault<z.ZodNumber> =>
   z.coerce.number().int().positive().default(defaultValue);
 
 const ALLOWED_APP_URL_PROTOCOLS = new Set(['http:', 'https:']);
+
+/**
+ * Obje depolama adresleri icin ortak kural: `z.string().url()` tek basina
+ * `localhost:9000` gibi semasi hatali degerleri de kabul ettigi icin protokol acikca
+ * dogrulanir (S3 istemcisi mutlak http(s) adresi ister).
+ */
+const httpUrl = (): z.ZodEffects<z.ZodString, string, string> =>
+  z
+    .string()
+    .url()
+    .refine((value) => /^https?:\/\//.test(value), 'http(s) adresi olmalidir');
 
 /** PAYMENT_PROVIDER=iyzico secildiginde zorunlu hale gelen sirlar (CLAUDE.md §5). */
 const IYZICO_SECRET_KEYS = [
@@ -68,23 +97,54 @@ const envObjectSchema = z.object({
   IYZICO_API_KEY: z.string().optional(),
   IYZICO_SECRET_KEY: z.string().optional(),
   IYZICO_WEBHOOK_SECRET: z.string().optional(),
+  /**
+   * Obje depolama adresi — uretimde R2, yerelde MinIO (CLAUDE.md §5 sir listesi).
+   * `z.string().url()` tek basina `localhost:9000` gibi semasi hatali degerleri de kabul
+   * ettigi icin protokol acikca dogrulanir (S3 istemcisi mutlak http(s) adresi ister).
+   */
+  R2_ENDPOINT: httpUrl(),
+  /**
+   * On-imzali fotograf URL'sinin TARAYICIYA donen adresi. SigV4 imzasi host'u da
+   * kapsadigi icin URL yalnizca imzalandigi adresle acilabilir; docker aginda
+   * `R2_ENDPOINT` bir servis adidir (`http://minio:9000`) ve tarayici (masaustu ya da
+   * LAN'daki telefon) bu adi cozemez. Verilmezse `R2_ENDPOINT` kullanilir — tek adresli
+   * uretim kurulumunda (public R2 domaini) iki deger zaten aynidir.
+   */
+  R2_PUBLIC_ENDPOINT: httpUrl().optional(),
+  /** Fotograf objelerinin yazildigi kova adi. */
+  R2_BUCKET: z.string().min(1),
+  R2_ACCESS_KEY_ID: z.string().min(1),
+  R2_SECRET_ACCESS_KEY: z.string().min(1),
+  /** Fotograf boyut ust siniri (CLAUDE.md §5.1; DDL CHECK ile ayni deger). */
+  PHOTO_MAX_BYTES: positiveInt(DEFAULT_PHOTO_MAX_BYTES),
+  /** Tutanak basina fotograf ust siniri — PHOTO_LIMIT_REACHED esigi (§5.1). */
+  PHOTO_MAX_PER_REPORT: positiveInt(DEFAULT_PHOTO_MAX_PER_REPORT),
+  /** On-imzali fotograf okuma URL'sinin omru (§5.1, varsayilan 15 dk). */
+  PRESIGNED_URL_TTL_SECONDS: positiveInt(DEFAULT_PRESIGNED_URL_TTL_SECONDS),
 });
 
-export const envSchema = envObjectSchema.superRefine((env, ctx) => {
-  if (env.PAYMENT_PROVIDER !== 'iyzico') {
-    // Yerel/test kosumu dis hesap gerektirmez (CLAUDE.md §10).
-    return;
-  }
-  for (const key of IYZICO_SECRET_KEYS) {
-    if (env[key] === undefined || env[key] === '') {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: [key],
-        message: 'PAYMENT_PROVIDER=iyzico iken zorunludur',
-      });
+export const envSchema = envObjectSchema
+  .superRefine((env, ctx) => {
+    if (env.PAYMENT_PROVIDER !== 'iyzico') {
+      // Yerel/test kosumu dis hesap gerektirmez (CLAUDE.md §10).
+      return;
     }
-  }
-});
+    for (const key of IYZICO_SECRET_KEYS) {
+      if (env[key] === undefined || env[key] === '') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [key],
+          message: 'PAYMENT_PROVIDER=iyzico iken zorunludur',
+        });
+      }
+    }
+  })
+  // Varsayilan burada turetilir; boylece uygulama kodu "yoksa digerini kullan"
+  // dallanmasini tasimaz — ortam degeri tek noktada tamamlanir (CLAUDE.md §5).
+  .transform((env) => ({
+    ...env,
+    R2_PUBLIC_ENDPOINT: env.R2_PUBLIC_ENDPOINT ?? env.R2_ENDPOINT,
+  }));
 
 export type AppEnv = z.infer<typeof envSchema>;
 

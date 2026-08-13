@@ -101,6 +101,20 @@ export class ConflictError extends AppError {
   }
 }
 
+type UnprocessableCode = Extract<
+  ErrorCode,
+  'REPORT_HAS_NO_PHOTOS' | 'UNSUPPORTED_MEDIA_FORMAT' | 'FILE_TOO_LARGE'
+>;
+
+/** Istek bicimsel olarak gecerli ama icerik islenemez; §4.2 geregi HTTP durumu 400'dur. */
+export class UnprocessableError extends AppError {
+  constructor(code: UnprocessableCode, message: string) {
+    // 400 olmasina ragmen alan bazli `details` tasimaz: kaynak bir form alani degil,
+    // yuklenen icerigin kendisidir (CLAUDE.md §4.2.3).
+    super(code, 400, message);
+  }
+}
+
 type ExternalServiceCode = Extract<ErrorCode, 'PAYMENT_PROVIDER_ERROR' | 'STORAGE_UNAVAILABLE'>;
 
 /** Dis sistem (odeme saglayicisi, obje depolama) erisilemez/hatali yanit verdi (§4.2). */

@@ -12,13 +12,19 @@
     "test": "jest --config jest.config.mjs"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.101.4",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.18.2"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.4",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
     "@vitejs/plugin-react": "^4.3.4",
+    "jest-environment-jsdom": "^29.7.0",
     "vite": "^6.0.5",
     "vite-plugin-pwa": "^0.21.1"
   }

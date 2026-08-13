@@ -30,6 +30,16 @@ services:
     volumes:
       - minio-data:/data
 
+  # T-006: fotograf kovasi acilista bir kez olusturulur; aksi halde ilk yukleme
+  # 502 STORAGE_UNAVAILABLE ile doner ve `docker compose up` sonrasi akis tamamlanmaz.
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    entrypoint: >-
+      sh -c "until mc alias set yerel http://minio:9000 minioadmin minioadmin; do sleep 1; done;
+      mc mb --ignore-existing yerel/${R2_BUCKET:-tutanak-photos}"
+
   mailpit:
     image: axllent/mailpit:latest
     ports:
@@ -53,11 +63,19 @@ services:
         required: false
     environment:
       DATABASE_URL: postgresql://tutanak:tutanak@db:5432/tutanak
+      # .env'deki adres host icindir; container aginda servis adi kullanilir.
+      R2_ENDPOINT: http://minio:9000
+      # Ama on-imzali URL'yi TARAYICI acar: imza host'u da kapsadigi icin URL,
+      # tarayicinin cozebildigi adresle imzalanmalidir (yukaridaki servis adi degil).
+      # .env'de deger varsa o kazanir (telefondan denemek icin LAN IP'si yazilir).
+      R2_PUBLIC_ENDPOINT: ${R2_PUBLIC_ENDPOINT:-http://localhost:9000}
     ports:
       - '3000:3000'
     depends_on:
       db:
         condition: service_healthy
+      minio:
+        condition: service_started
     volumes:
       - ./apps/api:/app/apps/api
       - api-node-modules:/app/node_modules
@@ -66,6 +84,10 @@ services:
     image: node:22-alpine
     working_dir: /app
     command: sh -c "npm ci && npm run dev --workspace @tutanak/web -- --host"
+    environment:
+      # T-006: tarayici API'yi ayni kaynakta (`/api/v1`) gorur; Vite vekili container
+      # aginda servis adina yonlendirir (CORS gerekmez).
+      VITE_API_PROXY_TARGET: http://api:3000
     ports:
       - '5173:5173'
     depends_on:

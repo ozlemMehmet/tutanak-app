@@ -1,4 +1,5 @@
 import { ForbiddenError, NotFoundError } from '../../common/errors/app-error';
+import type { PhotosService } from '../photos/photos.service';
 import type { ReportRecord, ReportsRepository } from './reports.repository';
 import { ReportsService } from './reports.service';
 
@@ -20,8 +21,11 @@ const STORED_REPORT: ReportRecord = {
   updatedAt: new Date('2026-08-13T10:00:00.000Z'),
 };
 
-function serviceWith(repository: Partial<ReportsRepository>): ReportsService {
-  return new ReportsService(repository as ReportsRepository);
+function serviceWith(
+  repository: Partial<ReportsRepository>,
+  photosService: Partial<PhotosService> = { listOwnedPhotos: jest.fn().mockResolvedValue([]) },
+): ReportsService {
+  return new ReportsService(repository as ReportsRepository, photosService as PhotosService);
 }
 
 describe('ReportsService.createDraft', () => {
@@ -82,6 +86,31 @@ describe('ReportsService.getReport', () => {
     expect(findById).toHaveBeenCalledWith(REPORT_ID);
     expect(result.id).toBe(REPORT_ID);
     expect(result.photos).toEqual([]);
+  });
+
+  it('detay yanitinin fotograf listesini fotograf servisinden doldurur (T-006)', async () => {
+    const findById = jest.fn().mockResolvedValue(STORED_REPORT);
+    const photo = { id: '55555555-5555-4555-8555-555555555555' };
+    const listOwnedPhotos = jest.fn().mockResolvedValue([photo]);
+
+    const result = await serviceWith({ findById }, { listOwnedPhotos }).getReport(
+      REPORT_ID,
+      OWNER_ID,
+    );
+
+    expect(listOwnedPhotos).toHaveBeenCalledWith(REPORT_ID);
+    expect(result.photos).toEqual([photo]);
+  });
+
+  it('sahiplik dogrulanmadan fotograflari OKUMAZ', async () => {
+    const findById = jest.fn().mockResolvedValue(STORED_REPORT);
+    const listOwnedPhotos = jest.fn();
+
+    await serviceWith({ findById }, { listOwnedPhotos })
+      .getReport(REPORT_ID, OTHER_USER_ID)
+      .catch(() => undefined);
+
+    expect(listOwnedPhotos).not.toHaveBeenCalled();
   });
 
   it('tutanak yoksa NOT_FOUND ile NotFoundError firlatir', async () => {

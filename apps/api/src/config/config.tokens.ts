@@ -19,3 +19,6 @@ export interface BillingConfig {
   /** Saglayicinin odeme sonrasi kullaniciyi dondurecegi adres (PUBLIC_APP_URL tabanli). */
   checkoutCallbackUrl: string;
 }
+
+/** Tutanak basina fotograf ust siniri — PHOTO_LIMIT_REACHED esigi (CLAUDE.md §5.1). */
+export const PHOTO_MAX_PER_REPORT = 'PHOTO_MAX_PER_REPORT';
