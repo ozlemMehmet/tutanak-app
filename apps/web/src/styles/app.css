@@ -1,0 +1,184 @@
+/* Uygulama stilleri. TUM renk / bosluk / yaricap / tipografi degerleri tokens.css'ten
+   gelir (design-tokens.json sozlesmesi); ham hex ve keyfi px kullanilmaz.
+   Tek istisna, design.md §5'te elle dogrulanmis fotograf damgasi scrim'idir (asagida). */
+
+body {
+  margin: 0;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+}
+
+h1,
+h2 {
+  font-family: var(--font-heading);
+}
+
+.page {
+  padding: var(--space-3);
+  /* Mobil oncelikli: alt guvenli alan (safe-area) korunur — design.md mobil notu. */
+  padding-bottom: calc(var(--space-6) + env(safe-area-inset-bottom));
+}
+
+/* --- Butonlar (dokunma hedefi min 44x44px — design.md §5) --- */
+.button {
+  min-height: 44px;
+  min-width: 44px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.button--primary {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.button--ghost {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  border-color: var(--color-border);
+}
+
+.button:focus-visible,
+.photo-capture__input:focus-visible + .photo-capture__trigger,
+.photo-capture__trigger:focus-within {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* --- Fotograf ekleme (kamera girisi + onizleme) --- */
+.photo-capture {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.photo-capture__trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.photo-capture__trigger:has(input:disabled) {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Giris gorsel olarak gizlenir ama erisilebilir kalir (label ile eslesir). */
+.photo-capture__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.photo-capture__preview img {
+  display: block;
+  width: 100%;
+  max-height: 60vh;
+  object-fit: contain;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+}
+
+.photo-capture__actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+/* --- Fotograf izgarasi --- */
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+@media (min-width: 768px) {
+  .photo-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.photo-thumbnail {
+  position: relative;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-surface-muted);
+}
+
+.photo-thumbnail img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+}
+
+/* Damga overlay'i: scrim opakligi design.md §5 geregi %70'in ALTINA dusurulmez. */
+.photo-thumbnail__stamp {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  padding: var(--space-0) var(--space-1);
+  background: rgb(15 42 74 / 72%);
+  color: var(--color-on-primary);
+  font-size: 0.875rem;
+}
+
+/* --- Durum bildirimleri --- */
+.empty-state,
+.skeleton-text {
+  color: var(--color-text-muted);
+  padding: var(--space-3) 0;
+}
+
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+}
+
+.banner--danger {
+  background: var(--color-surface-muted);
+  color: var(--color-danger);
+}
+
+.toast {
+  margin: var(--space-2) 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+}
+
+.toast--danger {
+  background: var(--color-danger);
+  color: var(--color-on-danger);
+}

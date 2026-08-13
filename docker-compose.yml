@@ -80,6 +80,10 @@ services:
     image: node:22-alpine
     working_dir: /app
     command: sh -c "npm ci && npm run dev --workspace @tutanak/web -- --host"
+    environment:
+      # T-006: tarayici API'yi ayni kaynakta (`/api/v1`) gorur; Vite vekili container
+      # aginda servis adina yonlendirir (CORS gerekmez).
+      VITE_API_PROXY_TARGET: http://api:3000
     ports:
       - '5173:5173'
     depends_on:
