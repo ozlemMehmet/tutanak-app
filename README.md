@@ -67,8 +67,9 @@ npm run test:e2e    # HTTP seviyesi entegrasyon testleri (supertest + gercek Pos
 `test:e2e` calisan bir Postgres ister (`DATABASE_URL`); migration testi kendi izole
 veritabanini olusturup sonunda dusurur, gelistirme veritabanina dokunmaz.
 
-Uygulama acilista ortam degiskenlerini dogrular (eksik sir varsa ACILMAZ), bu yuzden
-e2e kosumunda `JWT_SECRET` de tanimli olmalidir — `cp .env.example .env` sonrasi:
+Uygulama acilista ortam degiskenlerini dogrular (eksik sir/ayar varsa ACILMAZ), bu yuzden
+e2e kosumunda `JWT_SECRET`, `SUBSCRIPTION_PRICE_AMOUNT` ve `PUBLIC_APP_URL` de tanimli
+olmalidir — `cp .env.example .env` sonrasi:
 
 ```bash
 set -a && . ./.env && set +a && npm run test:e2e
