@@ -54,6 +54,11 @@ describe('T-003 kimlik dogrulama akisi', () => {
     process.env.JWT_SECRET = TEST_JWT_SECRET;
     process.env.JWT_EXPIRES_IN = '7d';
     process.env.SUBSCRIPTION_CURRENCY = 'TRY';
+    // T-014: bu dosya hiz siniri ALTINDAKI davranisi dogrular (uretim varsayilani 5 istek/dk
+    // olan /auth/* limitinin uzerinde istek atar). Limit ASIMI davranisi kucuk limitlerle
+    // `auth-rate-limit.e2e-spec.ts` icinde test edilir; limitler env'den gelir (CLAUDE.md §5.1).
+    process.env.RATE_LIMIT_MAX_REQUESTS = '1000';
+    process.env.AUTH_RATE_LIMIT_MAX_REQUESTS = '1000';
 
     const { createApiApp } = await import('../src/main');
     app = await createApiApp();
