@@ -35,7 +35,7 @@ describe('validateEnv', () => {
   // T-014: hiz siniri degerleri koda gomulmez, env uzerinden gelir (CLAUDE.md §5.1).
   describe('hiz siniri anahtarlari', () => {
     it('anahtarlar yoksa architecture.md §7 tablosundaki varsayilanlari uygular', () => {
-      expect(validateEnv({ DATABASE_URL, JWT_SECRET })).toMatchObject({
+      expect(validateEnv({ ...REQUIRED_ENV })).toMatchObject({
         RATE_LIMIT_WINDOW_SECONDS: 60,
         RATE_LIMIT_MAX_REQUESTS: 300,
         AUTH_RATE_LIMIT_MAX_REQUESTS: 5,
@@ -45,8 +45,7 @@ describe('validateEnv', () => {
     it('ortamdan metin olarak gelen degerleri sayiya cevirir', () => {
       expect(
         validateEnv({
-          DATABASE_URL,
-          JWT_SECRET,
+          ...REQUIRED_ENV,
           RATE_LIMIT_WINDOW_SECONDS: '30',
           RATE_LIMIT_MAX_REQUESTS: '100',
           AUTH_RATE_LIMIT_MAX_REQUESTS: '3',
@@ -59,27 +58,27 @@ describe('validateEnv', () => {
     });
 
     it('sifir limit degerini reddeder (hiz siniri kapatilamaz)', () => {
-      expect(() =>
-        validateEnv({ DATABASE_URL, JWT_SECRET, AUTH_RATE_LIMIT_MAX_REQUESTS: '0' }),
-      ).toThrow(/AUTH_RATE_LIMIT_MAX_REQUESTS/);
+      expect(() => validateEnv({ ...REQUIRED_ENV, AUTH_RATE_LIMIT_MAX_REQUESTS: '0' })).toThrow(
+        /AUTH_RATE_LIMIT_MAX_REQUESTS/,
+      );
     });
 
     it('negatif pencere degerini reddeder', () => {
-      expect(() =>
-        validateEnv({ DATABASE_URL, JWT_SECRET, RATE_LIMIT_WINDOW_SECONDS: '-1' }),
-      ).toThrow(/RATE_LIMIT_WINDOW_SECONDS/);
+      expect(() => validateEnv({ ...REQUIRED_ENV, RATE_LIMIT_WINDOW_SECONDS: '-1' })).toThrow(
+        /RATE_LIMIT_WINDOW_SECONDS/,
+      );
     });
 
     it('sayi olmayan limit degerini reddeder', () => {
-      expect(() =>
-        validateEnv({ DATABASE_URL, JWT_SECRET, RATE_LIMIT_MAX_REQUESTS: 'cok' }),
-      ).toThrow(/RATE_LIMIT_MAX_REQUESTS/);
+      expect(() => validateEnv({ ...REQUIRED_ENV, RATE_LIMIT_MAX_REQUESTS: 'cok' })).toThrow(
+        /RATE_LIMIT_MAX_REQUESTS/,
+      );
     });
 
     it('ondalikli limit degerini reddeder', () => {
-      expect(() =>
-        validateEnv({ DATABASE_URL, JWT_SECRET, RATE_LIMIT_MAX_REQUESTS: '2.5' }),
-      ).toThrow(/RATE_LIMIT_MAX_REQUESTS/);
+      expect(() => validateEnv({ ...REQUIRED_ENV, RATE_LIMIT_MAX_REQUESTS: '2.5' })).toThrow(
+        /RATE_LIMIT_MAX_REQUESTS/,
+      );
     });
   });
 

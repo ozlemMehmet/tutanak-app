@@ -51,6 +51,48 @@ ve `SUBSCRIPTION_CURRENCY` token'larina DOKUNULMADI.
 **Iade turu dogrulamasi:** `npm run lint` (0 uyari), `npm run typecheck`, `npm run format:check`,
 `npm test` (kok 22 + api 118 + web 10), `npm run build` ve CI-taklidi e2e (5 suite / 57 test) — hepsi yesil.
 
+## Iade turu 2 (code-reviewer CHANGES_REQUESTED — 4 madde, hepsi ele alindi)
+
+Ortak kok neden: **T-012'nin iki yeni ZORUNLU env anahtari (`SUBSCRIPTION_PRICE_AMOUNT`,
+`PUBLIC_APP_URL`) ile T-014'un uretim varsayilani hiz siniri**, testlerin env kurulumuna eksik
+yansimisti. Hicbir maddede urun kodu degismedi; dort duzeltme de TEST KURULUMU duzeltmesidir
+(test zayiflatma yok, aksine madde 1 ve 4 testleri guclendirir).
+
+**Madde 1 — `src/config/env.schema.spec.ts` 2 birim testi kirmizi.** "Hiz siniri anahtarlari"
+describe'i hala `{ DATABASE_URL, JWT_SECRET }` ile cagiriyordu; T-012 sonrasi bu kume artik gecerli
+bir env degil. Alti cagri da dosyada zaten tanimli `REQUIRED_ENV` tabanina cekildi. Ayni describe'daki
+dort "reddetme" testi tesadufen geciyordu (beklenen anahtar adi eksik-anahtar mesajinda da geciyordu);
+artik gercekten hiz siniri kuralini dogruluyorlar — yani duzeltme sonrasi bu testler daha KATI.
+
+**Madde 2 — `reports.e2e-spec.ts` + `auth-rate-limit.e2e-spec.ts` hic ayaga kalkmiyordu.** Iade turu
+1'de yalnizca auth/health/templates/billing suite'leri guncellenmisti; bu iki suite atlanmisti (ayni
+hatanin tekrari). Her ikisinin `beforeAll`'una `auth.e2e-spec.ts` ile ayni iki satir eklendi. Test
+mantigina DOKUNULMADI.
+
+**Madde 3 — `billing.e2e-spec.ts` kendi suite'inde 9 test kirmizi.** Suite her senaryoda yeni
+kayit+giris yaptigi icin T-014'un uretim varsayilani (`AUTH_RATE_LIMIT_MAX_REQUESTS=5`) 6. kayittan
+sonra 429 donduruyor; token `undefined` -> checkout 401 -> `providerReference: undefined` -> webhook
+400. `beforeAll`'a `RATE_LIMIT_MAX_REQUESTS=1000` ve `AUTH_RATE_LIMIT_MAX_REQUESTS=1000` eklendi
+(auth.e2e ile ayni kalip ve ayni gerekce: bu dosya hiz sinirini test etmez, sinir davranisi
+`auth-rate-limit.e2e-spec.ts`'in isidir).
+
+**Madde 4 — `signedInUser()` sessiz basarisizlik uretiyordu.** Dogrulanmayan register/login yaniti
+`userId`/`token`/`reference` degerlerini `undefined` yapiyor, bu `undefined` Prisma `where` filtresine
+sizinca filtre TAMAMEN dusuyor ve "tum satirlari getir" davranisi olusuyordu (raporlanan 6 satirlik
+bulgu). `expect(registered.status).toBe(201)` + `expect(login.status).toBe(200)` eklendi; kurulum
+hatasi artik kaynaginda patliyor. Bu ayni zamanda madde 3'un regresyon korumasidir: hiz siniri
+kurulumu ileride tekrar bozulursa test, yaniltici bir assertion hatasi yerine dogrudan
+"register 429 != 201" diye kirilir.
+
+**Iade turu 2 dogrulamasi (CI kosulu birebir taklit — `env -i` ile yalnizca `DATABASE_URL`):**
+```
+env -i PATH=$PATH HOME=$HOME DATABASE_URL=... npm run test     -> kok 25, api 148, web 10 (hepsi PASS)
+env -i PATH=$PATH HOME=$HOME DATABASE_URL=... npm run test:e2e -> 7 suite / 81 test PASS
+npm run lint / format:check / typecheck                        -> temiz
+```
+Onceki turdaki "5 suite / 57 test" rakami, ayaga kalkamayan iki suite'in kosumdan dusmus olmasindandi;
+dogru sayi 7 suite / 81 testtir.
+
 ## Alinan Kararlar ve Gerekceler
 - **Kapsam = API.** Ticket'in bes kabul kriteri de HTTP seviyesindedir; `apps/web` bu ticket'ta
   degistirilmedi. Gerekce: web tarafinda henuz router, `api/client.ts` ve React Query altyapisi YOK
@@ -154,12 +196,14 @@ ve `SUBSCRIPTION_CURRENCY` token'larina DOKUNULMADI.
 npm run lint          -> 0 hata / 0 uyari (eslint --max-warnings=0)
 npm run format:check  -> All matched files use Prettier code style!
 npm run typecheck     -> temiz (kok + api + web)
-npm test              -> kok 22/22, api 105/105, web 10/10
+npm test              -> kok 25/25, api 148/148, web 10/10   (iade turu 2 sonrasi, CI kosulunda)
                          (kapsam: modules/billing %100 satir, infra/payment %96.3;
                           esikler: modules/** >= %80, global >= %70 — gecti)
-npm run test:e2e      -> 5 suite / 57 test PASS
-                         (billing.e2e 18, auth.e2e 16, migration.e2e 12, templates.e2e 9, health.e2e 2)
-                         Iade turu 1: yalnizca DATABASE_URL tanimliyken (CI kosulu taklidi) de 5/57 PASS
+npm run test:e2e      -> 7 suite / 81 test PASS               (iade turu 2 sonrasi, CI kosulunda)
+                         (billing.e2e 18, auth.e2e 16, migration.e2e 12, templates.e2e 9,
+                          reports.e2e, auth-rate-limit.e2e, health.e2e 2)
+                         Kosum bicimi: env -i ile YALNIZCA DATABASE_URL tanimli (CI'in gordugu kosul);
+                         bir suite env kurmayi unutursa bu kosum kirmizi olur — regresyon korumasi budur.
 npm audit --audit-level=high -> cikis kodu 0 (4 moderate, 0 high/critical)
 npm run build         -> api + web derlendi
 Mutasyon kontrolu     -> idempotans/aktif-koruma kosullari kaldirildiginda ilgili 2 e2e testi

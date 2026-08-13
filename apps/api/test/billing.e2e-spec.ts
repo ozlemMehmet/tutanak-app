@@ -65,6 +65,10 @@ describe('T-012 abonelik odeme akisi', () => {
     const login = await request(httpServer())
       .post('/api/v1/auth/login')
       .send({ email, password: PASSWORD });
+    // Kurulum sessizce basarisiz olursa undefined token/id Prisma `where` filtresine sizar
+    // ve senaryo yanlis yerde patlar; hatayi kaynaginda gorunur kil.
+    expect(registered.status).toBe(201);
+    expect(login.status).toBe(200);
     return {
       token: (login.body as { accessToken: string }).accessToken,
       email,
@@ -124,6 +128,11 @@ describe('T-012 abonelik odeme akisi', () => {
     process.env.JWT_SECRET = TEST_JWT_SECRET;
     process.env.JWT_EXPIRES_IN = '7d';
     process.env.SUBSCRIPTION_CURRENCY = 'TRY';
+    // Bu dosya hiz sinirini TEST ETMEZ; her senaryo yeni kayit+giris yaptigi icin uretim
+    // varsayilani (5 istek/dk/IP) kurulumu 429'a dusururdu. Sinir davranisi T-014'un
+    // `auth-rate-limit.e2e-spec.ts` dosyasinda dogrulanir; limitler env'den gelir (§5.1).
+    process.env.RATE_LIMIT_MAX_REQUESTS = '1000';
+    process.env.AUTH_RATE_LIMIT_MAX_REQUESTS = '1000';
     process.env.SUBSCRIPTION_PRICE_AMOUNT = PRICE_AMOUNT;
     process.env.SUBSCRIPTION_PERIOD_DAYS = PERIOD_DAYS.toString();
     process.env.PAYMENT_PROVIDER = 'fake';
