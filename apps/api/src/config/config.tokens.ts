@@ -19,13 +19,3 @@ export interface BillingConfig {
   /** Saglayicinin odeme sonrasi kullaniciyi dondurecegi adres (PUBLIC_APP_URL tabanli). */
   checkoutCallbackUrl: string;
 }
-
-/** iyzico adapter'inin sirlari (CLAUDE.md §5) — yalnizca PAYMENT_PROVIDER=iyzico iken doludur. */
-export const IYZICO_CONFIG = 'IyzicoConfig';
-
-export interface IyzicoConfig {
-  apiKey: string;
-  secretKey: string;
-  /** Bildirim imzasinin (HMAC) dogrulandigi sir. */
-  webhookSecret: string;
-}

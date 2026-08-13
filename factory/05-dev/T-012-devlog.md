@@ -21,6 +21,36 @@ sema disi ek alanlar -> `200` (CLAUDE.md §3.7 istisna 2), abonelik aktifken che
 `skipWhenActive` kosulu gecici olarak kaldirildiginda tam olarak ilgili iki e2e testi KIRMIZI oldu
 (`...donem sonu DEGISMEZ (idempotans)` ve `...failed bildirimi durumu DUSURMEZ`), sonra geri alindi.
 
+## Iade turu 1 (code-reviewer CHANGES_REQUESTED — 2 madde, ikisi de ele alindi)
+
+**BLOKLAYICI 1 — CI'da `templates.e2e-spec.ts` bootstrap'i patliyordu.** Sistematik hata ayiklama:
+- *(1) Izole et:* CI kosulu birebir taklit edildi — `env -i` ile SADECE `DATABASE_URL` tanimlanip
+  `npx jest --config test/jest-e2e.config.mjs --runInBand` kosuldu. Hata bileseni dogrulandi:
+  `config.module.ts` (zod semasi) -> `main.ts` bootstrap, mesaj
+  "Ortam degiskenleri gecersiz: SUBSCRIPTION_PRICE_AMOUNT (Required), PUBLIC_APP_URL (Required)".
+- *(2) Hipotez (tek, test edilebilir):* Hata testin mantiginda degil, ENV KURULUMUNDA; T-012 bu iki
+  anahtari varsayilansiz zorunlu yapti (`env.schema.ts`), `auth`/`health`/`billing` suite'lerinin
+  `beforeAll`'u guncellendi ama `templates` suite'i atlandi. Yerelde gorulmemesinin nedeni: gelistirici
+  kabuğunda `.env` degerleri yukluyken kosulmasi (CI'da `cp .env.example .env` adimi YOK).
+- *(3) Test et:* En kucuk degisiklik — `templates.e2e-spec.ts` `beforeAll`'una `auth.e2e-spec.ts:57-58`
+  ile ayni iki satir eklendi. Test mantigina, kurgusuna veya beklentilerine DOKUNULMADI (test zayiflatma
+  yok; eksik olan yalnizca uygulama yapilandirmasiydi).
+- *(4) Dogrula + regresyon:* Ayni CI-taklidi komut (`env -i` + yalnizca `DATABASE_URL`) artik
+  **5 suite / 57 test PASS**. Bu kosum bicimi regresyon korumasinin ta kendisidir: suite'lerden biri
+  gerekli env'i kurmayi unutursa yalnizca `DATABASE_URL` ile kosum kirmizi olur (CI'in gordugu kosul).
+  Onceki turdaki "4 suite / 48 test" rakami bu suite'in kosumdan dusmus olmasindandi; dogru sayi 5/57.
+- Not: CI is akisi (`ci.yml`) DEGISTIRILMEDI — kirilma testin env kurulumundan geliyordu ve is akisina
+  env eklemek gercek eksigi maskelerdi; ayrica `ci.yml` bu ticket'in kapsaminda degil.
+
+**BULGU 2 — olu kod.** `config.tokens.ts` icindeki `IYZICO_CONFIG` token'i ve `IyzicoConfig` arayuzu
+SILINDI (grep ile tek referanslarinin kendi tanimlari oldugu dogrulandi). Sirlar zaten
+`payment.module.ts`'te `ConfigService`'ten okunup adapter'a `IyzicoAdapterOptions` olarak veriliyor;
+ikinci bir DI token'i karsiligi olmayan soyutlamaydi (CLAUDE.md §7.1). Kullanimda olan `BILLING_CONFIG`
+ve `SUBSCRIPTION_CURRENCY` token'larina DOKUNULMADI.
+
+**Iade turu dogrulamasi:** `npm run lint` (0 uyari), `npm run typecheck`, `npm run format:check`,
+`npm test` (kok 22 + api 118 + web 10), `npm run build` ve CI-taklidi e2e (5 suite / 57 test) — hepsi yesil.
+
 ## Alinan Kararlar ve Gerekceler
 - **Kapsam = API.** Ticket'in bes kabul kriteri de HTTP seviyesindedir; `apps/web` bu ticket'ta
   degistirilmedi. Gerekce: web tarafinda henuz router, `api/client.ts` ve React Query altyapisi YOK
@@ -127,8 +157,9 @@ npm run typecheck     -> temiz (kok + api + web)
 npm test              -> kok 22/22, api 105/105, web 10/10
                          (kapsam: modules/billing %100 satir, infra/payment %96.3;
                           esikler: modules/** >= %80, global >= %70 — gecti)
-npm run test:e2e      -> 4 suite / 48 test PASS
-                         (billing.e2e 18, auth.e2e 16, migration.e2e 12, health.e2e 2)
+npm run test:e2e      -> 5 suite / 57 test PASS
+                         (billing.e2e 18, auth.e2e 16, migration.e2e 12, templates.e2e 9, health.e2e 2)
+                         Iade turu 1: yalnizca DATABASE_URL tanimliyken (CI kosulu taklidi) de 5/57 PASS
 npm audit --audit-level=high -> cikis kodu 0 (4 moderate, 0 high/critical)
 npm run build         -> api + web derlendi
 Mutasyon kontrolu     -> idempotans/aktif-koruma kosullari kaldirildiginda ilgili 2 e2e testi

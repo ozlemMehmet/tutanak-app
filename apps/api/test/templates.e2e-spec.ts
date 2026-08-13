@@ -70,6 +70,9 @@ describe('T-004 hazir sablon listesi ve secimi', () => {
     process.env.JWT_SECRET = TEST_JWT_SECRET;
     process.env.JWT_EXPIRES_IN = '7d';
     process.env.SUBSCRIPTION_CURRENCY = 'TRY';
+    // T-012 ile zorunlu hale gelen yapilandirma; uygulama bunlar olmadan ACILMAZ (§5).
+    process.env.SUBSCRIPTION_PRICE_AMOUNT = '199.00';
+    process.env.PUBLIC_APP_URL = 'http://localhost:5173';
 
     const { createApiApp } = await import('../src/main');
     app = await createApiApp();
