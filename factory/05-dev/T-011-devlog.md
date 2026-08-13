@@ -66,3 +66,45 @@ npm run format:check -> All matched files use Prettier code style!
 npm audit --audit-level=high -> found 0 vulnerabilities
 npx prisma validate  -> gecerli (sema/migration degismedi)
 ```
+
+## Iade turu 1 (code-reviewer CHANGES_REQUESTED)
+
+**Bulgu (BLOKLEYICI 1):** `test/reports-list.e2e-spec.ts` beforeAll'i `SUBSCRIPTION_PRICE_AMOUNT` ve `PUBLIC_APP_URL` atamiyordu; bu iki anahtarin `config/env.schema.ts` icinde varsayilani yok. CI yalnizca `DATABASE_URL` verdigi icin `createApiApp()` env dogrulamasinda patlayip `process.exit(1)` cagiriyor, suite hic kosmuyordu (jest worker cokmesi ayni kosumdaki baska suite'leri de dusurebiliyordu).
+
+**Sistematik hata ayiklama:**
+1. *Izole:* Yalnizca `DATABASE_URL` export edilmis halde `npm run test:e2e -w @tutanak/api -- --testPathPattern reports-list` -> KIRMIZI, "process.exit called with 1", yigin izi `src/main.ts:20 NestFactory.create` -> ConfigModule dogrulamasi. Bulgu uygulama kodunda degil, test kurulumunda.
+2. *Hipotez (tek):* Suite'in beforeAll'i varsayilani olmayan iki zorunlu anahtari (`SUBSCRIPTION_PRICE_AMOUNT`, `PUBLIC_APP_URL`) atamadigi icin env semasi acilista reddediyor; kardes e2e dosyalarinda bu iki satir var, bu dosyada yok.
+3. *Test:* En kucuk degisiklik — kardes dosyalardaki (reports/templates/auth e2e) kalibin birebir kopyasi, `SUBSCRIPTION_CURRENCY`den sonra ve dinamik `import('../src/main')`dan ONCE eklendi. Uretim kodu (`src/modules/reports/**`), CI workflow'u, package.json ve migration'lar degistirilmedi.
+4. *Dogrulama:* Ayni komut yesile dondu (25/25); ardindan tam suite ile birlikte de dogrulandi.
+
+**Ikincil not (ayni turda giderildi):** `AUTH_RATE_LIMIT_MAX_REQUESTS` varsayilani 5 iken beforeAll 4 auth istegi yapiyordu (marj 1 istek). Kardes dosyalardaki kalibla `RATE_LIMIT_MAX_REQUESTS=1000` ve `AUTH_RATE_LIMIT_MAX_REQUESTS=1000` eklendi; boylece kuruluma kullanici/istek eklenirse suite 429 ile flaky olmaz. Regresyon korumasi: hata sinifi "env kurulumu eksik -> suite hic kosmuyor" oldugu icin ek bir test degil, kosum sartinin kendisi kanittir (asagidaki 1-2 numarali kosumlar: sadece `DATABASE_URL` ile once kirmizi, duzeltmeden sonra yesil).
+
+**Degisen dosya:** yalnizca `apps/api/test/reports-list.e2e-spec.ts` (beforeAll env kurulumu, 6 satir).
+
+### Iade turu 1 — kosum ciktisi
+```
+# 0) Yerel Postgres: docker compose -p tutanak-t011-e2e up -d db  (16-alpine, CI ile ayni imaj)
+
+# 1) ONCE KIRMIZI (duzeltmeden once, ortamda SADECE DATABASE_URL):
+DATABASE_URL=postgresql://tutanak:tutanak@localhost:5432/tutanak \
+  npm run test:e2e -w @tutanak/api -- --testPathPattern reports-list
+-> Test suite failed to run: process.exit called with "1"  (src/main.ts:20 -> ConfigModule)
+
+# 2) SONRA YESIL — ayni komut, ayni ortam:
+Test Suites: 1 passed, 1 total
+Tests:       25 passed, 25 total
+
+# 3) TAM e2e paketi (ortamda SADECE DATABASE_URL) — reviewer'in dogrulama sarti:
+npm run test:e2e
+Test Suites: 8 passed, 8 total
+Tests:       106 passed, 106 total
+
+# 4) Birim regresyonu:
+npm test --workspace @tutanak/api -> Test Suites: 27 passed, Tests: 162 passed
+npm test (kok, tum workspace'ler)  -> yesil
+
+# 5) Statik analiz kapilari:
+npm run lint      -> 0 hata / 0 uyari (--max-warnings=0)
+npm run typecheck -> temiz
+npx prettier --check apps/api/test/reports-list.e2e-spec.ts -> Prettier uyumlu
+```

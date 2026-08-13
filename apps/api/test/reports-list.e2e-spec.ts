@@ -103,6 +103,13 @@ describe('T-011 tutanak listeleme ve arama', () => {
     process.env.JWT_SECRET = TEST_JWT_SECRET;
     process.env.JWT_EXPIRES_IN = '7d';
     process.env.SUBSCRIPTION_CURRENCY = 'TRY';
+    // Bu dosya hiz siniri ALTINDAKI davranisi dogrular; /auth/* uretim varsayilani 5 istek/dk
+    // oldugu icin kurulum istekleri limite takilmasin diye limitler yukseltilir (T-014 kalibi).
+    process.env.RATE_LIMIT_MAX_REQUESTS = '1000';
+    process.env.AUTH_RATE_LIMIT_MAX_REQUESTS = '1000';
+    // T-012 ile zorunlu hale gelen yapilandirma; uygulama bunlar olmadan ACILMAZ (§5).
+    process.env.SUBSCRIPTION_PRICE_AMOUNT = '199.00';
+    process.env.PUBLIC_APP_URL = 'http://localhost:5173';
 
     const { createApiApp } = await import('../src/main');
     app = await createApiApp();
