@@ -55,6 +55,17 @@ tamamini kapsiyor.
 - **Frontend yapilandirma anahtari:** §5 "frontend'e VITE_ onekli, sir olmayan degerler gider (API tabani)" diyor ama §5.1 tablosunda karsiligi yok. Yeni bir uygulama ayari icat etmemek icin API tabani koda sabit `'/api/v1'` (ayni kaynak) olarak birakildi; yalnizca **gelistirme araci** olan vekil hedefi icin `VITE_API_PROXY_TARGET` eklendi ve `.env.example`'a yazildi. §5.1 tablosuna girmesi gereken aday: `VITE_API_PROXY_TARGET`.
 - **Tasarim sozlesmesi boslugu:** design.md ReportDetailPage'de yukleme akisi "sec -> yukle" olarak anlatiliyor, ticket K7 ise **onizleme + "Yukle" onayi** istiyor. Ticket kriteri baglayici kabul edildi; onizleme adimi eklendi, sartnamedeki durumlar (empty/error/success metinleri) aynen korundu. `Toast` bileseni tasarim sisteminde tanimli ama henuz yazilmadi; hata mesaji `role="alert"` tasiyan `.toast` sinifli bir bolge olarak uygulandi (tokenlarla).
 
+## Iade turu 1 (code-reviewer CHANGES — 2 blokleyici bulgu, ikisi de `apps/web/src/styles/app.css`)
+
+Rapordaki iki madde de dogrulandi ve duzeltildi; rapordaki "DOKUNMA" listesine hic dokunulmadi (44x44px dokunma hedefi ve `rgb(15 42 74 / 72%)` scrim aynen kaldi), baska hicbir dosya degismedi.
+
+1. **`.photo-thumbnail` yaricapi `md` -> `lg`.** design.md §4.4 tablosunda `lg` (16px) satiri birebir "Fotograf thumbnail'i, buyuk kart, alt-sheet panel" kullanimina atanmis (design.md:442); kod yanlis token'i (`--radius-md`, 8px) tuketiyordu. `border-radius: var(--radius-lg);` yapildi ve satirin ustune sozlesme referansi yorum olarak eklendi. Dogrulama: `tokens.css:31` `--radius-lg: 16px`.
+2. **`.photo-thumbnail__stamp` yazi boyutu `0.875rem` (14px) -> `0.8125rem` (~13px).** 14px tipografi olceginde bir adim degil, ham degerdi. design.md §4.2 (design.md:426) "Kucuk/Caption | ~13px" satirini birebir "Zaman damgasi, yardimci aciklama, karakter sayaci" kullanimina atiyor; bu eleman tam olarak zaman damgasi. Deger olcekten turetildi: taban 16px / oran 1.25 = 12.8px ≈ 13px = 0.8125rem.
+   - **Tasarim sozlesmesi boslugu (yeni):** `design-tokens.json` -> `tokens.css` uretimi tipografi icin yalnizca `--font-size-base` ve `--line-height-base` uretiyor; olcek adimlari (caption/h1/h2...) icin degisken YOK. Bu yuzden caption degeri CSS'te sayisal yazilmak zorunda kaldi; yerinde gerekce yorumu birakildi. Retrospektif adayi: token sozlesmesinde `--font-size-caption` (ve diger olcek adimlari) uretilmesi.
+   - Dosya basligindaki "tum degerler token'dan gelir" iddiasi da gercekle hizalandi: token karsiligi olmayan uc istisna (44x44px dokunma hedefi, damga scrim'i, caption adimi) baslikta acikca sayiliyor ve her biri kullanim yerinde design.md referansiyla gerekcelendirildi.
+
+**Regresyon kosumu (kod degisikligi yalnizca CSS oldugu icin tam paket yeniden kosuldu):** `npm run format:check` temiz, `npm run lint` (--max-warnings=0) 0 hata/0 uyari, `npm run typecheck` temiz, `npm test` 22 (kok) + 137 (api) + 53 (web) = 212 test gecti, `npm run test:e2e` (gercek Postgres) 82 test / 6 suite gecti. Kirmizi test yok.
+
 ## Bilinen Sinirlamalar
 
 - **`ReportDetailPage` bu ticket'ta yalnizca fotograf bolumunu icerir.** Baslik/durum rozeti, PDF indirme (T-007), paylasim paneli (T-008) yok. Bunun sonucu: `canAddPhoto` su an sabit `true`; **onaylanmis** tutanakta ekleme arayuzunun gizlenmesi (design.md success durumu) tutanak detayini ceken cagri bu sayfaya eklendiginde baglanacak. Guvenlik/kanit butunlugu tarafi sunucuda **zaten** zorunlu: onaylanmis tutanakta yukleme `409 REPORT_ALREADY_APPROVED` ile reddedilir ve bu e2e'de testli (§3.10).

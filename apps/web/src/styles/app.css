@@ -1,6 +1,7 @@
 /* Uygulama stilleri. TUM renk / bosluk / yaricap / tipografi degerleri tokens.css'ten
    gelir (design-tokens.json sozlesmesi); ham hex ve keyfi px kullanilmaz.
-   Tek istisna, design.md §5'te elle dogrulanmis fotograf damgasi scrim'idir (asagida). */
+   Token karsiligi olmayan istisnalar design.md'den birebir alinir ve yerinde
+   gerekcelendirilir: §5 dokunma hedefi (44x44px), §5 damga scrim'i, §4.2 caption adimi. */
 
 body {
   margin: 0;
@@ -128,7 +129,8 @@ h2 {
 
 .photo-thumbnail {
   position: relative;
-  border-radius: var(--radius-md);
+  /* design.md §4.4: `lg` (16px) satiri fotograf thumbnail'ine atanmistir. */
+  border-radius: var(--radius-lg);
   overflow: hidden;
   background: var(--color-surface-muted);
 }
@@ -148,7 +150,10 @@ h2 {
   padding: var(--space-0) var(--space-1);
   background: rgb(15 42 74 / 72%);
   color: var(--color-on-primary);
-  font-size: 0.875rem;
+  /* design.md §4.2 "Kucuk/Caption ~13px" (taban 16px / oran 1.25 = 12.8px) satiri zaman
+     damgasinin kendisine atanmistir. tokens.css caption adimi icin degisken uretmiyor
+     (tasarim sozlesmesi boslugu — devlog), deger olcekten birebir alindi. */
+  font-size: 0.8125rem;
 }
 
 /* --- Durum bildirimleri --- */
