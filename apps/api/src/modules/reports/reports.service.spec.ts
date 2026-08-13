@@ -1,4 +1,5 @@
-import { ForbiddenError, NotFoundError } from '../../common/errors/app-error';
+import { ForbiddenError, NotFoundError, UnprocessableError } from '../../common/errors/app-error';
+import type { ReportPdfService } from '../pdf/report-pdf.service';
 import type { PhotosService } from '../photos/photos.service';
 import type { ReportRecord, ReportsRepository } from './reports.repository';
 import { ReportsService } from './reports.service';
@@ -21,11 +22,20 @@ const STORED_REPORT: ReportRecord = {
   updatedAt: new Date('2026-08-13T10:00:00.000Z'),
 };
 
+const PDF_BYTES = Buffer.from('%PDF-1.3 sahte');
+
 function serviceWith(
   repository: Partial<ReportsRepository>,
   photosService: Partial<PhotosService> = { listOwnedPhotos: jest.fn().mockResolvedValue([]) },
+  reportPdfService: Partial<ReportPdfService> = {
+    renderReport: jest.fn().mockResolvedValue(PDF_BYTES),
+  },
 ): ReportsService {
-  return new ReportsService(repository as ReportsRepository, photosService as PhotosService);
+  return new ReportsService(
+    repository as ReportsRepository,
+    photosService as PhotosService,
+    reportPdfService as ReportPdfService,
+  );
 }
 
 describe('ReportsService.createDraft', () => {
@@ -141,6 +151,81 @@ describe('ReportsService.getReport', () => {
     await serviceWith({ findById }).getReport(REPORT_ID, OWNER_ID);
 
     expect(findById).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('ReportsService.generatePdf', () => {
+  const PHOTO_SOURCE = {
+    storageKey: `reports/${REPORT_ID}/abc.jpg`,
+    capturedAt: new Date('2026-08-14T10:45:12.000Z'),
+  };
+
+  function photosServiceWith(sources: unknown[]): Partial<PhotosService> {
+    return { listOwnedPhotoSources: jest.fn().mockResolvedValue(sources) };
+  }
+
+  it('en az bir fotografi olan tutanak icin PDF baytlarini doner', async () => {
+    const findById = jest.fn().mockResolvedValue(STORED_REPORT);
+    const renderReport = jest.fn().mockResolvedValue(PDF_BYTES);
+
+    const result = await serviceWith({ findById }, photosServiceWith([PHOTO_SOURCE]), {
+      renderReport,
+    }).generatePdf(REPORT_ID, OWNER_ID);
+
+    expect(result).toBe(PDF_BYTES);
+    expect(renderReport).toHaveBeenCalledWith({
+      title: STORED_REPORT.title,
+      templateName: STORED_REPORT.templateName,
+      note: STORED_REPORT.note,
+      photos: [PHOTO_SOURCE],
+    });
+  });
+
+  it('hic fotografi olmayan tutanakta REPORT_HAS_NO_PHOTOS ile 400 firlatir', async () => {
+    const findById = jest.fn().mockResolvedValue(STORED_REPORT);
+    const renderReport = jest.fn();
+
+    const promise = serviceWith({ findById }, photosServiceWith([]), {
+      renderReport,
+    }).generatePdf(REPORT_ID, OWNER_ID);
+
+    await expect(promise).rejects.toBeInstanceOf(UnprocessableError);
+    await expect(promise).rejects.toMatchObject({
+      code: 'REPORT_HAS_NO_PHOTOS',
+      httpStatus: 400,
+    });
+    expect(renderReport).not.toHaveBeenCalled();
+  });
+
+  it('baska kullaniciya ait tutanakta ForbiddenError firlatir ve PDF URETMEZ', async () => {
+    const findById = jest.fn().mockResolvedValue(STORED_REPORT);
+    const renderReport = jest.fn();
+    const listOwnedPhotoSources = jest.fn();
+
+    const promise = serviceWith(
+      { findById },
+      { listOwnedPhotoSources },
+      {
+        renderReport,
+      },
+    ).generatePdf(REPORT_ID, OTHER_USER_ID);
+
+    await expect(promise).rejects.toBeInstanceOf(ForbiddenError);
+    // Sahiplik dogrulanmadan fotograf da PDF de okunmaz (CLAUDE.md §3.8).
+    expect(listOwnedPhotoSources).not.toHaveBeenCalled();
+    expect(renderReport).not.toHaveBeenCalled();
+  });
+
+  it('var olmayan tutanakta NotFoundError firlatir', async () => {
+    const findById = jest.fn().mockResolvedValue(null);
+
+    const promise = serviceWith({ findById }, photosServiceWith([])).generatePdf(
+      REPORT_ID,
+      OWNER_ID,
+    );
+
+    await expect(promise).rejects.toBeInstanceOf(NotFoundError);
+    await expect(promise).rejects.toMatchObject({ code: 'NOT_FOUND', httpStatus: 404 });
   });
 });
 

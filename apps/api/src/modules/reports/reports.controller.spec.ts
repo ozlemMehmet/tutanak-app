@@ -51,3 +51,18 @@ describe('ReportsController.list', () => {
     expect(result).toEqual({ items: [], page: 1, pageSize: 20, total: 0 });
   });
 });
+
+describe('ReportsController.downloadPdf', () => {
+  const PDF_BYTES = Buffer.from('%PDF-1.3 sahte');
+
+  it('PDF"i indirilebilir dosya olarak application/pdf icerik tipiyle doner', async () => {
+    const generatePdf = jest.fn().mockResolvedValue(PDF_BYTES);
+
+    const result = await controllerWith({ generatePdf }).downloadPdf(CURRENT_USER, REPORT_ID);
+
+    expect(generatePdf).toHaveBeenCalledWith(REPORT_ID, CURRENT_USER.userId);
+    expect(result.options.type).toBe('application/pdf');
+    expect(result.options.disposition).toBe(`attachment; filename="tutanak-${REPORT_ID}.pdf"`);
+    expect(result.getStream().read()).toEqual(PDF_BYTES);
+  });
+});

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { ForbiddenError, NotFoundError } from '../../common/errors/app-error';
+import { ForbiddenError, NotFoundError, UnprocessableError } from '../../common/errors/app-error';
+import { ReportPdfService } from '../pdf/report-pdf.service';
 import { PhotosService } from '../photos/photos.service';
 import type { CreateReportDto } from './dto/create-report.dto';
 import type { ListReportsQueryDto } from './dto/list-reports-query.dto';
@@ -12,11 +13,15 @@ import { ReportsRepository } from './reports.repository';
 /** Sozlesmedeki `note` varsayilani (CreateReportRequest.note: default ''). */
 const DEFAULT_NOTE = '';
 
+const NO_PHOTOS_MESSAGE =
+  'PDF olusturmak icin tutanakta en az bir fotograf olmalidir; once fotograf ekleyin.';
+
 @Injectable()
 export class ReportsService {
   constructor(
     private readonly reportsRepository: ReportsRepository,
     private readonly photosService: PhotosService,
+    private readonly reportPdfService: ReportPdfService,
   ) {}
 
   /**
@@ -66,6 +71,28 @@ export class ReportsService {
     const report = await this.assertOwnership(reportId, userId);
     const photos = await this.photosService.listOwnedPhotos(reportId);
     return toReportDetailDto(report, photos);
+  }
+
+  /**
+   * Tutanagin PDF ciktisini uretir (T-007). Sira: sahiplik (§3.8) -> fotograf kaynaklari
+   * -> "fotografsiz tutanak PDF olamaz" kurali -> uretim. Onay bilgisinin belgeye
+   * islenmesi T-010 kapsamindadir ve burada YOKTUR.
+   * Fotograflar sahiplik dogrulandiktan sonra ikinci bir sahiplik sorgusu YAPILMADAN
+   * okunur (istek basina iki sorgu).
+   */
+  async generatePdf(reportId: string, userId: string): Promise<Buffer> {
+    const report = await this.assertOwnership(reportId, userId);
+    const photos = await this.photosService.listOwnedPhotoSources(reportId);
+    if (photos.length === 0) {
+      throw new UnprocessableError('REPORT_HAS_NO_PHOTOS', NO_PHOTOS_MESSAGE);
+    }
+
+    return this.reportPdfService.renderReport({
+      title: report.title,
+      templateName: report.templateName,
+      note: report.note,
+      photos,
+    });
   }
 
   /**
