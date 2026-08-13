@@ -14,26 +14,48 @@ import type { StorageObjectInput, StoragePort } from './storage.port';
 const STORAGE_REGION = 'auto';
 const STORAGE_UNAVAILABLE_MESSAGE = 'Fotograf deposuna su anda erisilemiyor, tekrar deneyin.';
 
+interface StorageCredentials {
+  accessKeyId: string;
+  secretAccessKey: string;
+}
+
+/** Iki istemci de ayni ayarlarla kurulur; yalnizca adresleri farklidir. */
+function createClient(endpoint: string, credentials: StorageCredentials): S3Client {
+  return new S3Client({
+    region: STORAGE_REGION,
+    endpoint,
+    // MinIO sanal-host adresleme kullanmaz; yol tabanli erisim her iki tarafta da calisir.
+    forcePathStyle: true,
+    credentials,
+  });
+}
+
 @Injectable()
 export class R2StorageAdapter implements StoragePort {
   private readonly logger = new Logger(R2StorageAdapter.name);
+  /** Sunucudan sunucuya yazma/okuma yolu (docker aginda servis adi olabilir). */
   private readonly client: S3Client;
+  /**
+   * On-imzali URL'yi imzalayan istemci. SigV4 imzasi host'u da kapsadigi icin URL
+   * yalnizca imzalandigi adresle acilabilir; tarayici (masaustu ya da LAN'daki telefon)
+   * ic ag adini (`http://minio:9000`) cozemez. Iki adres esitse ayni istemci kullanilir.
+   */
+  private readonly presignClient: S3Client;
   private readonly bucket: string;
   private readonly urlTtlSeconds: number;
 
   constructor(config: ConfigService<AppEnv, true>) {
     this.bucket = config.get('R2_BUCKET', { infer: true });
     this.urlTtlSeconds = config.get('PRESIGNED_URL_TTL_SECONDS', { infer: true });
-    this.client = new S3Client({
-      region: STORAGE_REGION,
-      endpoint: config.get('R2_ENDPOINT', { infer: true }),
-      // MinIO sanal-host adresleme kullanmaz; yol tabanli erisim her iki tarafta da calisir.
-      forcePathStyle: true,
-      credentials: {
-        accessKeyId: config.get('R2_ACCESS_KEY_ID', { infer: true }),
-        secretAccessKey: config.get('R2_SECRET_ACCESS_KEY', { infer: true }),
-      },
-    });
+    const credentials = {
+      accessKeyId: config.get('R2_ACCESS_KEY_ID', { infer: true }),
+      secretAccessKey: config.get('R2_SECRET_ACCESS_KEY', { infer: true }),
+    };
+    const endpoint = config.get('R2_ENDPOINT', { infer: true });
+    const publicEndpoint = config.get('R2_PUBLIC_ENDPOINT', { infer: true });
+    this.client = createClient(endpoint, credentials);
+    this.presignClient =
+      publicEndpoint === endpoint ? this.client : createClient(publicEndpoint, credentials);
   }
 
   async putObject(input: StorageObjectInput): Promise<void> {
@@ -54,7 +76,7 @@ export class R2StorageAdapter implements StoragePort {
   async createReadUrl(key: string): Promise<string> {
     try {
       return await getSignedUrl(
-        this.client,
+        this.presignClient,
         new GetObjectCommand({ Bucket: this.bucket, Key: key }),
         { expiresIn: this.urlTtlSeconds },
       );

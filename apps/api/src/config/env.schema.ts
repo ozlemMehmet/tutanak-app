@@ -39,6 +39,17 @@ const positiveIntFromEnv = (defaultValue: number): z.ZodDefault<z.ZodNumber> =>
 
 const ALLOWED_APP_URL_PROTOCOLS = new Set(['http:', 'https:']);
 
+/**
+ * Obje depolama adresleri icin ortak kural: `z.string().url()` tek basina
+ * `localhost:9000` gibi semasi hatali degerleri de kabul ettigi icin protokol acikca
+ * dogrulanir (S3 istemcisi mutlak http(s) adresi ister).
+ */
+const httpUrl = (): z.ZodEffects<z.ZodString, string, string> =>
+  z
+    .string()
+    .url()
+    .refine((value) => /^https?:\/\//.test(value), 'http(s) adresi olmalidir');
+
 /** PAYMENT_PROVIDER=iyzico secildiginde zorunlu hale gelen sirlar (CLAUDE.md §5). */
 const IYZICO_SECRET_KEYS = [
   'IYZICO_API_KEY',
@@ -91,10 +102,15 @@ const envObjectSchema = z.object({
    * `z.string().url()` tek basina `localhost:9000` gibi semasi hatali degerleri de kabul
    * ettigi icin protokol acikca dogrulanir (S3 istemcisi mutlak http(s) adresi ister).
    */
-  R2_ENDPOINT: z
-    .string()
-    .url()
-    .refine((value) => /^https?:\/\//.test(value), 'http(s) adresi olmalidir'),
+  R2_ENDPOINT: httpUrl(),
+  /**
+   * On-imzali fotograf URL'sinin TARAYICIYA donen adresi. SigV4 imzasi host'u da
+   * kapsadigi icin URL yalnizca imzalandigi adresle acilabilir; docker aginda
+   * `R2_ENDPOINT` bir servis adidir (`http://minio:9000`) ve tarayici (masaustu ya da
+   * LAN'daki telefon) bu adi cozemez. Verilmezse `R2_ENDPOINT` kullanilir — tek adresli
+   * uretim kurulumunda (public R2 domaini) iki deger zaten aynidir.
+   */
+  R2_PUBLIC_ENDPOINT: httpUrl().optional(),
   /** Fotograf objelerinin yazildigi kova adi. */
   R2_BUCKET: z.string().min(1),
   R2_ACCESS_KEY_ID: z.string().min(1),
@@ -107,21 +123,28 @@ const envObjectSchema = z.object({
   PRESIGNED_URL_TTL_SECONDS: positiveInt(DEFAULT_PRESIGNED_URL_TTL_SECONDS),
 });
 
-export const envSchema = envObjectSchema.superRefine((env, ctx) => {
-  if (env.PAYMENT_PROVIDER !== 'iyzico') {
-    // Yerel/test kosumu dis hesap gerektirmez (CLAUDE.md §10).
-    return;
-  }
-  for (const key of IYZICO_SECRET_KEYS) {
-    if (env[key] === undefined || env[key] === '') {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: [key],
-        message: 'PAYMENT_PROVIDER=iyzico iken zorunludur',
-      });
+export const envSchema = envObjectSchema
+  .superRefine((env, ctx) => {
+    if (env.PAYMENT_PROVIDER !== 'iyzico') {
+      // Yerel/test kosumu dis hesap gerektirmez (CLAUDE.md §10).
+      return;
     }
-  }
-});
+    for (const key of IYZICO_SECRET_KEYS) {
+      if (env[key] === undefined || env[key] === '') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [key],
+          message: 'PAYMENT_PROVIDER=iyzico iken zorunludur',
+        });
+      }
+    }
+  })
+  // Varsayilan burada turetilir; boylece uygulama kodu "yoksa digerini kullan"
+  // dallanmasini tasimaz — ortam degeri tek noktada tamamlanir (CLAUDE.md §5).
+  .transform((env) => ({
+    ...env,
+    R2_PUBLIC_ENDPOINT: env.R2_PUBLIC_ENDPOINT ?? env.R2_ENDPOINT,
+  }));
 
 export type AppEnv = z.infer<typeof envSchema>;
 

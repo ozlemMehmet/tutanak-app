@@ -65,6 +65,10 @@ services:
       DATABASE_URL: postgresql://tutanak:tutanak@db:5432/tutanak
       # .env'deki adres host icindir; container aginda servis adi kullanilir.
       R2_ENDPOINT: http://minio:9000
+      # Ama on-imzali URL'yi TARAYICI acar: imza host'u da kapsadigi icin URL,
+      # tarayicinin cozebildigi adresle imzalanmalidir (yukaridaki servis adi degil).
+      # .env'de deger varsa o kazanir (telefondan denemek icin LAN IP'si yazilir).
+      R2_PUBLIC_ENDPOINT: ${R2_PUBLIC_ENDPOINT:-http://localhost:9000}
     ports:
       - '3000:3000'
     depends_on:

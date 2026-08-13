@@ -97,12 +97,66 @@ photos 24 | billing 18 | auth-rate-limit 5 | auth 16 | health 2 | reports 19 | t
 
 Kapsam: yalnizca uc test dosyasinin env bloklari degisti; urun kodu, sema ve rapordaki "eylem gerekmez" listesindeki hicbir sey degistirilmedi.
 
+## Iade turu 3 (qa-agent CHANGES — 1 blokleyici bulgu: on-imzali URL tarayicida acilmiyor)
+
+Bulgu dogruydu ve K7'nin 5. adimini (fotograf izgarada **gorunur**) fiilen dusuruyordu.
+
+**Sistematik hata ayiklama (kural 3).**
+1. *Izole:* Raporun yeniden uretim adimlari birebir kosuldu. Yanittaki `url` alani
+   `http://minio:9000/...` — yani imza, API'nin **sunucudan sunucuya** kullandigi adresle
+   uretiliyor. Sinir netti: hata API/tarayici sinirinda, DNS cozumlemesinde.
+2. *Hipotez (tek):* "Adapter tek bir S3 istemcisi tutuyor ve ayni `R2_ENDPOINT` hem PUT
+   hem de on-imzalama icin kullaniliyor; imzalanan URL'nin host'u bu yuzden ic ag adi
+   oluyor." Kanit: `r2-storage.adapter.ts` yalnizca `this.client` tanimliyor ve
+   `getSignedUrl` ona veriliyor; docker-compose `R2_ENDPOINT`'i `http://minio:9000` ile eziyor.
+3. *Test (en kucuk degisiklik):* Ic adres ile tarayiciya donen adres ayristirildi.
+   Onemli ayrinti: **SigV4 imzasi host'u da kapsar**, bu yuzden URL uretildikten sonra
+   metin degistirme (`replace('minio','localhost')`) imzayi gecersiz kilardi — dogru cozum
+   imzalamayi bastan **dogru endpoint ile** yapmaktir. Adapter artik iki istemci tutar
+   (`client` = yazma/ic yol, `presignClient` = imzalama/tarayici yolu); iki adres esitse
+   tek istemci kullanilir. Adres `R2_PUBLIC_ENDPOINT`'ten gelir, verilmezse `R2_ENDPOINT`'e
+   duser (davranis, tek adresli uretim kurulumunda oldugu gibi kalir).
+4. *Dogrula (tarayicida, raporun istedigi bicimde):* `docker compose up -d --build` sonrasi
+   gercek jpeg yuklendi -> `url` host'u `localhost:9000`; URL host'tan `curl` ile cekildi
+   (`200`, `image/jpeg`, 2068 bayt, `sharp` ile 640x480 dogrulandi); ardindan **gercek
+   tarayicida** (Playwright/Chromium) `http://localhost:5173/reports/<id>` acildi:
+   `naturalWidth=640` (QA'nin gordugu `0` / `ERR_NAME_NOT_RESOLVED` yok). Ayrica dosya
+   secme -> onizleme -> "Yukle" akisi tarayicida bastan kosuldu: yeni fotograf izgarada
+   **sunucu damgasiyla ve goruntusu yuklenmis** halde belirdi (ekran goruntusu alindi).
+   **Mobil/LAN yolu da dogrulandi:** `.env`'de `R2_PUBLIC_ENDPOINT=http://192.168.1.109:9000`
+   yapilip `docker compose up -d api` ile yeniden kaldirildi, sayfa `http://192.168.1.109:5173`
+   uzerinden acildi -> her uc fotograf da `192.168.1.109:9000` host'undan yuklendi
+   (`naturalWidth=640`). Yani telefonun kullandigi yol bir cihaz olmadan da kanitlandi.
+5. *Regresyon korumasi:* `r2-storage.adapter.spec.ts`'e uc test eklendi — imzalamanin
+   `R2_PUBLIC_ENDPOINT` ile yapildigi, yazmanin ic endpoint uzerinden gittigi ve iki adres
+   ayni oldugunda tek istemci kuruldugu. `env.schema.spec.ts`'e uc test: anahtar yoksa
+   `R2_ENDPOINT`'e duser, verilince korunur, bicimsiz deger reddedilir. Bu hata artik
+   sessizce geri gelemez (imzalama endpoint'i degisirse test kirmizi olur).
+
+**Kapsam disi gorunen ama benim degisikligimin dusurdugu tek test:** `reports-list.e2e-spec.ts`
+(T-011) uygulamayi ayaga kaldiriyor ama `R2_*` atamiyordu; bu ticket'in semasi bu anahtarlari
+zorunlu yaptigi icin suite acilista patliyordu. Iade turu 2'deki ayni kalip (dort atama + ayni
+gerekce yorumu) uygulandi; sema **gevsetilmedi**, baska hicbir sey degistirilmedi.
+
+**Anayasa boslugu (yeni):** `R2_PUBLIC_ENDPOINT` §5.1 tablosunda yok. Sir **degildir**
+(yalnizca adres; `R2_ENDPOINT` sir listesindedir cunku ic adresi ifsa etmemek istenmis).
+Kendi adimi icat etmemek icin en yakin mevcut kalip izlendi (`R2_ENDPOINT` + `PUBLIC_APP_URL`
+ikilisinin birlesimi) ve `.env.example`'a yerel varsayilaniyla yazildi. Retrospektif adayi:
+§5.1 tablosuna `R2_PUBLIC_ENDPOINT | Mutlak http(s) URL, varsayilan = R2_ENDPOINT | on-imzali
+fotograf URL'sinin tarayiciya donen adresi` satiri.
+
+**Kosum sonucu:** `npm run lint` (--max-warnings=0) 0/0, `npm run typecheck` temiz,
+`npm run format:check` temiz, `npm test` 25 (kok) + 226 (api) + 53 (web) = 304 test gecti,
+`npm run test:e2e` (gercek Postgres) **9 suite / 130 test** gecti, `npm audit --audit-level=high`
+gecti, `npm run build` temiz.
+
 ## Bilinen Sinirlamalar
 
 - **E2E spec'leri env'i `process.env` uzerinden kurar; `--runInBand` altinda anahtarlar suite'ler arasi sizabilir.** Bu turda uc spec kendi kendine yeterli hale getirildi, ama yapisal koruma yok: zorunlu bir env anahtari eklendiginde onu ayaga kalkan TUM spec'lere eklemek hala elle yapilan bir istir (bu bulgunun kok nedeni). Anayasa boslugu / retrospektif adayi: e2e icin ortak bir `setupTestEnv()` yardimcisi (ya da jest `setupFiles`) — tek yerde tanimlanir, yeni zorunlu anahtar tum suite'lere otomatik iner. Bu ticket'in kapsami disinda oldugu icin YAPILMADI.
 - **`ReportDetailPage` bu ticket'ta yalnizca fotograf bolumunu icerir.** Baslik/durum rozeti, PDF indirme (T-007), paylasim paneli (T-008) yok. Bunun sonucu: `canAddPhoto` su an sabit `true`; **onaylanmis** tutanakta ekleme arayuzunun gizlenmesi (design.md success durumu) tutanak detayini ceken cagri bu sayfaya eklendiginde baglanacak. Guvenlik/kanit butunlugu tarafi sunucuda **zaten** zorunlu: onaylanmis tutanakta yukleme `409 REPORT_ALREADY_APPROVED` ile reddedilir ve bu e2e'de testli (§3.10).
 - **Playwright E2E senaryolari (§8.3) hala yok** — repoda Playwright kurulu degil ve kritik akisin diger halkalari (giris ekrani, tutanak olusturma ekrani) henuz yazilmadi. K7 icin oznitelik+akis bilesen testleriyle ve yukaridaki manuel senaryoyla dogrulanir; §8.3'un 4. senaryosu ekranlar tamamlandiginda kurulmalidir.
 - Fotograf ust siniri UI'da **proaktif** olarak degil, sunucudan `PHOTO_LIMIT_REACHED` dondukten sonra kapatilir (esigi istemciye gommemek icin).
+- **Telefondan denemek icin `R2_PUBLIC_ENDPOINT` elle LAN IP'sine cevrilmelidir** (`.env.example`'da bu not yazili). Otomatik tespit (istegin `Host` basligindan URL uretmek) bilincli olarak YAPILMADI: istemciden gelen basliga gore imza adresi secmek acik yonlendirme/onbellek zehirlenmesi yuzeyi acar; adres yapilandirmadan gelir (§5).
 - `GET /reports/{id}/photos` sayfalamasizdir; tutanak basina ust sinir 30 oldugu icin bilincli tercihtir.
 
 ## Ticket Disi Fark Edilen Sorunlar (DOKUNULMADI)

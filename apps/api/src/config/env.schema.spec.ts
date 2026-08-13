@@ -131,6 +131,35 @@ describe('validateEnv', () => {
     );
   });
 
+  // T-006 QA iadesi: on-imzali URL tarayicida acilir; ic ag adresiyle (http://minio:9000)
+  // imzalanan URL cozulemez. Tarayiciya donen adres ayri anahtardan gelir.
+  describe('R2_PUBLIC_ENDPOINT (tarayiciya donen on-imzali URL adresi)', () => {
+    it('anahtar verilmediginde R2_ENDPOINT degerine duser (tek adresli kurulum)', () => {
+      expect(validateEnv(REQUIRED_ENV)).toMatchObject({
+        R2_PUBLIC_ENDPOINT: STORAGE_ENV.R2_ENDPOINT,
+      });
+    });
+
+    it('verildiginde R2_ENDPOINT"ten bagimsiz olarak korunur (docker: ic ad vs. host adresi)', () => {
+      expect(
+        validateEnv({
+          ...REQUIRED_ENV,
+          R2_ENDPOINT: 'http://minio:9000',
+          R2_PUBLIC_ENDPOINT: 'http://localhost:9000',
+        }),
+      ).toMatchObject({
+        R2_ENDPOINT: 'http://minio:9000',
+        R2_PUBLIC_ENDPOINT: 'http://localhost:9000',
+      });
+    });
+
+    it('gecersiz bicimli degeri reddeder (S3 istemcisi mutlak http(s) adresi ister)', () => {
+      expect(() => validateEnv({ ...VALID_ENV, R2_PUBLIC_ENDPOINT: 'localhost:9000' })).toThrow(
+        /R2_PUBLIC_ENDPOINT/,
+      );
+    });
+  });
+
   it('JWT_SECRET eksikse uygulama acilmasin diye hata firlatir', () => {
     expect(() => validateEnv({ ...REQUIRED_ENV, JWT_SECRET: undefined })).toThrow(/JWT_SECRET/);
   });
