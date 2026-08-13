@@ -1,8 +1,15 @@
 // Entity -> DTO donusumu (CLAUDE.md §3.5): yanit govdesi YALNIZCA burada kurulur,
 // boylece owner_id gibi ic alanlarin sizmasi yapisal olarak engellenir.
 
-import type { ReportDetailDto, ReportDto } from '../dto/report.dto';
+import type { ReportDetailDto, ReportDto, ReportListDto } from '../dto/report.dto';
 import type { ReportRecord } from '../reports.repository';
+
+/** Sozlesmedeki ReportListResponse'un sayfalama alanlari. */
+interface Pagination {
+  page: number;
+  pageSize: number;
+  total: number;
+}
 
 export function toReportDto(report: ReportRecord): ReportDto {
   return {
@@ -15,6 +22,15 @@ export function toReportDto(report: ReportRecord): ReportDto {
     photoCount: report.photoCount,
     createdAt: report.createdAt.toISOString(),
     updatedAt: report.updatedAt.toISOString(),
+  };
+}
+
+export function toReportListDto(reports: ReportRecord[], pagination: Pagination): ReportListDto {
+  return {
+    items: reports.map(toReportDto),
+    page: pagination.page,
+    pageSize: pagination.pageSize,
+    total: pagination.total,
   };
 }
 

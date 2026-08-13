@@ -1,8 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { ForbiddenError, NotFoundError } from '../../common/errors/app-error';
 import type { CreateReportDto } from './dto/create-report.dto';
-import type { ReportDetailDto, ReportDto } from './dto/report.dto';
-import { toReportDetailDto, toReportDto } from './mappers/report.mapper';
+import type { ListReportsQueryDto } from './dto/list-reports-query.dto';
+import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } from './dto/list-reports-query.dto';
+import type { ReportDetailDto, ReportDto, ReportListDto } from './dto/report.dto';
+import { toReportDetailDto, toReportDto, toReportListDto } from './mappers/report.mapper';
 import type { ReportRecord } from './reports.repository';
 import { ReportsRepository } from './reports.repository';
 
@@ -30,6 +32,25 @@ export class ReportsService {
       throw new NotFoundError('TEMPLATE_NOT_FOUND', 'Secilen sablon bulunamadi.');
     }
     return toReportDto(report);
+  }
+
+  /**
+   * Oturum sahibinin kendi tutanaklarini sayfali olarak listeler; arama terimi verilirse
+   * baslik/notta filtreler. Sahiplik YALNIZCA token'daki kimlikten gelir — istemci baska
+   * bir kullanicinin listesini isteyemez. Eslesme olmamasi hata degildir: bos liste doner.
+   */
+  async listReports(ownerId: string, query: ListReportsQueryDto): Promise<ReportListDto> {
+    const page = query.page ?? DEFAULT_PAGE;
+    const pageSize = query.pageSize ?? DEFAULT_PAGE_SIZE;
+
+    const { records, total } = await this.reportsRepository.findManyByOwner({
+      ownerId,
+      searchTerm: query.q,
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    });
+
+    return toReportListDto(records, { page, pageSize, total });
   }
 
   /** Oturum sahibinin kendi tutanagini doner; sahiplik kurali is mantigindadir (§3.8). */
