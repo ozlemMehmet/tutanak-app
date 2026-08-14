@@ -188,9 +188,9 @@ describe('AuthService.login sabit-zamanli dogrulama (T-015)', () => {
     } as unknown as UsersRepository;
     const service = new AuthService(repository, jwtService);
 
-    await expect(service.login({ email: 'yok@ornek.test', password: PASSWORD })).rejects.toBeInstanceOf(
-      UnauthenticatedError,
-    );
+    await expect(
+      service.login({ email: 'yok@ornek.test', password: PASSWORD }),
+    ).rejects.toBeInstanceOf(UnauthenticatedError);
 
     expect(compareMock).toHaveBeenCalledTimes(1);
     expect(compareMock).toHaveBeenCalledWith(PASSWORD, DUMMY_PASSWORD_HASH);
@@ -211,7 +211,7 @@ describe('AuthService.login sabit-zamanli dogrulama (T-015)', () => {
     expect(compareMock).toHaveBeenCalledWith(PASSWORD, passwordHash);
   });
 
-  it("dummy hash sabiti cost 10 bcrypt onekine sahiptir (maliyet gercek dogrulamayla esit)", () => {
+  it('dummy hash sabiti cost 10 bcrypt onekine sahiptir (maliyet gercek dogrulamayla esit)', () => {
     expect(DUMMY_PASSWORD_HASH.startsWith(BCRYPT_COST_PREFIX)).toBe(true);
     expect(DUMMY_PASSWORD_HASH).toHaveLength(60); // gecerli bir bcrypt hash uzunlugu
   });
