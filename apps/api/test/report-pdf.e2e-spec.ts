@@ -96,6 +96,8 @@ describe('T-007 tutanak PDF ciktisi', () => {
     process.env.SUBSCRIPTION_CURRENCY = 'TRY';
     process.env.SUBSCRIPTION_PRICE_AMOUNT = '199.00';
     process.env.PUBLIC_APP_URL = 'http://localhost:5173';
+    // T-008 ile zorunlu hale gelen yapilandirma; uygulama bunlar olmadan ACILMAZ (§5).
+    process.env.EMAIL_FROM = 'Tutanak <noreply@ornek.test>';
     // Obje depolama testte sahtelendigi icin bu degerler yalnizca sema dogrulamasini
     // gecmek icindir; hicbir ag cagrisi yapilmaz (CLAUDE.md §5).
     process.env.R2_ENDPOINT = 'http://localhost:9000';
