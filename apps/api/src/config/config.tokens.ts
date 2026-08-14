@@ -22,3 +22,6 @@ export interface BillingConfig {
 
 /** Tutanak basina fotograf ust siniri — PHOTO_LIMIT_REACHED esigi (CLAUDE.md §5.1). */
 export const PHOTO_MAX_PER_REPORT = 'PHOTO_MAX_PER_REPORT';
+
+/** Erisim tokeni omru SANIYE cinsinden; JWT_EXPIRES_IN'den turer (CLAUDE.md §5.1) — T-016. */
+export const ACCESS_TOKEN_TTL_SECONDS = 'AccessTokenTtlSeconds';

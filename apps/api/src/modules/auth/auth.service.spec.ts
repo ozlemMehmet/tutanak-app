@@ -105,6 +105,40 @@ describe('AuthService.login', () => {
     ).rejects.toMatchObject({ code: 'INVALID_CREDENTIALS', httpStatus: 401 });
   });
 
+  // T-016: omur yapilandirmadan gelir; imzalanan token omru ogrenmek icin geri
+  // decode EDILMEZ (`decode()` null donebilir -> olasi null dereference).
+  it('expiresIn degerini yapilandirilan token omrunden uretir, tokeni decode etmez', async () => {
+    const passwordHash = await bcrypt.hash(PASSWORD, 10);
+    const decode = jest.fn();
+    const isolatedJwtService = {
+      signAsync: jest.fn().mockResolvedValue('imzali.jwt.token'),
+      decode,
+    } as unknown as JwtService;
+    const repository = {
+      create: jest.fn(),
+      findByEmail: jest.fn().mockResolvedValue(userRecord({ passwordHash })),
+    } as unknown as UsersRepository;
+    const service = new AuthService(repository, isolatedJwtService, 900);
+
+    const result = await service.login({ email: 'selin@ornek.test', password: PASSWORD });
+
+    expect(result.expiresIn).toBe(900);
+    expect(decode).not.toHaveBeenCalled();
+  });
+
+  it('token omru verilmediginde yapilandirma varsayilanini (7d) kullanir', async () => {
+    const passwordHash = await bcrypt.hash(PASSWORD, 10);
+    const repository = {
+      create: jest.fn(),
+      findByEmail: jest.fn().mockResolvedValue(userRecord({ passwordHash })),
+    } as unknown as UsersRepository;
+    const service = new AuthService(repository, jwtService);
+
+    const result = await service.login({ email: 'selin@ornek.test', password: PASSWORD });
+
+    expect(result.expiresIn).toBe(604_800);
+  });
+
   it('kayitli olmayan e-postada da ayni INVALID_CREDENTIALS hatasini firlatir (kullanici sizdirmaz)', async () => {
     const repository = {
       create: jest.fn(),
