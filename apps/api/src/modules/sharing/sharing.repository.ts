@@ -47,6 +47,27 @@ export interface ReportAccessRecord {
   status: ReportStatusDto;
 }
 
+/** Onay kaydinin goruntulemede gosterilen alanlari (T-009 salt-okunur; yazma T-010'da). */
+export interface ApprovalRecord {
+  id: string;
+  approverEmail: string;
+  approvedAt: Date;
+}
+
+/**
+ * Oturumsuz goruntulemenin ihtiyac duydugu tutanak alanlari (T-009). `ownerId` bilerek
+ * TASINMAZ: bu akista yetkilendirme anahtari gecerli paylasim token'idir, sahiplik degil.
+ */
+export interface PublicReportRecord {
+  reportId: string;
+  title: string;
+  templateName: string;
+  note: string;
+  status: ReportStatusDto;
+  createdAt: Date;
+  approval: ApprovalRecord | null;
+}
+
 interface PrismaShareLinkLike {
   id: string;
   reportId: string;
@@ -121,6 +142,45 @@ export class SharingRepository {
       status: delivery.status,
       errorMessage: delivery.errorMessage,
       createdAt: delivery.createdAt,
+    };
+  }
+
+  /**
+   * Paylasim token'i ile tutanagi, sablon adini ve (varsa) onay kaydini TEK sorguda okur
+   * (T-009). Token `share_links_token_key` ile benzersizdir; bulunamazsa `null` doner ve
+   * servis bunu 404'e cevirir — "token gecersiz" ile "tutanak yok" istemciye ayni gorunur.
+   * Fotograflar buraya DAHIL DEGILDIR: on-imzali URL uretimi photos modulunun isidir
+   * ve sira kurali (§3.14) orada tek noktada yasar.
+   */
+  async findReportViewByToken(token: string): Promise<PublicReportRecord | null> {
+    const link = await this.prisma.shareLink.findUnique({
+      where: { token },
+      select: {
+        report: {
+          select: {
+            id: true,
+            title: true,
+            note: true,
+            status: true,
+            createdAt: true,
+            template: { select: { name: true } },
+            approval: { select: { id: true, approverEmail: true, approvedAt: true } },
+          },
+        },
+      },
+    });
+    if (link === null) {
+      return null;
+    }
+    const { report } = link;
+    return {
+      reportId: report.id,
+      title: report.title,
+      templateName: report.template.name,
+      note: report.note,
+      status: report.status,
+      createdAt: report.createdAt,
+      approval: report.approval,
     };
   }
 

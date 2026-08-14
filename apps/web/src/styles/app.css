@@ -250,3 +250,37 @@ h2 {
   border-radius: var(--radius-md);
   font: inherit;
 }
+
+/* --- T-009: oturumsuz kiraci gorunumu (design.md → PublicReportPage) --- */
+
+/* Uyari banner'i sabit kalir: sayfa kaydirilsa da onay oncesi okunur olmalidir (H-11). */
+.disclaimer-banner {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0 0 var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-warning);
+  color: var(--color-on-warning);
+}
+
+.public-report__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0);
+}
+
+.public-report__template,
+.public-report__created {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.public-report__note {
+  margin: var(--space-3) 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  white-space: pre-wrap;
+}

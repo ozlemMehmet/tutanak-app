@@ -1,5 +1,6 @@
 import { Route, Routes } from 'react-router-dom';
 import type { ApiClient } from './api/client';
+import { PublicReportPage } from './pages/PublicReportPage';
 import { ReportDetailPage } from './pages/ReportDetailPage';
 
 interface AppRoutesProps {
@@ -23,6 +24,9 @@ export function AppRoutes({ client }: AppRoutesProps): React.JSX.Element {
         }
       />
       <Route path="/reports/:reportId" element={<ReportDetailPage client={client} />} />
+      {/* Paylasim linkinin adresi (`<PUBLIC_APP_URL>/t/<token>`, T-008): kiraci bu rotayi
+          hesap acmadan/oturum acmadan acar — AppShell'e bagli DEGILDIR (T-009). */}
+      <Route path="/t/:token" element={<PublicReportPage client={client} />} />
     </Routes>
   );
 }

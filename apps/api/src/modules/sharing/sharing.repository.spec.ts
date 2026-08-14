@@ -146,3 +146,58 @@ describe('SharingRepository.createDelivery', () => {
     });
   });
 });
+
+describe('SharingRepository.findReportViewByToken', () => {
+  const VIEW_ROW = {
+    report: {
+      id: REPORT_ID,
+      title: 'Kadikoy 3+1 teslim tutanagi',
+      note: 'Salon duvarinda cizik var.',
+      status: 'shared',
+      createdAt: new Date('2026-08-14T09:00:00.000Z'),
+      template: { name: 'Kiraci Cikis Teslimi' },
+      approval: null,
+    },
+  };
+
+  it('token ile tutanagi, sablon adini ve onay kaydini TEK sorguda okur (T-009 kriter 1)', async () => {
+    const findUnique = jest.fn().mockResolvedValue(VIEW_ROW);
+
+    const record = await repositoryWith({ shareLink: { findUnique } }).findReportViewByToken(TOKEN);
+
+    expect(findUnique).toHaveBeenCalledTimes(1);
+    expect(findUnique).toHaveBeenCalledWith(expect.objectContaining({ where: { token: TOKEN } }));
+    expect(record).toEqual({
+      reportId: REPORT_ID,
+      title: 'Kadikoy 3+1 teslim tutanagi',
+      templateName: 'Kiraci Cikis Teslimi',
+      note: 'Salon duvarinda cizik var.',
+      status: 'shared',
+      createdAt: VIEW_ROW.report.createdAt,
+      approval: null,
+    });
+  });
+
+  it('onay kaydi varsa onu da tasir (goruntuleme yanitindaki approval alani)', async () => {
+    const approval = {
+      id: '66666666-6666-4666-8666-666666666666',
+      approverEmail: 'kiraci@ornek.test',
+      approvedAt: new Date('2026-08-14T10:00:00.000Z'),
+    };
+    const findUnique = jest
+      .fn()
+      .mockResolvedValue({ report: { ...VIEW_ROW.report, status: 'approved', approval } });
+
+    const record = await repositoryWith({ shareLink: { findUnique } }).findReportViewByToken(TOKEN);
+
+    expect(record?.approval).toEqual(approval);
+  });
+
+  it('bilinmeyen token icin null doner (servis 404 SHARE_LINK_NOT_FOUND uretir — kriter 2)', async () => {
+    const findUnique = jest.fn().mockResolvedValue(null);
+
+    await expect(
+      repositoryWith({ shareLink: { findUnique } }).findReportViewByToken('bilinmeyen'),
+    ).resolves.toBeNull();
+  });
+});
