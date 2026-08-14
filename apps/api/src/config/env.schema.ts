@@ -45,7 +45,9 @@ const ALLOWED_APP_URL_PROTOCOLS = new Set(['http:', 'https:']);
  * EMAIL_FROM iki bicimi kabul eder (CLAUDE.md §5.1): duz `adres@alan` veya `Ad <adres@alan>`.
  * Amac tam RFC 5322 dogrulamasi degil, acilista bariz yanlis yapilandirmayi yakalamaktir.
  */
-const EMAIL_ADDRESS_PART = '[^<>@\\s]+@[^<>@\\s]+\\.[^<>@\\s]+';
+// Alan adinda nokta ZORUNLU DEGILDIR: `.env.example` T-001'den beri `noreply@localhost`
+// tasir ve §10 geregi `docker compose up` bu degerle acilmak zorundadir.
+const EMAIL_ADDRESS_PART = '[^<>@\\s]+@[^<>@\\s]+';
 const EMAIL_FROM_PATTERN = new RegExp(`^(?:${EMAIL_ADDRESS_PART}|[^<>]+<${EMAIL_ADDRESS_PART}>)$`);
 
 /**

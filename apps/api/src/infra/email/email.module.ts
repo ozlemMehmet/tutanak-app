@@ -19,8 +19,11 @@ import { ResendEmailAdapter } from './resend-email.adapter';
 const MISSING_API_KEY_PLACEHOLDER = 'resend-anahtari-tanimsiz';
 
 function createEmailAdapter(config: ConfigService<AppEnv, true>): EmailPort {
+  // Semadaki transform '' degerini undefined'a cevirir, ama ConfigService dogrulanmis deger
+  // undefined oldugunda process.env'e duser ve `.env`'deki bos `RESEND_API_KEY=` satirini
+  // '' olarak geri verir; bos string de anahtarsizlik demektir (nullish kontrolu yetmez).
   const apiKey: string | undefined = config.get('RESEND_API_KEY', { infer: true });
-  const client = new Resend(apiKey ?? MISSING_API_KEY_PLACEHOLDER);
+  const client = new Resend(apiKey || MISSING_API_KEY_PLACEHOLDER);
   return new ResendEmailAdapter({ from: config.get('EMAIL_FROM', { infer: true }) }, client);
 }
 
