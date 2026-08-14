@@ -5,6 +5,8 @@
 import { z } from 'zod';
 
 const MIN_JWT_SECRET_LENGTH = 16;
+/** Erisim tokeni omrunun varsayilani (CLAUDE.md §5.1); tek dogruluk kaynagi burasidir. */
+export const DEFAULT_JWT_EXPIRES_IN = '7d';
 const CURRENCY_CODE_LENGTH = 3;
 const DEFAULT_SUBSCRIPTION_PERIOD_DAYS = 30;
 /** Para degeri ondalikli METIN olarak tasinir; float'a cevrilmez (CLAUDE.md §5.1). */
@@ -63,7 +65,7 @@ const envObjectSchema = z.object({
   /** JWT imzalama anahtari (CLAUDE.md §5 sir listesi). */
   JWT_SECRET: z.string().min(MIN_JWT_SECRET_LENGTH),
   /** Erisim tokeni omru (CLAUDE.md §5.1, varsayilan 7d). */
-  JWT_EXPIRES_IN: z.string().min(1).default('7d'),
+  JWT_EXPIRES_IN: z.string().min(1).default(DEFAULT_JWT_EXPIRES_IN),
   /** Abonelik tutari — numeric(12,2) sutunlarina birebir yazilan METIN (CLAUDE.md §5.1). */
   SUBSCRIPTION_PRICE_AMOUNT: z.string().regex(MONEY_AMOUNT_PATTERN),
   /** GET /me varsayilan abonelik yanitinin para birimi (CLAUDE.md §3.11, §5.1). */
