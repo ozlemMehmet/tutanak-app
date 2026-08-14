@@ -23,7 +23,9 @@ function createEmailAdapter(config: ConfigService<AppEnv, true>): EmailPort {
   // undefined oldugunda process.env'e duser ve `.env`'deki bos `RESEND_API_KEY=` satirini
   // '' olarak geri verir; bos string de anahtarsizlik demektir (nullish kontrolu yetmez).
   const apiKey: string | undefined = config.get('RESEND_API_KEY', { infer: true });
-  const client = new Resend(apiKey === undefined || apiKey === '' ? MISSING_API_KEY_PLACEHOLDER : apiKey);
+  const client = new Resend(
+    apiKey === undefined || apiKey === '' ? MISSING_API_KEY_PLACEHOLDER : apiKey,
+  );
   return new ResendEmailAdapter({ from: config.get('EMAIL_FROM', { infer: true }) }, client);
 }
 
