@@ -58,6 +58,8 @@ describe('T-014 /auth/* hiz siniri', () => {
     // T-012 ile zorunlu hale gelen yapilandirma; uygulama bunlar olmadan ACILMAZ (§5).
     process.env.SUBSCRIPTION_PRICE_AMOUNT = '199.00';
     process.env.PUBLIC_APP_URL = 'http://localhost:5173';
+    // T-008 ile zorunlu hale gelen yapilandirma; uygulama bunlar olmadan ACILMAZ (§5).
+    process.env.EMAIL_FROM = 'Tutanak <noreply@ornek.test>';
     // Obje depolama yapilandirmasi T-006 ile zorunlu hale geldi; bu testler depolamayi
     // kullanmaz, degerler yalnizca env semasini gecmek icindir (CLAUDE.md §5).
     process.env.R2_ENDPOINT = 'http://localhost:9000';

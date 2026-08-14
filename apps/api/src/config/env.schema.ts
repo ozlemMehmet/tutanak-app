@@ -42,6 +42,13 @@ const positiveIntFromEnv = (defaultValue: number): z.ZodDefault<z.ZodNumber> =>
 const ALLOWED_APP_URL_PROTOCOLS = new Set(['http:', 'https:']);
 
 /**
+ * EMAIL_FROM iki bicimi kabul eder (CLAUDE.md §5.1): duz `adres@alan` veya `Ad <adres@alan>`.
+ * Amac tam RFC 5322 dogrulamasi degil, acilista bariz yanlis yapilandirmayi yakalamaktir.
+ */
+const EMAIL_ADDRESS_PART = '[^<>@\\s]+@[^<>@\\s]+\\.[^<>@\\s]+';
+const EMAIL_FROM_PATTERN = new RegExp(`^(?:${EMAIL_ADDRESS_PART}|[^<>]+<${EMAIL_ADDRESS_PART}>)$`);
+
+/**
  * Obje depolama adresleri icin ortak kural: `z.string().url()` tek basina
  * `localhost:9000` gibi semasi hatali degerleri de kabul ettigi icin protokol acikca
  * dogrulanir (S3 istemcisi mutlak http(s) adresi ister).
@@ -95,6 +102,22 @@ const envObjectSchema = z.object({
     .refine((value) => ALLOWED_APP_URL_PROTOCOLS.has(new URL(value).protocol), {
       message: 'http veya https ile baslayan mutlak bir adres olmalidir',
     }),
+  /** T-008 paylasim e-postasinin gonderen adresi (CLAUDE.md §5.1) — koda gomulmez. */
+  EMAIL_FROM: z.string().regex(EMAIL_FROM_PATTERN, {
+    message: '"adres@alan" veya "Ad <adres@alan>" biciminde olmalidir',
+  }),
+  /**
+   * Islemsel e-posta saglayicisinin API anahtari (CLAUDE.md §5 sir listesi).
+   * ANAYASA CELISKISI (devlog T-008): §5 "diger tum sirlar her ortamda zorunludur" der;
+   * ama §10 `docker compose up`'in HICBIR dis hesap/anahtar olmadan calismasini sart kosar
+   * ve `.env.example` bu anahtari bos tasir. Anahtar zorunlu yapilsaydi yerel kurulum hic
+   * ACILMAZDI. Secim: anahtar istege bagli; yokken gonderim §4.2.2 geregi 202 +
+   * `status: failed` olarak yanita yansir (istisna degildir), uygulama acilir.
+   */
+  RESEND_API_KEY: z
+    .string()
+    .optional()
+    .transform((value) => (value === '' ? undefined : value)),
   /** iyzico sirlari — yalnizca PAYMENT_PROVIDER=iyzico iken zorunludur (CLAUDE.md §5). */
   IYZICO_API_KEY: z.string().optional(),
   IYZICO_SECRET_KEY: z.string().optional(),

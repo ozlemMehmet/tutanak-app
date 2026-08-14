@@ -114,6 +114,8 @@ describe('T-006 tutanaga fotograf ekleme ve sunucu damgasi', () => {
     // kosan bir spec'ten sizdigi icin gelir ve suite sirasi degisince kosum kirmiziya doner.
     process.env.SUBSCRIPTION_PRICE_AMOUNT = '199.00';
     process.env.PUBLIC_APP_URL = 'http://localhost:5173';
+    // T-008 ile zorunlu hale gelen yapilandirma; uygulama bunlar olmadan ACILMAZ (§5).
+    process.env.EMAIL_FROM = 'Tutanak <noreply@ornek.test>';
     // Obje depolama saglayicisi testte sahtelendigi icin bu degerler yalnizca sema
     // dogrulamasini gecmek icindir; hicbir ag cagrisi yapilmaz (CLAUDE.md §5).
     process.env.R2_ENDPOINT = 'http://localhost:9000';

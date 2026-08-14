@@ -25,3 +25,11 @@ export const PHOTO_MAX_PER_REPORT = 'PHOTO_MAX_PER_REPORT';
 
 /** Erisim tokeni omru SANIYE cinsinden; JWT_EXPIRES_IN'den turer (CLAUDE.md §5.1) — T-016. */
 export const ACCESS_TOKEN_TTL_SECONDS = 'AccessTokenTtlSeconds';
+
+/** Paylasim akisinin yapilandirmasi (CLAUDE.md §5.1) — T-008. */
+export const SHARING_CONFIG = 'SharingConfig';
+
+export interface SharingConfig {
+  /** PUBLIC_APP_URL — paylasim linkinin (`/t/<token>`) ve wa.me metninin tabani. */
+  publicAppUrl: string;
+}
