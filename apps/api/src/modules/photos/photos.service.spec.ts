@@ -264,6 +264,7 @@ describe('PhotosService.addPhoto', () => {
         .fn()
         .mockRejectedValue(new ExternalServiceError('STORAGE_UNAVAILABLE', 'erisilemiyor')),
       createReadUrl: jest.fn(),
+      getObject: jest.fn(),
     };
     const service = serviceWith(
       {
@@ -333,5 +334,45 @@ describe('PhotosService.listPhotos', () => {
     });
 
     await expect(service.listPhotos(REPORT_ID, OWNER_ID)).rejects.toBeInstanceOf(NotFoundError);
+  });
+});
+
+// T-007: PDF uretimi fotografin ICERIGINE ihtiyac duyar; on-imzali URL tasiyan PhotoDto
+// bunu karsilamaz (storage_key API yanitina KONULMAZ, CLAUDE.md §3.5).
+describe('PhotosService.listOwnedPhotoSources', () => {
+  it('PDF icin depolama anahtari ve damgayi (sort_order, captured_at) sirasinda doner', async () => {
+    const second: PhotoRecord = {
+      ...STORED_PHOTO,
+      id: '66666666-6666-4666-8666-666666666666',
+      storageKey: `reports/${REPORT_ID}/def.jpg`,
+      capturedAt: new Date('2026-08-13T10:05:00.000Z'),
+    };
+    const findByReport = jest.fn().mockResolvedValue([STORED_PHOTO, second]);
+
+    const result = await serviceWith({ findByReport }).listOwnedPhotoSources(REPORT_ID);
+
+    expect(findByReport).toHaveBeenCalledWith(REPORT_ID);
+    expect(result).toEqual([
+      { storageKey: STORED_PHOTO.storageKey, capturedAt: STORED_PHOTO.capturedAt },
+      { storageKey: second.storageKey, capturedAt: second.capturedAt },
+    ]);
+  });
+
+  it('fotografsiz tutanakta bos dizi doner (fotografsizlik kurali cagirana aittir)', async () => {
+    const findByReport = jest.fn().mockResolvedValue([]);
+
+    await expect(serviceWith({ findByReport }).listOwnedPhotoSources(REPORT_ID)).resolves.toEqual(
+      [],
+    );
+  });
+
+  it('on-imzali okuma URL"si URETMEZ (PDF depodan dogrudan okur)', async () => {
+    const findByReport = jest.fn().mockResolvedValue([STORED_PHOTO]);
+    const storage = new FakeStorageAdapter();
+    const createReadUrl = jest.spyOn(storage, 'createReadUrl');
+
+    await serviceWith({ findByReport }, storage).listOwnedPhotoSources(REPORT_ID);
+
+    expect(createReadUrl).not.toHaveBeenCalled();
   });
 });

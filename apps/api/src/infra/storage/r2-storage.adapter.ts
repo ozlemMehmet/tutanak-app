@@ -85,6 +85,25 @@ export class R2StorageAdapter implements StoragePort {
     }
   }
 
+  /**
+   * Objeyi sunucudan sunucuya (ic ag) okur — on-imzali URL kullanilmaz; PDF uretimi
+   * fotograf baytlarina dogrudan ihtiyac duyar. Govdesi olmayan yanit da erisim hatasi
+   * sayilir: eksik icerikle yarim PDF uretilmez (CLAUDE.md §4.2.1).
+   */
+  async getObject(key: string): Promise<Buffer> {
+    try {
+      const response = await this.client.send(
+        new GetObjectCommand({ Bucket: this.bucket, Key: key }),
+      );
+      if (response.Body === undefined) {
+        throw new Error('yanit govdesi bos');
+      }
+      return Buffer.from(await response.Body.transformToByteArray());
+    } catch (error: unknown) {
+      this.fail('Obje depolamadan okunamadi', error);
+    }
+  }
+
   /** Saglayici hatasini tek noktada loglar ve sozlesmedeki hataya cevirir. */
   private fail(context: string, error: unknown): never {
     this.logger.error(`${context} (bucket=${this.bucket})`, error);

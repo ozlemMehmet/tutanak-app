@@ -21,6 +21,15 @@ export interface UploadedPhoto {
   buffer: Buffer;
 }
 
+/**
+ * Fotografin PDF uretimi icin gereken kaynak bilgisi (T-007). `storageKey` API yanitina
+ * KONULMAZ (CLAUDE.md §3.5), bu yuzden PhotoDto yerine ayri bir sinir tipi tasinir.
+ */
+export interface PhotoSource {
+  storageKey: string;
+  capturedAt: Date;
+}
+
 const UNSUPPORTED_MEDIA_MESSAGE = 'Yalnizca JPEG, PNG veya WEBP fotograf yukleyebilirsiniz.';
 const APPROVED_REPORT_MESSAGE =
   'Bu tutanak onaylandigi icin icerigi dondurulmustur; yeni fotograf eklenemez.';
@@ -91,6 +100,16 @@ export class PhotosService {
   async listOwnedPhotos(reportId: string): Promise<PhotoDto[]> {
     const photos = await this.photosRepository.findByReport(reportId);
     return Promise.all(photos.map((photo) => this.withReadUrl(photo)));
+  }
+
+  /**
+   * Sahipligi ZATEN dogrulanmis bir tutanagin fotograf kaynaklari (PDF uretimi icin).
+   * Sira (sort_order, captured_at) ikilisine gore sabittir (§3.14). On-imzali URL
+   * URETILMEZ: PDF fotografi depodan sunucuda okur, tarayici uzerinden degil.
+   */
+  async listOwnedPhotoSources(reportId: string): Promise<PhotoSource[]> {
+    const photos = await this.photosRepository.findByReport(reportId);
+    return photos.map((photo) => ({ storageKey: photo.storageKey, capturedAt: photo.capturedAt }));
   }
 
   private async withReadUrl(photo: PhotoRecord): Promise<PhotoDto> {
