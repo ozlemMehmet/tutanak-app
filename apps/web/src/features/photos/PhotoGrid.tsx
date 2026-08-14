@@ -1,10 +1,20 @@
 // Fotograf izgarasi (design.md → `PhotoGrid` + `PhotoThumbnail`): her karenin uzerinde
 // sunucunun urettigi damga bir scrim uzerinde gosterilir (§5 kontrast notu).
 import { formatStamp } from '../../lib/format-timestamp';
-import type { Photo } from './photos.api';
+
+/**
+ * Izgaranin ihtiyac duydugu asgari alanlar: sozlesmedeki `Photo` (tutanak sahibi gorunumu)
+ * ve `PublicPhoto` (T-009 oturumsuz gorunum) bu sekle uyar — ayni izgara iki ekranda da
+ * kullanilir (design.md: PublicReportPage bilesenleri → PhotoGrid readonly).
+ */
+export interface PhotoGridItem {
+  id: string;
+  capturedAt: string;
+  url: string;
+}
 
 interface PhotoGridProps {
-  photos: Photo[];
+  photos: PhotoGridItem[];
 }
 
 export function PhotoGrid({ photos }: PhotoGridProps): React.JSX.Element {
