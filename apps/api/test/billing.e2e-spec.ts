@@ -137,6 +137,8 @@ describe('T-012 abonelik odeme akisi', () => {
     process.env.SUBSCRIPTION_PERIOD_DAYS = PERIOD_DAYS.toString();
     process.env.PAYMENT_PROVIDER = 'fake';
     process.env.PUBLIC_APP_URL = PUBLIC_APP_URL;
+    // T-008 ile zorunlu hale gelen yapilandirma; uygulama bunlar olmadan ACILMAZ (§5).
+    process.env.EMAIL_FROM = 'Tutanak <noreply@ornek.test>';
     // Obje depolama yapilandirmasi T-006 ile zorunlu hale geldi; bu testler depolamayi
     // kullanmaz, degerler yalnizca env semasini gecmek icindir (CLAUDE.md §5).
     process.env.R2_ENDPOINT = 'http://localhost:9000';

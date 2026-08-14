@@ -11,12 +11,13 @@ const STORAGE_ENV = {
   R2_SECRET_ACCESS_KEY: 'minioadmin',
 };
 
-// Zorunlu anahtarlarin en kucuk kumesi (T-012 abonelik + T-006 depolama ile buyudu).
+// Zorunlu anahtarlarin en kucuk kumesi (T-012 abonelik + T-006 depolama + T-008 e-posta ile buyudu).
 const REQUIRED_ENV = {
   DATABASE_URL,
   JWT_SECRET,
   SUBSCRIPTION_PRICE_AMOUNT: '199.00',
   PUBLIC_APP_URL: 'http://localhost:5173',
+  EMAIL_FROM: 'Tutanak <noreply@ornek.test>',
   ...STORAGE_ENV,
 };
 
@@ -186,6 +187,47 @@ describe('validateEnv', () => {
 
   it('bilinmeyen ortam degiskenlerini yok sayar (process.env tumuyle gelir)', () => {
     expect(() => validateEnv({ ...VALID_ENV, PATH: '/usr/bin', HOME: '/root' })).not.toThrow();
+  });
+
+  describe('T-008 e-posta yapilandirmasi', () => {
+    it('EMAIL_FROM eksikse hata firlatir (gonderen adresi koda gomulmez, CLAUDE.md §5.1)', () => {
+      expect(() => validateEnv({ ...REQUIRED_ENV, EMAIL_FROM: undefined })).toThrow(/EMAIL_FROM/);
+    });
+
+    it('EMAIL_FROM duz e-posta bicimini kabul eder', () => {
+      expect(() =>
+        validateEnv({ ...REQUIRED_ENV, EMAIL_FROM: 'noreply@ornek.test' }),
+      ).not.toThrow();
+    });
+
+    it('EMAIL_FROM "Ad <adres@alan>" bicimini kabul eder', () => {
+      expect(() =>
+        validateEnv({ ...REQUIRED_ENV, EMAIL_FROM: 'Tutanak <noreply@ornek.test>' }),
+      ).not.toThrow();
+    });
+
+    it('EMAIL_FROM iki bicime de uymayan degeri reddeder', () => {
+      expect(() => validateEnv({ ...REQUIRED_ENV, EMAIL_FROM: 'gecersiz-adres' })).toThrow(
+        /EMAIL_FROM/,
+      );
+      expect(() => validateEnv({ ...REQUIRED_ENV, EMAIL_FROM: 'Tutanak <adres-yok>' })).toThrow(
+        /EMAIL_FROM/,
+      );
+    });
+
+    it('RESEND_API_KEY yokken dogrulamayi gecer (yerel kosum dis hesapsiz, CLAUDE.md §10)', () => {
+      expect(validateEnv(REQUIRED_ENV).RESEND_API_KEY).toBeUndefined();
+    });
+
+    it('RESEND_API_KEY bos metinse yok sayilir (.env.example bos deger tasir)', () => {
+      expect(validateEnv({ ...REQUIRED_ENV, RESEND_API_KEY: '' }).RESEND_API_KEY).toBeUndefined();
+    });
+
+    it('RESEND_API_KEY doluysa aynen korunur', () => {
+      expect(validateEnv({ ...REQUIRED_ENV, RESEND_API_KEY: 're_anahtar' }).RESEND_API_KEY).toBe(
+        're_anahtar',
+      );
+    });
   });
 
   describe('T-012 abonelik yapilandirmasi', () => {

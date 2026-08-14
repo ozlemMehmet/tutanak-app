@@ -17,6 +17,8 @@ describe('GET /health', () => {
     // T-012 ile zorunlu hale gelen yapilandirma; uygulama bunlar olmadan ACILMAZ (§5).
     process.env.SUBSCRIPTION_PRICE_AMOUNT ??= '199.00';
     process.env.PUBLIC_APP_URL ??= 'http://localhost:5173';
+    // T-008 ile zorunlu hale gelen yapilandirma; uygulama bunlar olmadan ACILMAZ (§5).
+    process.env.EMAIL_FROM ??= 'Tutanak <noreply@ornek.test>';
     // T-006: obje depolama yapilandirmasi env semasinda zorunludur (CLAUDE.md §5).
     process.env.R2_ENDPOINT ??= 'http://localhost:9000';
     process.env.R2_BUCKET ??= 'test-kovasi';
