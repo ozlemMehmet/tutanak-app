@@ -187,3 +187,66 @@ h2 {
   background: var(--color-danger);
   color: var(--color-on-danger);
 }
+
+/* T-008: e-posta gonderim sonucu — failed WARNING tonundadir (design.md: danger degil,
+   linkin kendisi gecerli kalir ve akis durmamalidir). */
+.toast--warning {
+  background: var(--color-warning);
+  color: var(--color-on-warning);
+}
+
+.toast--success {
+  background: var(--color-success);
+  color: var(--color-on-success);
+}
+
+/* --- Paylasim paneli (T-008: link kutusu + kopyala + WhatsApp + e-posta formu) --- */
+.share-panel__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: flex-start;
+}
+
+.share-link-box {
+  display: flex;
+  gap: var(--space-1);
+  width: 100%;
+}
+
+.share-link-box__url {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+}
+
+.share-panel__copied {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.share-panel__whatsapp {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.share-panel__email-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 100%;
+}
+
+.share-panel__email-form input {
+  min-height: 44px; /* dokunma hedefi — design.md §5 */
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font: inherit;
+}

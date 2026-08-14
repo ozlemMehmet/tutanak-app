@@ -1,9 +1,10 @@
-// ReportDetailPage (design.md → Ekran Envanteri). Bu ticket YALNIZCA fotograf bolumunu
-// uygular (T-006 kabul kriteri 7); PDF indirme T-007'de, paylasim paneli T-008'de,
-// baslik/durum rozeti tutanak detayini ceken ticket'ta bu sayfaya eklenir.
+// ReportDetailPage (design.md → Ekran Envanteri). Fotograf bolumu T-006, paylasim paneli
+// T-008 ile eklendi; PDF indirme T-007'de, baslik/durum rozeti tutanak detayini ceken
+// ticket'ta bu sayfaya eklenir.
 import { useParams } from 'react-router-dom';
 import type { ApiClient } from '../api/client';
 import { PhotoSection } from '../features/photos/PhotoSection';
+import { SharePanel } from '../features/sharing/SharePanel';
 
 interface ReportDetailPageProps {
   client: ApiClient;
@@ -31,6 +32,7 @@ export function ReportDetailPage({ client }: ReportDetailPageProps): React.JSX.E
         yuklemeyi sunucu zaten 409 REPORT_ALREADY_APPROVED ile reddeder (CLAUDE.md §3.10).
       */}
       <PhotoSection client={client} reportId={reportId} canAddPhoto />
+      <SharePanel client={client} reportId={reportId} />
     </main>
   );
 }
