@@ -71,6 +71,20 @@ describe('SharePanel', () => {
     expect(await screen.findByText('Kopyalandi')).toBeInTheDocument();
   });
 
+  it.each([
+    ['pano API"si reddederse', { writeText: jest.fn().mockRejectedValue(new Error('izin yok')) }],
+    ['pano API"si yoksa (guvenli olmayan baglam)', undefined],
+  ])('%s kullaniciya uyari gosterir, sessizce yutmaz', async (_ad, clipboard) => {
+    Object.defineProperty(navigator, 'clipboard', { value: clipboard, configurable: true });
+    renderPanel(jest.fn().mockResolvedValue(SHARE_LINK));
+
+    await openPanel();
+    await userEvent.click(await screen.findByRole('button', { name: 'Kopyala' }));
+
+    expect(await screen.findByText(/Kopyalanamadi/)).toBeInTheDocument();
+    expect(screen.queryByText('Kopyalandi')).not.toBeInTheDocument();
+  });
+
   it('link uretimi basarisiz olursa hata banner"i ve Tekrar Dene gosterir (design.md error durumu)', async () => {
     const request = jest
       .fn()

@@ -24,7 +24,9 @@ function errorMessageOf(error: unknown): string {
 export function SharePanel({ client, reportId }: SharePanelProps): React.JSX.Element {
   const [isOpen, setIsOpen] = useState(false);
   const [recipientEmail, setRecipientEmail] = useState('');
-  const [isCopied, setIsCopied] = useState(false);
+  // Pano API'si guvenli olmayan baglamda (LAN uzerinden http) tanimsiz olabilir veya izin
+  // reddedilebilir; sonuc kullaniciya gorunur olmali, sessizce yutulmamali.
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
   const createLink = useCreateShareLink(client, reportId);
   const sendEmail = useSendShareEmail(client, reportId);
 
@@ -35,8 +37,12 @@ export function SharePanel({ client, reportId }: SharePanelProps): React.JSX.Ele
   };
 
   const copyLink = async (url: string): Promise<void> => {
-    await navigator.clipboard.writeText(url);
-    setIsCopied(true);
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopyState('copied');
+    } catch {
+      setCopyState('failed');
+    }
   };
 
   const submitEmail = (event: React.SyntheticEvent<HTMLFormElement>): void => {
@@ -91,7 +97,12 @@ export function SharePanel({ client, reportId }: SharePanelProps): React.JSX.Ele
               Kopyala
             </button>
           </div>
-          {isCopied && <p className="share-panel__copied">Kopyalandi</p>}
+          {copyState === 'copied' && <p className="share-panel__copied">Kopyalandi</p>}
+          {copyState === 'failed' && (
+            <p className="toast toast--warning" role="status">
+              Kopyalanamadi — linki yukaridaki kutudan elle secip kopyalayabilirsiniz.
+            </p>
+          )}
 
           {/* WhatsApp paylasimi istemcinin actigi bir wa.me URL'sidir; sunucudan gonderim
               ve teslim kaydi YOKTUR (api-contract ShareDelivery.channel aciklamasi). */}

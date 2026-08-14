@@ -1,6 +1,7 @@
 // ResendEmailAdapter: saglayici hatasi ISTISNA DEGILDIR (CLAUDE.md §4.2.2) — adapter hicbir
 // kosulda firlatmaz, sonucu {sent|failed} olarak doner. Gercek ag cagrisi yapilmaz (§8.1);
 // Resend istemcisi sahtelenir.
+import { Logger } from '@nestjs/common';
 import { ResendEmailAdapter } from './resend-email.adapter';
 import type { ResendLikeClient } from './resend-email.adapter';
 
@@ -54,6 +55,25 @@ describe('ResendEmailAdapter.sendEmail', () => {
       status: 'failed',
       errorMessage: 'E-posta saglayicisina ulasilamadi.',
     });
+  });
+
+  it.each([
+    [
+      'saglayici hata dondugunde',
+      jest.fn().mockResolvedValue({ data: null, error: { message: 'API key is invalid' } }),
+    ],
+    ['istemci istisna firlattiginda', jest.fn().mockRejectedValue(new Error('ECONNREFUSED'))],
+  ])('%s hatayi nesnesiyle loglar; alici adresi maskelenir (§4.3, §4.4)', async (_ad, send) => {
+    const logError = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+
+    await new ResendEmailAdapter({ from: FROM }, clientWith(send)).sendEmail(EMAIL);
+
+    expect(logError).toHaveBeenCalledTimes(1);
+    const [message, cause] = logError.mock.calls[0] as [string, unknown];
+    expect(message).toContain('k***@ornek.test');
+    expect(message).not.toContain(EMAIL.to);
+    expect(cause).toBeDefined();
+    logError.mockRestore();
   });
 
   it('saglayici mesaj kimligi vermezse null doner (kayit yine yazilabilir)', async () => {
