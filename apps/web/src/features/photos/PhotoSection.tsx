@@ -2,6 +2,7 @@
 // Durumlar (loading / empty / error / success) design.md → ReportDetailPage sartnamesinden gelir.
 import type { ApiClient } from '../../api/client';
 import { isPhotoLimitReached, photoUploadErrorMessage } from './photo-error-message';
+import { isPhotoLimitReachedByCount } from './photo-limits';
 import { PhotoCaptureInput } from './PhotoCaptureInput';
 import { PhotoGrid } from './PhotoGrid';
 import { usePhotos, useUploadPhoto } from './usePhotos';
@@ -25,6 +26,11 @@ export function PhotoSection({
     await upload.mutateAsync(file);
   };
 
+  // Ust sinir iki yoldan da kapanir: listedeki fotograf sayisi sinira ULASTIGINDA proaktif
+  // olarak (T-020 kriter 5) ve sunucudan 409 PHOTO_LIMIT_REACHED geldiginde savunma olarak.
+  const isLimitReached =
+    isPhotoLimitReachedByCount(photosQuery.data?.length ?? 0) || isPhotoLimitReached(upload.error);
+
   return (
     <section className="photo-section">
       <h2>Fotograflar</h2>
@@ -33,8 +39,12 @@ export function PhotoSection({
         <PhotoCaptureInput
           onUpload={uploadFrame}
           isUploading={upload.isPending}
-          disabled={isPhotoLimitReached(upload.error)}
+          disabled={isLimitReached}
         />
+      )}
+
+      {canAddPhoto && isLimitReached && (
+        <p className="photo-section__limit">Bu tutanakta fotograf ust sinirina ulastiniz</p>
       )}
 
       {upload.isError && (

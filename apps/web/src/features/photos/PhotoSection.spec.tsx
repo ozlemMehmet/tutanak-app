@@ -6,6 +6,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ApiError } from '../../api/client';
 import type { ApiClient } from '../../api/client';
+import { PHOTO_MAX_PER_REPORT } from './photo-limits';
 import { PhotoSection } from './PhotoSection';
 import type { Photo } from './photos.api';
 
@@ -120,6 +121,32 @@ describe('PhotoSection', () => {
 
     await waitFor(() => {
       expect(screen.getByLabelText('Fotograf Ekle')).toBeDisabled();
+    });
+  });
+
+  it('ust sinira ulasilmis listede kamera girisi 409 beklenmeden disabled gelir (T-020 kriter 5)', async () => {
+    const full = Array.from({ length: PHOTO_MAX_PER_REPORT }, (_, index) =>
+      photo({ id: `foto-${String(index)}` }),
+    );
+    const request = jest.fn().mockResolvedValue(full);
+    renderSection(request);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Fotograf Ekle')).toBeDisabled();
+    });
+    // Proaktif kapatma: sunucuya tek bir yukleme denemesi bile yapilmaz.
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('Bu tutanakta fotograf ust sinirina ulastiniz')).toBeInTheDocument();
+  });
+
+  it('ust sinirin altindaki listede kamera girisi acik kalir', async () => {
+    const almostFull = Array.from({ length: PHOTO_MAX_PER_REPORT - 1 }, (_, index) =>
+      photo({ id: `foto-${String(index)}` }),
+    );
+    renderSection(jest.fn().mockResolvedValue(almostFull));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Fotograf Ekle')).toBeEnabled();
     });
   });
 
