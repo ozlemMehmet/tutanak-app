@@ -43,7 +43,7 @@ export function AppRoutes({ client }: AppRoutesProps): React.JSX.Element {
           </RequireAuth>
         }
       >
-        <Route path="/reports" element={<ReportListPage />} />
+        <Route path="/reports" element={<ReportListPage client={client} />} />
         <Route path="/reports/new" element={<ReportCreatePage client={client} />} />
         {/* Rota parametresi ReportDetailPage'in mevcut `useParams<{ reportId }>` sozlesmesiyle
             ayni adi tasir; URL bicimi design.md'deki `/reports/:id` ile birebir aynidir. */}
