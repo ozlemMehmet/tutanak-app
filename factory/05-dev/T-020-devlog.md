@@ -140,3 +140,38 @@ sozlesmesi boslugu).
 `npm run typecheck --workspace apps/web` (`tsc --noEmit`) temiz; degisen iki dosyada
 `npx prettier --check` temiz; `npx eslint StatusChip.tsx StatusChip.spec.tsx --max-warnings=0`
 exit 0.
+
+## Iade turu 2 (rapor dosyasi bulunamadi — tam yeniden dogrulama)
+
+Bu turda repoda T-020 icin bir `06-review`/`07-qa` rapor dosyasi YOK (`factory/06-review/` ve
+`factory/07-qa/` klasorleri hic olusturulmamis; `05-dev/` altinda da `T-020-review-feedback.md`
+bulunmuyor). Rapor maddesi tahmin EDILMEDI; bunun yerine 8 kabul kriteri kod + test uzerinden
+bastan dogrulandi ve yalnizca dogrulama sirasinda bulunan tek gercek kusur duzeltildi.
+
+**Bulgu (bu ticket'in kendi diff'inin yan etkisi):** `reports.api.ts` icinde `createReport`'un
+JSDoc blogu, T-020'nin `fetchReport`/`downloadReportPdf` eklemesi araya girdigi icin yerinden
+oynamisti: yorum artik `fetchReport`'un ustunde duruyordu (ust uste iki JSDoc) ve `createReport`
+belgesiz kalmisti. Davranis etkisi yok, belge dogrulugu kusuru.
+
+**Degisiklik:** `apps/web/src/features/reports/reports.api.ts` — `createReport` JSDoc'u kendi
+fonksiyonunun ustune geri tasindi; dosya basligi artik dosyanin fiilen tasidigi yuzeyleri
+(detay + PDF) da sayiyor. Urun davranisi ve testler DEGISMEDI.
+
+**Yeniden dogrulanan kriterler (kod → test):** 1 `ReportDetailPage.spec.tsx` "baslik bolgesi
+(kriter 1)"; 2-3 "PDF indirme (kriter 2 ve 3)" (6 test); 4 ve 7 "fotograf akisi (kriter 4 ve 7)";
+5 `PhotoSection.spec.tsx` ust sinir testi; 6 "onaylanmis tutanak (kriter 6)"; 8 "paylasim sirasi
+(kriter 8)". `app.css`'te eklenen blokta ham hex/keyfi px yok — renk/bosluk/yaricap degerlerinin
+tamami `tokens.css` degiskenlerinden geliyor (dogrulandi: `--space-0/1/2/3`, `--radius-pill`,
+`--color-surface/-muted`, `--color-text-muted`, `--color-primary`, `--color-success`,
+`--color-on-success` hepsi tanimli).
+
+**Dogrulama:** `npm test` (kok) → 5/25 (tools) + 55/360 (@tutanak/api) + 44/313 (@tutanak/web),
+uc paket de yesil; `npm run typecheck --workspace @tutanak/web` temiz; degisen dosyada
+`npx prettier --check` ve `npx eslint --max-warnings=0` exit 0.
+
+**Duzeltme (onceki turun ticket disi notu yanlisti):** `resend` bagimliligi `package-lock.json`'da
+MEVCUT (`node_modules/resend` girdisi lockfile'da var). Kok `npm run typecheck`/`npm run lint`'in
+`apps/api/src/infra/email/email.module.ts` uzerinde verdigi 4 hata tamamen YEREL kurulum
+eksikliginden (paylasilan `node_modules` icinde `resend` kurulu degil) kaynaklaniyor; `npm ci`
+calistiran CI'da bu hata olusmaz. T-020 bu dosyalarin hicbirine dokunmadi (`git diff
+origin/main...HEAD -- apps/api package.json package-lock.json` bos).

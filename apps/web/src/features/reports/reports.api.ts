@@ -1,4 +1,5 @@
-// Tutanak akisinin sozlesme yuzeyi: hazir sablonlar (T-004) ve taslak olusturma (T-005).
+// Tutanak akisinin sozlesme yuzeyi: hazir sablonlar (T-004), taslak olusturma (T-005),
+// tutanak detayi ve PDF ciktisi (T-020).
 // Ag cagrisi YALNIZCA `api/client.ts` uzerinden yapilir (CLAUDE.md §3.9).
 import type { ApiClient, FileResponse } from '../../api/client';
 import type { components } from '../../api/schema';
@@ -16,10 +17,6 @@ export function fetchTemplates(client: ApiClient): Promise<Template[]> {
 }
 
 /**
- * Taslak olusturur. Govdeye yalnizca sozlesmedeki uc alan konur: durum ve zaman damgalari
- * sunucuda uretilir (CLAUDE.md §3.7) ve govde katiligi geregi (§3.7) fazladan alan 400 verir.
- */
-/**
  * Tutanak detayi (baslik, sablon adi, not, durum ve varsa onay). `approval` alani onay
  * yokken yanitta HIC BULUNMAZ (CLAUDE.md §3.5): istemci onayi `status` uzerinden anlar.
  */
@@ -32,6 +29,10 @@ export function downloadReportPdf(client: ApiClient, reportId: string): Promise<
   return client.requestFile(`/reports/${reportId}/pdf`);
 }
 
+/**
+ * Taslak olusturur. Govdeye yalnizca sozlesmedeki uc alan konur: durum ve zaman damgalari
+ * sunucuda uretilir (CLAUDE.md §3.7) ve govde katiligi geregi (§3.7) fazladan alan 400 verir.
+ */
 export function createReport(client: ApiClient, input: CreateReportRequest): Promise<Report> {
   return client.request<Report>('/reports', {
     method: 'POST',
