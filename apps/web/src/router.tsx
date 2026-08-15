@@ -30,8 +30,8 @@ export function AppRoutes({ client }: AppRoutesProps): React.JSX.Element {
           tutanak listesidir; oturum yoksa guard bunu `/login`'e dusurur. */}
       <Route path="/" element={<Navigate to="/reports" replace />} />
 
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/login" element={<LoginPage client={client} />} />
+      <Route path="/register" element={<RegisterPage client={client} />} />
       {/* Paylasim linkinin adresi (`<PUBLIC_APP_URL>/t/<token>`, T-008): kiraci bu rotayi
           hesap acmadan/oturum acmadan acar — AppShell'e bagli DEGILDIR (T-009). */}
       <Route path="/t/:token" element={<PublicReportPage client={client} />} />

@@ -137,6 +137,35 @@ describe('AppRoutes', () => {
       expect(await screen.findByRole('heading', { name: 'Tutanaklarim' })).toBeInTheDocument();
       expect(screen.getByTestId('konum')).toHaveTextContent('/reports');
     });
+
+    // T-018: kimlik ekranlari da API istemcisine baglanir. Bu test rota seviyesindeki
+    // baglantiyi (prop gecisi) dogrular; ekranin kendi davranisi LoginPage.spec.tsx'tedir.
+    it('/login rotasindaki form gonderildiginde API istemcisini kullanir', async () => {
+      const request = jest.fn((path: string) => {
+        if (path === '/auth/login') {
+          return Promise.resolve({
+            accessToken: 'token-abc',
+            expiresIn: 604800,
+            user: ME,
+          });
+        }
+        if (path === '/me') {
+          return Promise.resolve(ME);
+        }
+        return Promise.resolve([]);
+      });
+      renderAt('/login', { client: { request } as unknown as ApiClient });
+
+      await userEvent.type(screen.getByLabelText('E-posta'), 'selin@ornek.com');
+      await userEvent.type(screen.getByLabelText('Sifre'), 'cok-gizli-8');
+      await userEvent.click(screen.getByRole('button', { name: 'Giris Yap' }));
+
+      expect(await screen.findByRole('heading', { name: 'Tutanaklarim' })).toBeInTheDocument();
+      expect(request).toHaveBeenCalledWith('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email: 'selin@ornek.com', password: 'cok-gizli-8' }),
+      });
+    });
   });
 
   describe('oturum korumasi', () => {
