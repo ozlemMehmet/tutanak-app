@@ -177,6 +177,14 @@ h2 {
   color: var(--color-danger);
 }
 
+/* T-018: kayittan gelindiginde gosterilen bilgi banner'i (design.md §3 LoginPage: `Banner`
+   info tonu). Token setinde `info` rengi YOKTUR; notr durumlarin zemini `surface-muted`,
+   uzerindeki metin `text`'tir (§4.1 + §5 beyan edilen cift, ~16.1:1). */
+.banner--info {
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+}
+
 .toast {
   margin: var(--space-2) 0;
   padding: var(--space-2) var(--space-3);
@@ -311,10 +319,21 @@ h2 {
   outline-offset: 2px;
 }
 
-/* Alan bazli hata metni: `danger` uzerinde `surface` — design-tokens.json ciftleri. */
+/* Alan bazli hata metni: `danger` uzerinde `surface` — design-tokens.json ciftleri.
+   Hata yalnizca renkle ifade edilmez: ikon + metin yan yana durur (design.md §5). */
 .field-error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-0);
   margin: 0;
   color: var(--color-danger);
+}
+
+.field-error__icon {
+  flex: none;
+  /* Ikon metinle ayni olcek adimini kullanir (sabit px yerine tipografiye bagli). */
+  width: 1em;
+  height: 1em;
 }
 
 /* Onaylandi durumu: `success` zemin uzerinde `on-success` metin (token cifti). */
@@ -431,4 +450,97 @@ h2 {
     gap: var(--space-3);
     padding: 0 var(--space-3);
   }
+}
+
+/* --- Kimlik ekranlari: LoginPage + RegisterPage (design.md §3, T-018) ---
+   Tek kolon, tam genislik alanlar; mobil oncelikli. Renk/bosluk/yaricap degerleri
+   yalnizca tokens.css degiskenlerinden gelir. */
+.auth-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  /* Genis ekranda form serbestce yayilmaz; okuma genisligi tokens'taki `sm`
+     breakpoint'i (480px) ile sinirlanir. */
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.auth-page__brand {
+  margin: 0;
+  color: var(--color-primary);
+  font-family: var(--font-heading);
+  font-weight: 600;
+}
+
+.auth-page__alternative {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.auth-form__submit {
+  /* Birincil buton tam genislik — design.md §3 LoginPage bilesenleri. */
+  width: 100%;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0);
+}
+
+.form-field__label {
+  font-weight: 600;
+}
+
+.form-field__input {
+  /* Dokunma hedefi min 44x44px — design.md §5 (token karsiligi yok, sartnameden birebir). */
+  min-height: 44px;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  /* Input yaricapi `sm`, zemini `surface-muted` — design.md §4.1 ve §4.4. */
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.form-field__input:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.form-field__input[aria-invalid='true'] {
+  /* Hata durumunda `danger` kenarlik (design.md §4.5 `Input` error) — mesaj her zaman
+     ikonla birlikte ayrica yazilir, hata yalnizca renkle ifade edilmez. */
+  border-color: var(--color-danger);
+}
+
+.form-field__hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  /* design.md §4.2 "Kucuk/Caption ~13px" (taban 16px / oran 1.25 = 12.8px) adimi;
+     tipografi olceginde bu adimin token karsiligi yok, sartnameden birebir alindi. */
+  font-size: 0.8125rem;
+}
+
+.password-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.password-field__input {
+  flex: 1;
+  /* Minimum genislik sifirlanir: dar ekranda goster/gizle butonu tasmaz. */
+  min-width: 0;
+}
+
+.password-field__toggle {
+  flex: none;
 }
