@@ -730,10 +730,11 @@ h2 {
 }
 
 /* Aksiyon bari: mobilde basparmak mesafesinde, alt guvenli alanla birlikte sabit kalir
-   (design.md ReportDetailPage mobil notu). */
+   (design.md ReportDetailPage mobil notu). Sabitleme YALNIZCA mobildedir: genis ekranda
+   `position: sticky; bottom: 0` bar'i, dogal konumuna daha ulasilmadigi icin viewport'un
+   altina pinliyor ve sayfa ilk acildiginda (kullanici scroll etmeden) fotograf izgarasinin
+   ilk satirindaki `capturedAt` damga rozetlerinin ustune biniyordu. */
 .report-actions {
-  position: sticky;
-  bottom: 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
@@ -741,6 +742,13 @@ h2 {
   padding: var(--space-2) 0;
   padding-bottom: calc(var(--space-2) + env(safe-area-inset-bottom));
   background: var(--color-surface);
+}
+
+@media (max-width: 767px) {
+  .report-actions {
+    position: sticky;
+    bottom: 0;
+  }
 }
 
 .report-actions__hint {
