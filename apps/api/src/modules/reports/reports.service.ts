@@ -75,10 +75,13 @@ export class ReportsService {
 
   /**
    * Tutanagin PDF ciktisini uretir (T-007). Sira: sahiplik (§3.8) -> fotograf kaynaklari
-   * -> "fotografsiz tutanak PDF olamaz" kurali -> uretim. Onay bilgisinin belgeye
-   * islenmesi T-010 kapsamindadir ve burada YOKTUR.
+   * -> "fotografsiz tutanak PDF olamaz" kurali -> uretim.
    * Fotograflar sahiplik dogrulandiktan sonra ikinci bir sahiplik sorgusu YAPILMADAN
    * okunur (istek basina iki sorgu).
+   *
+   * T-010: tutanak onaylandiysa onay damgasi + onaylayanin e-posta kimligi belgeye islenir.
+   * Onay bilgisi tutanakla AYNI sorgudan gelir (ek gidis-donus yok) ve PDF her istekte
+   * yeniden uretildigi icin onaydan SONRAKI her indirme onay blogunu tasir.
    */
   async generatePdf(reportId: string, userId: string): Promise<Buffer> {
     const report = await this.assertOwnership(reportId, userId);
@@ -92,6 +95,15 @@ export class ReportsService {
       templateName: report.templateName,
       note: report.note,
       photos,
+      // Onay yoksa alan hic gonderilmez: belgede onay blogu da olusmaz.
+      ...(report.approval === null
+        ? {}
+        : {
+            approval: {
+              approverEmail: report.approval.approverEmail,
+              approvedAt: report.approval.approvedAt,
+            },
+          }),
     });
   }
 

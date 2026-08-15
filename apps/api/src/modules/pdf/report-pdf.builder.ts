@@ -25,8 +25,18 @@ const BODY_FONT = 'Helvetica';
 const TEMPLATE_LABEL = 'Sablon: ';
 const NOTE_LABEL = 'Not: ';
 const PHOTO_STAMP_LABEL = 'Fotograf tarihi: ';
+/** T-010: onay blogunun etiketleri (delil degerinin tasiyicisi bu iki satirdir). */
+const APPROVAL_HEADING = 'Taraf onayi';
+const APPROVER_LABEL = 'Onaylayan: ';
+const APPROVED_AT_LABEL = 'Onay tarihi: ';
 /** Bos not, bolumun kaybolmasi yerine yer tutucu ile yazilir (belge alanlari sabittir). */
 const EMPTY_NOTE_PLACEHOLDER = '-';
+
+export interface ReportPdfApprovalSection {
+  approverEmail: string;
+  /** Veritabaninin urettigi onay damgasi (CLAUDE.md §3.7); bicimleme burada yapilir. */
+  approvedAt: Date;
+}
 
 export interface ReportPdfPhotoSection {
   /** PDF'e gomulebilir bicime indirgenmis goruntu (bkz. pdf-photo.processor). */
@@ -72,6 +82,19 @@ export class ReportPdfBuilder {
     });
     this.document.moveDown(SECTION_GAP_LINES);
     return this.addBodyLine(`${PHOTO_STAMP_LABEL}${formatReportStamp(section.capturedAt)}`);
+  }
+
+  /**
+   * Onay blogu (T-010): belgenin SON bolumudur (Builder sirasi: baslik -> sablon -> not ->
+   * fotograflar -> onay). Kendi sayfasinda yer alir; boylece son fotografin damgasiyla ayni
+   * satira dusmez ve onay bilgisi belgede tek bir yerde, aranabilir bicimde durur.
+   */
+  addApproval(section: ReportPdfApprovalSection): this {
+    this.document.addPage();
+    this.document.font(TITLE_FONT).fontSize(BODY_FONT_SIZE_PT).text(APPROVAL_HEADING);
+    this.document.moveDown(SECTION_GAP_LINES);
+    this.addBodyLine(`${APPROVER_LABEL}${section.approverEmail}`);
+    return this.addBodyLine(`${APPROVED_AT_LABEL}${formatReportStamp(section.approvedAt)}`);
   }
 
   /** Belgeyi sonlandirir ve tam baytlarini doner (yarim belge stream EDILMEZ — §4.2.1). */

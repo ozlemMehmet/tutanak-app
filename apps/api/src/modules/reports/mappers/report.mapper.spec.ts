@@ -13,6 +13,18 @@ const STORED_REPORT: ReportRecord = {
   photoCount: 0,
   createdAt: new Date('2026-08-13T10:00:00.000Z'),
   updatedAt: new Date('2026-08-13T10:05:00.000Z'),
+  approval: null,
+};
+
+/** T-010: onaylanmis tutanagin depo kaydindaki onay bilgisi. */
+const APPROVED_REPORT: ReportRecord = {
+  ...STORED_REPORT,
+  status: 'approved',
+  approval: {
+    id: '66666666-6666-4666-8666-666666666666',
+    approverEmail: 'kiraci@ornek.test',
+    approvedAt: new Date('2026-08-15T09:30:00.000Z'),
+  },
 };
 
 describe('toReportDto', () => {
@@ -31,6 +43,10 @@ describe('toReportDto', () => {
       updatedAt: '2026-08-13T10:05:00.000Z',
     });
     expect(Object.keys(dto)).not.toContain('ownerId');
+  });
+
+  it('liste/ozet yanitinda onay bilgisi TASINMAZ (sozlesme: Report.approval yoktur)', () => {
+    expect('approval' in toReportDto(APPROVED_REPORT)).toBe(false);
   });
 
   it('zaman damgalarini ISO 8601 metnine cevirir', () => {
@@ -57,6 +73,23 @@ describe('toReportDetailDto', () => {
     const detail = toReportDetailDto(STORED_REPORT, [PHOTO]);
 
     expect(detail).toEqual({ ...toReportDto(STORED_REPORT), photos: [PHOTO] });
+  });
+
+  it('onaylanmis tutanakta onay bilgisini (Approval) tasir (T-010 kriter 6)', () => {
+    const detail = toReportDetailDto(APPROVED_REPORT, []);
+
+    expect(detail.status).toBe('approved');
+    expect(detail.approval).toEqual({
+      id: '66666666-6666-4666-8666-666666666666',
+      approverEmail: 'kiraci@ornek.test',
+      approvedAt: '2026-08-15T09:30:00.000Z',
+    });
+  });
+
+  it('onay yokken `approval` alani yanit govdesine HIC konulmaz (CLAUDE.md §3.5)', () => {
+    const detail = toReportDetailDto(STORED_REPORT, []);
+
+    expect('approval' in detail).toBe(false);
   });
 
   it('fotograf yokken bos dizi tasir (alan yanittan cikarilmaz)', () => {

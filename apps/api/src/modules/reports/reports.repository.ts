@@ -4,6 +4,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../infra/prisma/prisma.service';
+import type { ApprovalSource } from '../approvals/mappers/approval.mapper';
 import type { ReportStatusDto } from './dto/report.dto';
 
 /** Var olmayan sablona referans — Prisma yabanci anahtar ihlali. */
@@ -23,6 +24,8 @@ export interface ReportRecord {
   photoCount: number;
   createdAt: Date;
   updatedAt: Date;
+  /** Karsi tarafin onayi (T-010); onaylanmamis tutanakta `null`. */
+  approval: ApprovalSource | null;
 }
 
 export interface CreateReportInput {
@@ -46,10 +49,13 @@ export interface ReportPage {
   total: number;
 }
 
-/** Sablon adi ve fotograf sayisi tek sorguda gelir (ek gidis-donus yok). */
+/** Sablon adi, fotograf sayisi ve onay bilgisi tek sorguda gelir (ek gidis-donus yok). */
 const REPORT_INCLUDE = {
   template: { select: { name: true } },
   _count: { select: { photos: true } },
+  // T-010: onay yalnizca 0..1 satirdir (`approvals_report_id_key`); JOIN maliyeti sabittir
+  // ve liste sorgusunda da satir sayisini artirmaz.
+  approval: { select: { id: true, approverEmail: true, approvedAt: true } },
 } as const;
 
 /**
@@ -82,6 +88,7 @@ interface PrismaReportLike {
   updatedAt: Date;
   template: { name: string };
   _count: { photos: number };
+  approval: ApprovalSource | null;
 }
 
 function toReportRecord(report: PrismaReportLike): ReportRecord {
@@ -96,6 +103,7 @@ function toReportRecord(report: PrismaReportLike): ReportRecord {
     photoCount: report._count.photos,
     createdAt: report.createdAt,
     updatedAt: report.updatedAt,
+    approval: report.approval,
   };
 }
 

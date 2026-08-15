@@ -2,9 +2,10 @@
 // YALNIZCA burada kurulur. Kiraci kimlik dogrulamasi yapmadigi icin bu sinir ozellikle
 // kritiktir: `ownerId`, `reportId`, `storageKey` ve paylasim token'i govdeye GIRMEZ.
 
+import { toApprovalDto } from '../../approvals/mappers/approval.mapper';
 import type { PhotoDto } from '../../photos/dto/photo.dto';
-import type { ApprovalDto, PublicPhotoDto, PublicReportViewDto } from '../dto/public-report.dto';
-import type { ApprovalRecord, PublicReportRecord } from '../sharing.repository';
+import type { PublicPhotoDto, PublicReportViewDto } from '../dto/public-report.dto';
+import type { PublicReportRecord } from '../sharing.repository';
 
 /**
  * Sozlesmedeki PublicReportView.disclaimer metni (api-contract.yaml ornegi ile birebir).
@@ -15,14 +16,6 @@ export const PUBLIC_REPORT_DISCLAIMER =
 
 function toPublicPhotoDto(photo: PhotoDto): PublicPhotoDto {
   return { id: photo.id, capturedAt: photo.capturedAt, url: photo.url };
-}
-
-function toApprovalDto(approval: ApprovalRecord): ApprovalDto {
-  return {
-    id: approval.id,
-    approverEmail: approval.approverEmail,
-    approvedAt: approval.approvedAt.toISOString(),
-  };
 }
 
 /**

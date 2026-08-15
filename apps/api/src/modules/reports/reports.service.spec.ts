@@ -20,7 +20,17 @@ const STORED_REPORT: ReportRecord = {
   photoCount: 0,
   createdAt: new Date('2026-08-13T10:00:00.000Z'),
   updatedAt: new Date('2026-08-13T10:00:00.000Z'),
+  approval: null,
 };
+
+/** T-010: karsi taraf onayladiktan sonraki tutanak kaydi. */
+const APPROVAL = {
+  id: '66666666-6666-4666-8666-666666666666',
+  approverEmail: 'kiraci@ornek.test',
+  approvedAt: new Date('2026-08-15T09:30:00.000Z'),
+};
+
+const APPROVED_REPORT: ReportRecord = { ...STORED_REPORT, status: 'approved', approval: APPROVAL };
 
 const PDF_BYTES = Buffer.from('%PDF-1.3 sahte');
 
@@ -96,6 +106,19 @@ describe('ReportsService.getReport', () => {
     expect(findById).toHaveBeenCalledWith(REPORT_ID);
     expect(result.id).toBe(REPORT_ID);
     expect(result.photos).toEqual([]);
+  });
+
+  it('onaylanmis tutanakta durumu ve onay bilgisini sahibine doner (T-010 kriter 6)', async () => {
+    const findById = jest.fn().mockResolvedValue(APPROVED_REPORT);
+
+    const result = await serviceWith({ findById }).getReport(REPORT_ID, OWNER_ID);
+
+    expect(result.status).toBe('approved');
+    expect(result.approval).toEqual({
+      id: APPROVAL.id,
+      approverEmail: APPROVAL.approverEmail,
+      approvedAt: APPROVAL.approvedAt.toISOString(),
+    });
   });
 
   it('detay yanitinin fotograf listesini fotograf servisinden doldurur (T-006)', async () => {
@@ -178,6 +201,23 @@ describe('ReportsService.generatePdf', () => {
       templateName: STORED_REPORT.templateName,
       note: STORED_REPORT.note,
       photos: [PHOTO_SOURCE],
+    });
+  });
+
+  it('onaylanmis tutanakta onay bilgisini PDF uretimine gecirir (T-010 kriter 5)', async () => {
+    const findById = jest.fn().mockResolvedValue(APPROVED_REPORT);
+    const renderReport = jest.fn().mockResolvedValue(PDF_BYTES);
+
+    await serviceWith({ findById }, photosServiceWith([PHOTO_SOURCE]), {
+      renderReport,
+    }).generatePdf(REPORT_ID, OWNER_ID);
+
+    expect(renderReport).toHaveBeenCalledWith({
+      title: APPROVED_REPORT.title,
+      templateName: APPROVED_REPORT.templateName,
+      note: APPROVED_REPORT.note,
+      photos: [PHOTO_SOURCE],
+      approval: { approverEmail: APPROVAL.approverEmail, approvedAt: APPROVAL.approvedAt },
     });
   });
 
