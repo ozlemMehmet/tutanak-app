@@ -29,9 +29,41 @@
 - `currentPeriodEnd` "okunur tarih bicimi" icin mevcut `lib/format-timestamp` (tr-TR kisa tarih-saat) yeniden kullanildi; ekrana ozel yeni bicimleyici yazilmadi.
 - Donus parametresi (`?checkout=return`) URL'de birakiliyor; temizlenmesi (replace ile) sartnamede istenmedigi icin yapilmadi — parametre yalnizca mount'ta bir kez tetikliyor.
 
+## Iade turu 1 (code-reviewer CHANGES)
+
+**BLOKLEYICI 1 — `GET /me` basarisiz oldugunda ekran sessizce bos kaliyor. GIDERILDI.**
+
+- **Kabul:** Onceki turda bunu "sartname varken durum icat etme" kuralina dayanarak bilincli
+  olarak bos biraktim (asagidaki tasarim sozlesmesi boslugu notu). Bu yanlis bir okumaydi:
+  problem sinifinin kod tabaninda ZATEN bir cozumu var (`PhotoSection.tsx` sorgu hatasi ->
+  `banner banner--danger` + "Tekrar Dene"), dolayisiyla bu bir durum icadi degil, MEVCUT
+  desenin uygulanmasidir (CLAUDE.md §7 desen tutarliligi + §4.5 "kullaniciya `error.message`
+  gosterilir"). Ekranin tek isi durum gostermek oldugu icin sessiz olum kabul edilemez.
+- **Kod:** `pages/SubscriptionPage.tsx` — `currentUser.isError` dali eklendi:
+  `<div className="banner banner--danger" role="alert">` + "Abonelik durumu yuklenemedi" +
+  `button button--ghost` "Tekrar Dene" -> `void currentUser.refetch()`. PhotoSection ile
+  birebir ayni yapi. **Yeni CSS yazilmadi**, yeni ham renk/px yok: `banner--danger` (app.css:175)
+  ve `button--ghost` (app.css:47) mevcut token tabanli siniflar.
+- **Test:** `SubscriptionPage.spec.tsx`'e `meResult` secenegi + 2 test eklendi:
+  (1) `/me` 500 reddedildiginde hata metni + "Tekrar Dene" gorunur ve iskelet KAYBOLUR;
+  (2) "Tekrar Dene" tiklaninca `/me` yeniden cagrilir.
+
+**Sistematik hata ayiklama kaydi (kirmizi -> yesil yolunda cikan tuzak).** Testler once
+beklendigi gibi kirmizi dondu (sayfa yalnizca `<h1>` render ediyordu — bulgu birebir dogrulandi).
+Kodu ekledikten sonra testler HALA kirmizi kaldi, ama farkli bir nedenle: ekran "yukleniyor"
+iskeletinde takiliydi. **Hipotez:** `useCurrentUser` sorgu seviyesinde kendi `retry`
+kuralini (`shouldRetryCurrentUser`) veriyor ve bu, test QueryClient'indaki `retry: false`
+VARSAYILANINI eziyor; 500'de 2 kez ustel beklemeli (1s/2s) yeniden deneme yapildigi icin
+sorgu, `findBy`'in 1sn'lik penceresinde hala `isPending`. **Dogrulama:** testte yalnizca
+`retryDelay: 0` verildi (hook'un `retry` davranisina DOKUNULMADI, uretim davranisi
+degismedi) — testler yesile dondu. Bu, review notundaki "`retry: false` ile ek gecikme
+olmaz" varsayiminin duzeltilmesidir. Ikinci testte cagri sayisi bu yuzden sabit "2" degil,
+"tiklamadan onceki sayidan BUYUK" olarak olculuyor (3 deneme + refetch); beklenti
+zayiflatilmadi, dogru davranis olculdu.
+
 ## Anayasa (CLAUDE.md) Bosluklari
 - **Tasarim sozlesmesi boslugu — "info" tonu yok.** design.md §4.5 `Banner` varyantlari arasinda `info` sayiliyor ama `design-tokens.json`'da `info` rengi YOK. Renk uydurulmadi: §4.1'in baglayici kurali ("akisi durdurmayan durum = `warning`") uygulanip en yakin token (`warning`) kullanildi (409 bilgi banner'i ve `pending` bilgi metni).
-- **Tasarim sozlesmesi boslugu — `GET /me` hata durumu tanimsiz.** SubscriptionPage sartnamesinin `error` durumu yalnizca checkout 502/409'u tanimliyor; `/me` basarisiz olursa gosterilecek ekran tarif edilmemis. "Sartname varken durum icat etme" kurali geregi yeni bir hata ekrani YAZILMADI: 401 zaten global olarak `/login`'e goturuyor, diger hatalarda sayfa yalnizca basligi gosteriyor. Sartname adayi: "SubscriptionPage: `/me` hata durumu -> tekrar dene butonlu banner".
+- **Tasarim sozlesmesi boslugu — `GET /me` hata durumu tanimsiz (GUNCELLENDI, iade turu 1).** SubscriptionPage sartnamesinin `error` durumu yalnizca checkout 502/409'u tanimliyor; `/me` basarisiz olursa gosterilecek ekran tarif edilmemis. Ilk turda bunu "durum icat etme" sayip bos biraktim; review hakli olarak reddetti. Cozum: yeni bir gorsel dil ICAT EDILMEDI, kod tabaninda ayni problem sinifi icin zaten standart olan desen (`PhotoSection` sorgu hatasi banner'i + "Tekrar Dene") uygulandi. Sartname adayi (design.md'ye eklenmesi icin, architect kararidir): "SubscriptionPage *error*: `/me` basarisiz -> `banner--danger` + 'Tekrar Dene'". Bu kural genellenebilir: **veri ceken her ekranin sorgu-hata dali zorunludur**, sartname ayrica yazmasa bile.
 
 ## Bilinen Sinirlamalar
 - `visibilitychange` tetikleyicisi durum `active` iken de calisiyor: kullanici sekmeye her donduğunde bir `GET /me` yapilir. Sartname durum ayrimi yapmadigi icin kosul eklenmedi; maliyet tek ve kucuk bir istek, TanStack Query es zamanli cagrilari birlestiriyor.
@@ -44,6 +76,15 @@
 
 ## Test Kosum Ciktisi (ozet)
 ```
+iade turu 1 sonrasi (guncel):
+  apps/web jest: Test Suites: 39 passed / 39   Tests: 247 passed / 247  (+2 test)
+  kok (tools) jest: 5 suites / 25 tests passed
+  npx tsc --noEmit -p apps/web/tsconfig.json            -> TEMIZ
+  npx eslint apps/web/src --max-warnings=0              -> TEMIZ (0 uyari)
+  npx prettier --check "apps/web/src/**/*.{ts,tsx,css}" -> TEMIZ
+  SubscriptionPage.tsx satir kapsami: %95.45 (kapsanmayan tek satir: zarfsiz hata yardimcisi dali)
+
+ilk tur (referans):
 apps/web (jest, coverage acik):
   Test Suites: 31 passed, 31 total
   Tests:       181 passed, 181 total   (T-022 oncesi: 158 -> +23 test)
