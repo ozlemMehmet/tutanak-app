@@ -72,7 +72,10 @@ function renderPage(request: jest.Mock): void {
       <MemoryRouter initialEntries={['/reports']}>
         <LocationProbe />
         <Routes>
-          <Route path="/reports" element={<ReportListPage client={{ request }} />} />
+          <Route
+            path="/reports"
+            element={<ReportListPage client={{ request, requestFile: jest.fn() }} />}
+          />
           <Route path="/reports/new" element={<h1>Yeni Tutanak Ekrani</h1>} />
           <Route path="/reports/:reportId" element={<h1>Tutanak Detayi</h1>} />
         </Routes>
