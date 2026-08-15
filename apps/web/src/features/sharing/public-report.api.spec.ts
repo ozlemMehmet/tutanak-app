@@ -6,7 +6,7 @@ describe('fetchPublicReport', () => {
   it('sozlesmedeki genel goruntuleme yolunu cagirir', async () => {
     const request = jest.fn().mockResolvedValue({ title: 'Tutanak' });
 
-    await fetchPublicReport({ request }, 'abc-token');
+    await fetchPublicReport({ request, requestFile: jest.fn() }, 'abc-token');
 
     expect(request).toHaveBeenCalledWith('/public/reports/abc-token');
   });
@@ -14,7 +14,7 @@ describe('fetchPublicReport', () => {
   it('token icindeki ozel karakterleri URL icin kodlar', async () => {
     const request = jest.fn().mockResolvedValue({ title: 'Tutanak' });
 
-    await fetchPublicReport({ request }, 'a/b?c#d');
+    await fetchPublicReport({ request, requestFile: jest.fn() }, 'a/b?c#d');
 
     expect(request).toHaveBeenCalledWith('/public/reports/a%2Fb%3Fc%23d');
   });
@@ -22,7 +22,7 @@ describe('fetchPublicReport', () => {
   it('yazma yontemi (method) GONDERMEZ — varsayilan GET kalir (kriter 3)', async () => {
     const request = jest.fn().mockResolvedValue({ title: 'Tutanak' });
 
-    await fetchPublicReport({ request }, 'abc-token');
+    await fetchPublicReport({ request, requestFile: jest.fn() }, 'abc-token');
 
     expect(request.mock.calls[0]).toHaveLength(1);
   });

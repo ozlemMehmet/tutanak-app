@@ -27,8 +27,21 @@ export class ApiError extends Error {
   }
 }
 
+/** Ikili (binary) yanit: govde + sunucunun onerdigi dosya adi (`Content-Disposition`). */
+export interface FileResponse {
+  blob: Blob;
+  /** Baslik yoksa `null`; dosya adini cagiran taraf belirler. */
+  fileName: string | null;
+}
+
 export interface ApiClient {
   request: <T>(path: string, init?: RequestInit) => Promise<T>;
+  /**
+   * JSON degil ikili govde okuyan istek (T-020: `GET /reports/{id}/pdf` → `application/pdf`).
+   * Oturum basligi, 401 kancasi ve hata zarfi cozumlemesi `request` ile AYNI yoldan gecer:
+   * bilesenler ciplak `fetch` kullanmadan dosya indirebilsin diye burada durur (CLAUDE.md §3.9).
+   */
+  requestFile: (path: string, init?: RequestInit) => Promise<FileResponse>;
 }
 
 export interface ApiClientOptions {
@@ -76,33 +89,61 @@ async function toApiError(response: Response): Promise<ApiError> {
   return new ApiError('INTERNAL_ERROR', GENERIC_ERROR_MESSAGE, response.status);
 }
 
+/**
+ * `attachment; filename="tutanak-r-1.pdf"` → `tutanak-r-1.pdf`. Baslik yoksa/cozulemezse
+ * `null` doner: dosya adi uydurulmaz, karari cagiran taraf verir.
+ */
+function fileNameFromDisposition(disposition: string | null): string | null {
+  if (disposition === null) {
+    return null;
+  }
+  const match = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(disposition);
+  return match?.[1] === undefined ? null : decodeURIComponent(match[1]);
+}
+
 export function createApiClient(options: ApiClientOptions): ApiClient {
   const doFetch: typeof fetch =
     options.fetchImpl ?? ((input, init) => globalThis.fetch(input, init));
 
+  /** Ortak istek yolu: token eklenir, 401 kancasi tetiklenir, hata zarfi ApiError'a cevrilir. */
+  const send = async (path: string, init: RequestInit): Promise<Response> => {
+    const headers: Record<string, string> = { ...(init.headers as Record<string, string>) };
+    const token = options.readAccessToken();
+    if (token !== null) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+    // FormData'da sinir degerini (boundary) tarayici uretir; Content-Type ELLE ayarlanmaz.
+    if (typeof init.body === 'string' && headers['Content-Type'] === undefined) {
+      headers['Content-Type'] = 'application/json';
+    }
+
+    const response = await doFetch(`${options.baseUrl}${path}`, { ...init, headers });
+    if (!response.ok) {
+      if (response.status === UNAUTHORIZED_STATUS && token !== null) {
+        options.onUnauthorized?.();
+      }
+      throw await toApiError(response);
+    }
+    return response;
+  };
+
   return {
     async request<T>(path: string, init: RequestInit = {}): Promise<T> {
-      const headers: Record<string, string> = { ...(init.headers as Record<string, string>) };
-      const token = options.readAccessToken();
-      if (token !== null) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-      // FormData'da sinir degerini (boundary) tarayici uretir; Content-Type ELLE ayarlanmaz.
-      if (typeof init.body === 'string' && headers['Content-Type'] === undefined) {
-        headers['Content-Type'] = 'application/json';
-      }
-
-      const response = await doFetch(`${options.baseUrl}${path}`, { ...init, headers });
-      if (!response.ok) {
-        if (response.status === UNAUTHORIZED_STATUS && token !== null) {
-          options.onUnauthorized?.();
-        }
-        throw await toApiError(response);
-      }
+      const response = await send(path, init);
       if (response.status === 204) {
         return undefined as T;
       }
       return (await response.json()) as T;
+    },
+
+    async requestFile(path: string, init: RequestInit = {}): Promise<FileResponse> {
+      // Hata yolunda govde JSON hata zarfidir (sozlesme): `send` bunu zaten cozer,
+      // blob'a yalnizca basarili yanitta dokunulur.
+      const response = await send(path, init);
+      return {
+        blob: await response.blob(),
+        fileName: fileNameFromDisposition(response.headers.get('Content-Disposition')),
+      };
     },
   };
 }

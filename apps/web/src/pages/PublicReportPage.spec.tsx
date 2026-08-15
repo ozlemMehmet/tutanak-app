@@ -47,7 +47,8 @@ function renderPage(client: ApiClient): void {
 
 /** Bilesen testinde sunucu yanitini sahteleyen istemci (ciplak fetch bilesende yasak). */
 function fakeClient(request: jest.Mock): ApiClient {
-  return { request };
+  // T-020: istemci sozlesmesi ikili govde okuyan `requestFile`'i da icerir; bu sayfa kullanmaz.
+  return { request, requestFile: jest.fn() };
 }
 
 function clientReturning(body: unknown, status = 200): ApiClient {

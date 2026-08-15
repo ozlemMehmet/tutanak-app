@@ -4,7 +4,7 @@ import { fetchPhotos, uploadPhoto } from './photos.api';
 describe('photos.api', () => {
   const createClientSpy = (): { client: ApiClient; request: jest.Mock } => {
     const request = jest.fn().mockResolvedValue({ id: 'foto-1' });
-    return { client: { request }, request };
+    return { client: { request, requestFile: jest.fn() }, request };
   };
 
   describe('uploadPhoto', () => {
