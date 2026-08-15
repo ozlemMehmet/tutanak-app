@@ -19,10 +19,30 @@ describe('App yonlendirmesi', () => {
     },
   };
 
+  // T-020: detay ekrani tutanagi sozlesme sekliyle ceker; baslik artik tutanagin kendi basligidir.
+  const reportDetail = {
+    id: 'r-1',
+    templateId: 'sablon-1',
+    templateName: 'Giris/Cikis Teslim Tutanagi',
+    title: 'Kadikoy 3+1 teslim tutanagi',
+    note: '',
+    status: 'draft',
+    photoCount: 0,
+    createdAt: '2026-08-14T09:00:00.000Z',
+    updatedAt: '2026-08-14T09:00:00.000Z',
+    photos: [],
+  };
+
   const client = {
-    request: jest.fn((path: string) =>
-      path === '/me' ? Promise.resolve(me) : Promise.resolve([]),
-    ),
+    request: jest.fn((path: string) => {
+      if (path === '/me') {
+        return Promise.resolve(me);
+      }
+      if (path === '/reports/r-1') {
+        return Promise.resolve(reportDetail);
+      }
+      return Promise.resolve([]);
+    }),
   } as unknown as ApiClient;
 
   beforeEach(() => {
@@ -35,7 +55,7 @@ describe('App yonlendirmesi', () => {
 
     render(<App client={client} session={createSessionStore(window.localStorage)} />);
 
-    expect(await screen.findByRole('heading', { name: 'Tutanak' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: reportDetail.title })).toBeInTheDocument();
     expect(await screen.findByText('selin@ornek.com')).toBeInTheDocument();
   });
 
