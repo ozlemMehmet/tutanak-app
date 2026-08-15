@@ -25,6 +25,19 @@ const ME = {
   },
 };
 
+const REPORT_DETAIL = {
+  id: 'r-1',
+  templateId: 'sablon-1',
+  templateName: 'Giris/Cikis Teslim Tutanagi',
+  title: 'Kadikoy 3+1 teslim tutanagi',
+  note: '',
+  status: 'draft',
+  photoCount: 0,
+  createdAt: '2026-08-14T09:00:00.000Z',
+  updatedAt: '2026-08-14T09:00:00.000Z',
+  photos: [],
+};
+
 function LocationProbe(): React.JSX.Element {
   const location = useLocation();
   return <span data-testid="konum">{`${location.pathname}${location.search}`}</span>;
@@ -56,6 +69,10 @@ describe('AppRoutes', () => {
       if (path === '/me') {
         return Promise.resolve(ME);
       }
+      // T-020: detay ekrani tutanagi sozlesme sekliyle ceker (baslik/durum rozeti burada dogar).
+      if (path === '/reports/r-1') {
+        return Promise.resolve(REPORT_DETAIL);
+      }
       return Promise.resolve([]);
     });
 
@@ -67,7 +84,8 @@ describe('AppRoutes', () => {
       window.localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, options.accessToken);
     }
     const store = options.store ?? createSessionStore(window.localStorage);
-    const client = options.client ?? { request: defaultRequest() };
+    // T-020: istemci sozlesmesi ikili govde okuyan `requestFile`'i da icerir (PDF indirme).
+    const client = options.client ?? { request: defaultRequest(), requestFile: jest.fn() };
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
     });
@@ -122,7 +140,7 @@ describe('AppRoutes', () => {
     it('/reports/:id rotasini oturum acikken tutanak detayina baglar', async () => {
       renderAt('/reports/r-1', { accessToken: 'token-abc' });
 
-      expect(await screen.findByRole('heading', { name: 'Tutanak' })).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { name: REPORT_DETAIL.title })).toBeInTheDocument();
     });
 
     it('/subscription rotasini oturum acikken render eder', async () => {

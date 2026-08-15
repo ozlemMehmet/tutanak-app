@@ -8,7 +8,7 @@ describe('approveReport', () => {
   it('sozlesmedeki onay yolunu POST ile cagirir', async () => {
     const request = jest.fn().mockResolvedValue(APPROVAL);
 
-    await approveReport({ request }, 'abc-token', 'kiraci@ornek.test');
+    await approveReport({ request, requestFile: jest.fn() }, 'abc-token', 'kiraci@ornek.test');
 
     expect(request).toHaveBeenCalledWith('/public/reports/abc-token/approval', {
       method: 'POST',
@@ -19,7 +19,7 @@ describe('approveReport', () => {
   it('token icindeki ozel karakterleri URL icin kodlar', async () => {
     const request = jest.fn().mockResolvedValue(APPROVAL);
 
-    await approveReport({ request }, 'a/b?c#d', 'kiraci@ornek.test');
+    await approveReport({ request, requestFile: jest.fn() }, 'a/b?c#d', 'kiraci@ornek.test');
 
     expect(request).toHaveBeenCalledWith('/public/reports/a%2Fb%3Fc%23d/approval', {
       method: 'POST',
@@ -30,8 +30,8 @@ describe('approveReport', () => {
   it('sunucunun donderdigi onay kaydini oldugu gibi doner', async () => {
     const request = jest.fn().mockResolvedValue(APPROVAL);
 
-    await expect(approveReport({ request }, 'abc-token', 'kiraci@ornek.test')).resolves.toEqual(
-      APPROVAL,
-    );
+    await expect(
+      approveReport({ request, requestFile: jest.fn() }, 'abc-token', 'kiraci@ornek.test'),
+    ).resolves.toEqual(APPROVAL);
   });
 });

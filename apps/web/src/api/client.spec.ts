@@ -223,4 +223,113 @@ describe('createApiClient', () => {
 
     await expect(client.request('/reports/r-1/photos')).resolves.toBeUndefined();
   });
+
+  // T-020: PDF indirme JSON degil ikili (binary) govde okur; oturum basligi ve hata zarfi
+  // cozumlemesi yine TEK noktada (bu modulde) yapilir — bilesende ciplak fetch yasak.
+  describe('requestFile', () => {
+    const fileResponse = (blob: Blob, contentDisposition?: string): Response =>
+      ({
+        ok: true,
+        status: 200,
+        headers: { get: (name: string) => (isDispositionHeader(name) ? contentDisposition : null) },
+        blob: () => Promise.resolve(blob),
+      }) as unknown as Response;
+
+    const isDispositionHeader = (name: string): boolean =>
+      name.toLowerCase() === 'content-disposition';
+
+    it('ikili govdeyi blob olarak doner ve Authorization basligi ekler', async () => {
+      const pdf = new Blob(['%PDF-1.7'], { type: 'application/pdf' });
+      const fetchImpl = jest.fn().mockResolvedValue(fileResponse(pdf));
+      const client = createApiClient({
+        baseUrl: '/api/v1',
+        readAccessToken: () => 'token-abc',
+        fetchImpl,
+      });
+
+      const file = await client.requestFile('/reports/r-1/pdf');
+
+      expect(file.blob).toBe(pdf);
+      const [url, init] = fetchImpl.mock.calls[0] as [string, RequestInit];
+      expect(url).toBe('/api/v1/reports/r-1/pdf');
+      expect(headersOf(init).Authorization).toBe('Bearer token-abc');
+    });
+
+    it('dosya adini Content-Disposition basligindan cozer', async () => {
+      const fetchImpl = jest
+        .fn()
+        .mockResolvedValue(
+          fileResponse(new Blob(['%PDF-1.7']), 'attachment; filename="tutanak-r-1.pdf"'),
+        );
+      const client = createApiClient({
+        baseUrl: '/api/v1',
+        readAccessToken: () => null,
+        fetchImpl,
+      });
+
+      await expect(client.requestFile('/reports/r-1/pdf')).resolves.toMatchObject({
+        fileName: 'tutanak-r-1.pdf',
+      });
+    });
+
+    it('Content-Disposition yoksa dosya adi null doner', async () => {
+      const fetchImpl = jest.fn().mockResolvedValue(fileResponse(new Blob(['%PDF-1.7'])));
+      const client = createApiClient({
+        baseUrl: '/api/v1',
+        readAccessToken: () => null,
+        fetchImpl,
+      });
+
+      await expect(client.requestFile('/reports/r-1/pdf')).resolves.toMatchObject({
+        fileName: null,
+      });
+    });
+
+    it('hata yanitinda ikili govdeyi degil hata zarfini cozer ve ApiError firlatir', async () => {
+      const fetchImpl = jest.fn().mockResolvedValue(
+        jsonResponse(
+          {
+            error: {
+              code: 'REPORT_HAS_NO_PHOTOS',
+              message: 'Tutanakta hic fotograf yok.',
+              traceId: 'iz-1',
+            },
+          },
+          400,
+        ),
+      );
+      const client = createApiClient({
+        baseUrl: '/api/v1',
+        readAccessToken: () => 'token-abc',
+        fetchImpl,
+      });
+
+      await expect(client.requestFile('/reports/r-1/pdf')).rejects.toMatchObject({
+        code: 'REPORT_HAS_NO_PHOTOS',
+        status: 400,
+      });
+    });
+
+    it('token gonderilen istek 401 dondugunde onUnauthorized kancasini cagirir', async () => {
+      const onUnauthorized = jest.fn();
+      const fetchImpl = jest.fn().mockResolvedValue(
+        jsonResponse(
+          {
+            error: { code: 'UNAUTHENTICATED', message: 'Oturum suresi doldu.', traceId: 'iz-1' },
+          },
+          401,
+        ),
+      );
+      const client = createApiClient({
+        baseUrl: '/api/v1',
+        readAccessToken: () => 'token-abc',
+        fetchImpl,
+        onUnauthorized,
+      });
+
+      await expect(client.requestFile('/reports/r-1/pdf')).rejects.toBeInstanceOf(ApiError);
+
+      expect(onUnauthorized).toHaveBeenCalledTimes(1);
+    });
+  });
 });
