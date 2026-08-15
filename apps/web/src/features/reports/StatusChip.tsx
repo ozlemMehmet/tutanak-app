@@ -1,6 +1,8 @@
 // Tutanak durum rozeti (design.md §4.5 `StatusChip`): etkilesimsiz, tek durumlu.
-// Tonlar sartnameden gelir: draft notr (`surface-muted`/`text-muted`), shared `primary`,
-// approved `success`. Renk TEK basina anlam tasimaz; etiket metni her zaman gorunur (§5).
+// Tonlar sartnameden gelir (token ciftleri `foreground`/`background` sirasindadir):
+// draft notr (`text-muted`/`surface-muted`), shared (`primary`/`surface-muted`),
+// approved (`on-success`/`success`).
+// Renk TEK basina anlam tasimaz; etiket metni her zaman gorunur (§5).
 import type { ReportStatus } from './reports.api';
 
 interface StatusChipProps {

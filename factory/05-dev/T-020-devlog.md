@@ -103,3 +103,40 @@ $ npm run typecheck --workspace @tutanak/web  -> hatasiz
 (Kok `npm run typecheck`/`npm run lint` apps/api'deki mevcut `resend` bagimlilik boslugu
 yuzunden kirmizi; yukarida "ticket disi" olarak raporlandi, T-020 degisikligiyle ilgisi yok.)
 ```
+
+## Iade turu 1 (code-reviewer, CHANGES)
+
+Raporda TEK blocking madde vardi; yalnizca o ele alindi, ticket'in geri kalanina dokunulmadi.
+
+**Bulgu:** `.status-chip--primary` "paylasildi" rozeti icin token ciftini TERS uyguluyordu
+(`background: primary` + `color: on-primary`).
+
+**Dogrulama (koru koru duzeltmeden once sozlesme teyit edildi):**
+- `design-tokens.json` → `pairs`: `{ "foreground": "primary", "background": "surface-muted",
+  "usage": "\"paylasildi\" durum rozeti metni; ..." }` — kullanim metni bu rozeti birebir adlandiriyor.
+- `design.md` §4.5 bilesen tablosu: `StatusChip` → ``shared (`primary`/`surface-muted`)``.
+- Cift siralamasinin `foreground`/`background` oldugu iki bagimsiz kanitla dogrulandi:
+  (1) `draft` rozeti (`background: surface-muted; color: text-muted`) `{foreground: text-muted,
+  background: surface-muted}` ciftiyle ortusuyor; (2) `design.md`:343 `SubscriptionPage`
+  gosterimi "inactive: notr `text-muted`/`surface-muted`" ayni sirayi kullaniyor.
+- Uygulanan `primary`/`on-primary` cifti gecerli bir cift olmakla birlikte beyan edilen kullanimi
+  "birincil buton metni, AppShell header/nav metni" — rozet degil; ayrica rozeti ayni ekrandaki
+  birincil butondan gorsel olarak ayirt edilemez kiliyordu.
+
+**Degisiklik:**
+- `apps/web/src/styles/app.css`: `.status-chip--primary` → `background: var(--color-surface-muted);
+  color: var(--color-primary);` (deger yine yalnizca token degiskenlerinden geliyor, ham hex yok).
+- `apps/web/src/features/reports/StatusChip.tsx:1-4`: sozlesmeyle celisen yorum duzeltildi; tonlar
+  artik acikca `foreground`/`background` sirasiyla yaziliyor.
+- `tone: 'primary'` anahtari ve sinif adi rapordaki yonlendirmeye uygun olarak DEGISMEDI;
+  `StatusChip.spec.tsx` yalnizca sinif adi assert ettigi icin test degisikligi gerekmedi.
+
+**Bulgu disi birakilanlar (raporda "finding degil" olarak isaretlenmisti, dokunulmadi):**
+kok `npm run lint`'teki `email.module.ts` hatalari (kapsam disi, ortam/kurulum kaynakli) ve
+`.status-chip`/`.report-actions__hint` icindeki caption `font-size` (beyan edilmis tasarim
+sozlesmesi boslugu).
+
+**Dogrulama:** `npm test --workspace apps/web` → 44 suite / 313 test gecti (regresyon yok);
+`npm run typecheck --workspace apps/web` (`tsc --noEmit`) temiz; degisen iki dosyada
+`npx prettier --check` temiz; `npx eslint StatusChip.tsx StatusChip.spec.tsx --max-warnings=0`
+exit 0.

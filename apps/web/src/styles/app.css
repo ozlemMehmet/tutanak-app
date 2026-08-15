@@ -716,8 +716,8 @@ h2 {
 }
 
 .status-chip--primary {
-  background: var(--color-primary);
-  color: var(--color-on-primary);
+  background: var(--color-surface-muted);
+  color: var(--color-primary);
 }
 
 .status-chip--success {
