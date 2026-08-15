@@ -1,8 +1,8 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
-import { readAccessToken } from './api/access-token';
-import { createApiClient } from './api/client';
+import { createSessionStore } from './features/auth/session';
+import { createSessionAwareClient } from './features/auth/session-client';
 import { registerServiceWorker } from './pwa/register-service-worker';
 import './styles/tokens.css';
 import './styles/app.css';
@@ -17,14 +17,14 @@ if (!rootElement) {
   throw new Error('Uygulama kok elemani (#root) bulunamadi');
 }
 
-const apiClient = createApiClient({
-  baseUrl: API_BASE_URL,
-  readAccessToken: () => readAccessToken(window.localStorage),
-});
+// Oturum kaynagi ve API istemcisi ayni yerde kurulur: istemci token'i buradan okur ve 401
+// aldiginda oturumu burada bitirir (T-017).
+const session = createSessionStore(window.localStorage);
+const apiClient = createSessionAwareClient({ baseUrl: API_BASE_URL, session });
 
 createRoot(rootElement).render(
   <StrictMode>
-    <App client={apiClient} />
+    <App client={apiClient} session={session} />
   </StrictMode>,
 );
 

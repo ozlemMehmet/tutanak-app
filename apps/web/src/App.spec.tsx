@@ -1,29 +1,51 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { ACCESS_TOKEN_STORAGE_KEY } from './api/access-token';
 import { App } from './App';
 import type { ApiClient } from './api/client';
+import { createSessionStore } from './features/auth/session';
 import { ReportDetailPage } from './pages/ReportDetailPage';
 
 describe('App yonlendirmesi', () => {
-  const client = { request: jest.fn().mockResolvedValue([]) } as unknown as ApiClient;
+  const me = {
+    id: 'kullanici-1',
+    email: 'selin@ornek.com',
+    createdAt: '2026-08-01T10:00:00.000Z',
+    subscription: {
+      status: 'inactive',
+      priceAmount: null,
+      currency: 'TRY',
+      currentPeriodEnd: null,
+    },
+  };
 
-  it('/reports/:reportId adresinde tutanak detayindaki fotograf bolumunu acar', async () => {
-    window.history.pushState({}, '', '/reports/r-1');
+  const client = {
+    request: jest.fn((path: string) =>
+      path === '/me' ? Promise.resolve(me) : Promise.resolve([]),
+    ),
+  } as unknown as ApiClient;
 
-    render(<App client={client} />);
-
-    expect(await screen.findByRole('heading', { name: 'Tutanak' })).toBeInTheDocument();
-    await waitFor(() => {
-      expect(screen.getByLabelText('Fotograf Ekle')).toBeInTheDocument();
-    });
+  beforeEach(() => {
+    window.localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
   });
 
-  it('kok adreste uygulama iskeletini gosterir', () => {
-    window.history.pushState({}, '', '/');
+  it('oturum acikken /reports/:reportId adresinde tutanak detayini AppShell icinde acar', async () => {
+    window.localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'token-abc');
+    window.history.pushState({}, '', '/reports/r-1');
 
-    render(<App client={client} />);
+    render(<App client={client} session={createSessionStore(window.localStorage)} />);
 
-    expect(screen.getByRole('heading', { name: 'Emlak Teslim Tutanagi' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Tutanak' })).toBeInTheDocument();
+    expect(await screen.findByText('selin@ornek.com')).toBeInTheDocument();
+  });
+
+  it('oturum yokken korumali adresi giris ekranina dusurur', () => {
+    window.history.pushState({}, '', '/reports/r-1');
+
+    render(<App client={client} session={createSessionStore(window.localStorage)} />);
+
+    expect(screen.getByRole('heading', { name: 'Giris Yap' })).toBeInTheDocument();
+    expect(window.location.search).toBe(`?redirectTo=${encodeURIComponent('/reports/r-1')}`);
   });
 });
 

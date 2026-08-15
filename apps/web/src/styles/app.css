@@ -322,3 +322,113 @@ h2 {
   background: var(--color-success);
   color: var(--color-on-success);
 }
+
+/* --- AppShell (design.md §1 "Ekran disi ortak yapi", §4.1 Navigation) ---
+   Ust bar `primary` zeminlidir; uzerindeki metin/odak halkasi `on-primary`'dir (§5).
+   Gezinme mobilde alt-tab, genis ekranda ust-nav olarak yerlesir. */
+.app-shell {
+  /* Mobilde alt-tab sabit oldugu icin icerigin altinda yer ayrilir (token: space-7). */
+  padding-bottom: calc(var(--space-7) + env(safe-area-inset-bottom));
+}
+
+.app-shell__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.app-shell__brand {
+  font-family: var(--font-heading);
+  font-weight: 600;
+}
+
+.app-shell__session {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.app-shell__user {
+  color: var(--color-on-primary);
+}
+
+/* `primary` zeminde duran ikincil buton (kontrast: on-primary/primary ~14.5:1 — §5). */
+.button--on-primary {
+  background: transparent;
+  color: var(--color-on-primary);
+  border-color: var(--color-on-primary);
+}
+
+/* design.md §5: `primary` zeminli alanlarda odak halkasi `on-primary` rengine gecer. */
+.app-shell__header .button:focus-visible,
+.app-shell__nav-link:focus-visible {
+  outline: 2px solid var(--color-on-primary);
+  outline-offset: 2px;
+}
+
+/* "Icerige gec" skip-link'i: yalnizca klavye odaginda gorunur (§5). */
+.skip-link {
+  position: absolute;
+  left: var(--space-1);
+  top: var(--space-1);
+  z-index: 2;
+  transform: translateY(-200%);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-primary);
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.app-shell__nav {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1;
+  display: flex;
+  justify-content: space-around;
+  background: var(--color-primary);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.app-shell__nav-link {
+  /* Dokunma hedefi min 44x44px — design.md §5 (token karsiligi yok, sartnameden birebir). */
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 2px solid transparent;
+  color: var(--color-on-primary);
+  text-decoration: none;
+}
+
+.app-shell__nav-link--active {
+  /* Aktif rota vurgusu: `primary` zeminde `on-primary` alt cizgi (design.md §4.1). */
+  border-bottom-color: var(--color-on-primary);
+  font-weight: 600;
+}
+
+/* breakpoint md (768px, tokens.css): gezinme ust-nav'a gecer, alt bosluk gerekmez. */
+@media (min-width: 768px) {
+  .app-shell {
+    padding-bottom: 0;
+  }
+
+  .app-shell__nav {
+    position: static;
+    justify-content: flex-start;
+    gap: var(--space-3);
+    padding: 0 var(--space-3);
+  }
+}
