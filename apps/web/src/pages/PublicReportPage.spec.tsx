@@ -9,6 +9,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { App } from '../App';
 import { createApiClient } from '../api/client';
 import type { ApiClient } from '../api/client';
+import { createSessionStore } from '../features/auth/session';
 import type { PublicReportView } from '../features/sharing/public-report.api';
 import { PublicReportPage } from './PublicReportPage';
 
@@ -320,7 +321,9 @@ describe('App yonlendirmesi — /t/:token', () => {
     window.history.pushState({}, '', `/t/${TOKEN}`);
     const client = { request: jest.fn().mockResolvedValue(VIEW) } as unknown as ApiClient;
 
-    render(<App client={client} />);
+    // Kiraci akisi oturum GEREKTIRMEZ: depoda token olmadan da sayfa acilir (T-017 kriter 4).
+    window.localStorage.clear();
+    render(<App client={client} session={createSessionStore(window.localStorage)} />);
 
     expect(await screen.findByRole('heading', { name: VIEW.title })).toBeInTheDocument();
     expect(client.request).toHaveBeenCalledWith(`/public/reports/${TOKEN}`);
