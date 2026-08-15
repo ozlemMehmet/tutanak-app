@@ -37,6 +37,8 @@ function meResponse(subscription: Subscription): unknown {
 interface RenderOptions {
   subscription?: Subscription;
   checkoutResult?: () => Promise<unknown>;
+  /** `GET /me` yanitini degistirir (hata durumu testleri icin). */
+  meResult?: () => Promise<unknown>;
   initialPath?: string;
   /**
    * Onbellekte TAZE kabul edilen bir durum birakir (saglayiciya gitmeden once cekilmis
@@ -50,7 +52,7 @@ function renderPage(options: RenderOptions = {}): { request: jest.Mock; redirect
   const subscription = options.subscription ?? INACTIVE;
   const request = jest.fn((path: string) => {
     if (path === '/me') {
-      return Promise.resolve(meResponse(subscription));
+      return (options.meResult ?? (() => Promise.resolve(meResponse(subscription))))();
     }
     if (path === '/billing/checkout') {
       return (options.checkoutResult ?? (() => Promise.resolve(CHECKOUT)))();
@@ -61,7 +63,14 @@ function renderPage(options: RenderOptions = {}): { request: jest.Mock; redirect
   const client = { request } as unknown as ApiClient;
   const queryClient = new QueryClient({
     defaultOptions: {
-      queries: { retry: false, ...(options.seedCache === true ? { staleTime: Infinity } : {}) },
+      queries: {
+        retry: false,
+        // `useCurrentUser` kendi `retry` kuralini tasidigi icin yukaridaki varsayilani
+        // EZER (5xx'te 2 kez yeniden dener). Davranisi degistirmiyoruz, yalnizca ustel
+        // bekleme suresini sifirliyoruz ki hata durumu testi gercek zamanda beklemesin.
+        retryDelay: 0,
+        ...(options.seedCache === true ? { staleTime: Infinity } : {}),
+      },
       mutations: { retry: false },
     },
   });
@@ -95,6 +104,33 @@ describe('SubscriptionPage', () => {
     renderPage();
 
     expect(screen.getByText('Abonelik durumu yukleniyor...')).toBeInTheDocument();
+  });
+
+  it('GET /me basarisiz olunca hata banner"i gosterir, sayfa sessizce bos kalmaz (kriter 1 hata durumu)', async () => {
+    renderPage({
+      meResult: () => Promise.reject(new ApiError('INTERNAL_ERROR', 'Sunucu hatasi olustu.', 500)),
+    });
+
+    expect(await screen.findByText('Abonelik durumu yuklenemedi')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tekrar Dene' })).toBeInTheDocument();
+    expect(screen.queryByText('Abonelik durumu yukleniyor...')).not.toBeInTheDocument();
+  });
+
+  it('GET /me hatasindan sonra "Tekrar Dene" durumu yeniden ceker (kriter 1 hata durumu)', async () => {
+    const { request } = renderPage({
+      meResult: () => Promise.reject(new ApiError('INTERNAL_ERROR', 'Sunucu hatasi olustu.', 500)),
+    });
+
+    await screen.findByText('Abonelik durumu yuklenemedi');
+    // 5xx'te hook 2 kez yeniden denedigi icin ilk yuklemede 3 cagri olur; onemli olan
+    // butonun YENI bir cekim baslatmasidir.
+    const callsBeforeRetry = meCallCount(request);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Tekrar Dene' }));
+
+    await waitFor(() => {
+      expect(meCallCount(request)).toBeGreaterThan(callsBeforeRetry);
+    });
   });
 
   it('inactive durumda odeme butonu aktiftir ve checkout cagrisini yapar (kriter 2)', async () => {

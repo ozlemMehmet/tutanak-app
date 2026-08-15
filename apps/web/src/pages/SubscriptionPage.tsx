@@ -52,6 +52,24 @@ export function SubscriptionPage({
       {/* loading: durum karti iskeleti (design.md SubscriptionPage durumlari). */}
       {currentUser.isPending && <p className="skeleton-text">Abonelik durumu yukleniyor...</p>}
 
+      {/* `GET /me` basarisiz: ekranin tek isi durum gostermek oldugu icin sessiz kalamaz.
+          Kod tabanindaki sorgu-hatasi deseni (PhotoSection) birebir uygulanir: danger
+          banner + "Tekrar Dene". */}
+      {currentUser.isError && (
+        <div className="banner banner--danger" role="alert">
+          <p>Abonelik durumu yuklenemedi</p>
+          <button
+            type="button"
+            className="button button--ghost"
+            onClick={() => {
+              void currentUser.refetch();
+            }}
+          >
+            Tekrar Dene
+          </button>
+        </div>
+      )}
+
       {subscription !== undefined && (
         <>
           <SubscriptionStatusCard subscription={subscription} />
