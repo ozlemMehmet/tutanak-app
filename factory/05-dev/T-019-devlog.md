@@ -40,17 +40,53 @@
 - `features/auth/auth-error.ts` ile `features/reports/report-error.ts` benzer bir cevrim iskeleti tasiyor (alan detaylarini bilinen alanlara baglama). Ucuncu bir form ekrani gelirse ortak bir saf yardimci cikarilabilir — su an iki kopya, farkli hata kodu semantigi tasidigi icin bilincli olarak ayri.
 - `ReportListPage`, `SubscriptionPage` hala rota iskeleti (T-021/T-022 kapsami) — dokunulmadi.
 
+## Iade turu 1 (QA: AC8 FAIL — hata banner'i gorunmuyor)
+
+Sistematik hata ayiklama, 4 faz:
+
+1. **Izole et.** QA'nin tekrar-uretimi (kalici 500, 3 saniye bekle) birim seviyesinde
+   yeniden uretildi: `renderPage`'e `uretimYenidenDeneme` secenegi eklendi (sorgu
+   varsayilanlarini bastirmaz, uretimdeki zamanlama calisir). Test kirmizi geldi — DOM'da
+   3. saniyede hala iskelet kartlar vardi, `alert` yoktu. QA'nin gozlemi birebir dogrulandi.
+2. **Hipotez (tek, test edilebilir).** "Hata durumu UI'a ZATEN bagli (`isTemplateListBroken`
+   → banner + Tekrar Dene); sorun `useTemplates`in yeniden deneme politikasinda: hook `retry`
+   belirtmedigi icin TanStack Query varsayilani (3 deneme, ustel bekleme 1s+2s+4s) devrede ve
+   sorgu ~7 saniye boyunca `isPending` kaliyor — 3 saniyede henuz `isError` olmuyor." QA'nin
+   "error handling eksik" tahmini bu yuzden dogru degildi; eksik olan ZAMANLAMA politikasiydi.
+   Mevcut birim testleri bunu goremedi, cunku test `QueryClient`i `retry: false` ile kosuyordu.
+3. **Test et.** `useTemplates`e kod tabaninin mevcut deseni uygulandi: `shouldRetryTemplates`
+   saf yuklem (`useCurrentUser` / `usePublicReport` ile ayni sekil) — 4xx tekrarlanmaz,
+   sunucu/ag hatasi sinirli tekrarlanir. `MAX_RETRY_COUNT = 1` (digerlerinde 2): bu ekranin
+   design.md §3 sartnamesinde ACIK bir "Tekrar Dene" butonu var, otomatik deneme yalnizca
+   anlik kesintiyi yutmali; kalici hatada kullanici hata durumunu ~1 saniyede gorup yeniden
+   denemeyi kendisi tetikler. Hipotez dogrulandi: test yesile dondu.
+4. **Dogrula + regresyon testi.** Kalici 500'de banner'in **en gec 3 saniyede** (QA'nin
+   tekrar-uretim penceresi) gorundugunu olcen test kaliciysa eklendi
+   (`ReportCreatePage.spec.tsx` → kriter 8). Bu test gercek zamanlayicilarla kosar; politika
+   yeniden yavaslarsa kirmizi doner. `shouldRetryTemplates` icin ayrica saf fonksiyon testleri
+   (`useTemplates.spec.ts`) eklendi.
+
+Yan etki (bilincli): hook artik kendi `retry`sini tasidigi icin test `QueryClient`indeki
+`retry: false` sablon sorgusunu ezemiyor. Varsayilan test modunda politika aynen calisir,
+yalnizca `retryDelay: 0` ile beklemesi sifirlanir. Buna bagli olarak "Tekrar Dene listeyi
+yeniden ceker" testi cagri SAYISINDAN bagimsiz hale getirildi (sunucu, kullanici butona
+basana kadar hatali kalir) — boylece test deneme sayisi degisirse kirilmaz.
+
+Kapsam: yalnizca `useTemplates.ts` (+ testleri) ve `ReportCreatePage.spec.tsx` degisti;
+`ReportCreatePage.tsx` uretim kodunda degisiklik GEREKMEDI (hata durumu zaten bagliydi).
+QA'nin PASS verdigi 7 kriterin kodu ellenmedi.
+
 ## Test Kosum Ciktisi (ozet)
 ```
-# npm run test (workspace koku)
+# npm run test (workspace koku) — iade turu 1 sonrasi
 root  : Test Suites: 5 passed, 5 total   | Tests: 25 passed
 api   : Test Suites: 55 passed, 55 total | Tests: 360 passed
-web   : Test Suites: 40 passed, 40 total | Tests: 275 passed
+web   : Test Suites: 41 passed, 41 total | Tests: 281 passed  (+1 suite / +6 test)
         ReportCreatePage.tsx  100% satir / 100% dal
-        src/features/reports  100% satir / 100% dal
+        src/features/reports  100% satir / 100% dal (useTemplates.ts dahil)
 
 # npm run lint        -> 0 uyari / 0 hata
 # npm run typecheck   -> temiz (root + api + web)
 # npm run format:check-> All matched files use Prettier code style
-# web build           -> 301.70 kB (gzip 94.35 kB), bundle butcesi (<=250 kB gz) korunuyor
+# web build           -> 301.78 kB (gzip 94.37 kB), bundle butcesi (<=250 kB gz) korunuyor
 ```

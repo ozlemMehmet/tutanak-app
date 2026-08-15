@@ -73,9 +73,23 @@ function LocationProbe(): React.JSX.Element {
   return <span data-testid="konum">{location.pathname}</span>;
 }
 
-function renderPage(request: jest.Mock): void {
+interface RenderOptions {
+  /**
+   * `true` iken sorgu varsayilanlari hic bastirilmaz: `useTemplates`in yeniden deneme
+   * politikasi URETIMDEKI zamanlamayla calisir. Kriter 8'in zamanlama regresyonu icin gerekli.
+   */
+  uretimYenidenDeneme?: boolean;
+}
+
+function renderPage(request: jest.Mock, options: RenderOptions = {}): void {
+  // `useTemplates` kendi `retry` politikasini tasir ve varsayilanlari ezer; testleri
+  // yavaslatmamak icin varsayilan modda yalnizca BEKLEME suresi sifirlanir (politika aynen
+  // calisir). Zamanlamayi olcen tek test `uretimYenidenDeneme` ile bunu da devre disi birakir.
   const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    defaultOptions: {
+      queries: options.uretimYenidenDeneme === true ? {} : { retry: false, retryDelay: 0 },
+      mutations: { retry: false },
+    },
   });
 
   render(
@@ -454,20 +468,40 @@ describe('ReportCreatePage', () => {
     });
 
     it('Tekrar Dene sablon listesini yeniden ceker', async () => {
-      let templateCallCount = 0;
+      // Sunucu, kullanici "Tekrar Dene" diyene kadar hatali kalir: otomatik deneme sayisindan
+      // bagimsiz olarak butonun gercekten yeni bir istek tetikledigi dogrulanir.
+      let sunucuAyakta = false;
       const request = createRequestMock({
-        templates: () => {
-          templateCallCount += 1;
-          return templateCallCount === 1
-            ? Promise.reject(new ApiError('INTERNAL_ERROR', 'Sunucu hatasi.', 500))
-            : Promise.resolve(TEMPLATES);
-        },
+        templates: () =>
+          sunucuAyakta
+            ? Promise.resolve(TEMPLATES)
+            : Promise.reject(new ApiError('INTERNAL_ERROR', 'Sunucu hatasi.', 500)),
       });
       renderPage(request);
+      const tekrarDene = await screen.findByRole('button', { name: 'Tekrar Dene' });
 
-      await userEvent.click(await screen.findByRole('button', { name: 'Tekrar Dene' }));
+      sunucuAyakta = true;
+      await userEvent.click(tekrarDene);
 
       expect(await screen.findAllByRole('radio')).toHaveLength(3);
+    });
+
+    /**
+     * QA regresyonu: banner UI'da bagliydi, ancak uretimdeki varsayilan yeniden deneme
+     * politikasi (3 deneme, ustel bekleme) hata durumunu ~7 saniye geciktiriyordu; kullanici
+     * bu sure boyunca iskelet kartlarda takili kaliyordu. Sinir, QA'nin tekrar-uretim
+     * penceresiyle ayni tutuldu: kalici 500'de hata durumu en gec 3 saniyede gorunmelidir.
+     */
+    it('kalici sunucu hatasinda otomatik denemeler tukenince banner 3 saniye icinde gorunur', async () => {
+      const request = createRequestMock({
+        templates: () => Promise.reject(new ApiError('INTERNAL_ERROR', 'Sunucu hatasi.', 500)),
+      });
+      renderPage(request, { uretimYenidenDeneme: true });
+
+      expect(await screen.findByRole('alert', undefined, { timeout: 3_000 })).toHaveTextContent(
+        'Sablonlar yuklenemedi',
+      );
+      expect(screen.getByRole('button', { name: 'Tekrar Dene' })).toBeInTheDocument();
     });
 
     it('sozlesme disi bos liste donerse savunmaci olarak hata banner"i gosterir', async () => {
