@@ -48,7 +48,7 @@ export function AppRoutes({ client }: AppRoutesProps): React.JSX.Element {
         {/* Rota parametresi ReportDetailPage'in mevcut `useParams<{ reportId }>` sozlesmesiyle
             ayni adi tasir; URL bicimi design.md'deki `/reports/:id` ile birebir aynidir. */}
         <Route path="/reports/:reportId" element={<ReportDetailPage client={client} />} />
-        <Route path="/subscription" element={<SubscriptionPage />} />
+        <Route path="/subscription" element={<SubscriptionPage client={client} />} />
       </Route>
     </Routes>
   );
