@@ -1,8 +1,16 @@
 // Sozlesme yuzeyleri (T-019 kriter 1 ve 5): `GET /templates` ve `POST /reports`.
 // T-020 ile eklendi: `GET /reports/{id}` (detay) ve `GET /reports/{id}/pdf` (indirme).
+// T-021 ile eklendi: `GET /reports` liste/arama/sayfalama yuzeyi.
 import type { ApiClient } from '../../api/client';
-import type { CreateReportRequest } from './reports.api';
-import { createReport, downloadReportPdf, fetchReport, fetchTemplates } from './reports.api';
+import type { CreateReportRequest, ReportListResponse } from './reports.api';
+import {
+  buildReportListPath,
+  createReport,
+  downloadReportPdf,
+  fetchReport,
+  fetchReports,
+  fetchTemplates,
+} from './reports.api';
 
 const TEMPLATE = {
   id: 'sablon-1',
@@ -60,6 +68,42 @@ describe('downloadReportPdf', () => {
 
     expect(requestFile).toHaveBeenCalledWith('/reports/rapor-1/pdf');
     expect(result).toEqual(file);
+  });
+});
+
+describe('buildReportListPath', () => {
+  it('arama terimi bosken `q` parametresini hic gondermez (sozlesme: filtre uygulanmaz)', () => {
+    expect(buildReportListPath({ q: '', page: 1 })).toBe('/reports?page=1');
+  });
+
+  it('arama terimini `q` parametresi olarak gonderir', () => {
+    expect(buildReportListPath({ q: 'kapi', page: 1 })).toBe('/reports?q=kapi&page=1');
+  });
+
+  it('yalnizca bosluktan olusan terimi filtre saymaz', () => {
+    expect(buildReportListPath({ q: '   ', page: 1 })).toBe('/reports?page=1');
+  });
+
+  it('ozel karakterli terimi URL kodlar', () => {
+    expect(buildReportListPath({ q: 'kapi & pencere', page: 1 })).toBe(
+      '/reports?q=kapi+%26+pencere&page=1',
+    );
+  });
+
+  it('sayfa numarasini `page` parametresi olarak gonderir', () => {
+    expect(buildReportListPath({ q: '', page: 3 })).toBe('/reports?page=3');
+  });
+});
+
+describe('fetchReports', () => {
+  it('GET /reports yolunu cagirir ve sayfali yaniti oldugu gibi verir', async () => {
+    const response: ReportListResponse = { items: [REPORT], page: 1, pageSize: 20, total: 1 };
+    const request = jest.fn().mockResolvedValue(response);
+
+    const list = await fetchReports(createClient(request), { q: 'bahce', page: 1 });
+
+    expect(request).toHaveBeenCalledWith('/reports?q=bahce&page=1');
+    expect(list).toEqual(response);
   });
 });
 

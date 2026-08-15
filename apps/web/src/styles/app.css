@@ -757,3 +757,128 @@ h2 {
   /* Yardimci metin caption adimindadir (yukaridaki gerekcenin aynisi). */
   font-size: 0.8125rem;
 }
+
+/* --- T-021: ReportListPage (design.md §3 ReportListPage sartnamesi) ---
+   Sticky arama kutusu, tek kolon kart listesi, sayfalama ve "+ Yeni Tutanak" girisi.
+   Tum gorsel degerler tokens.css degiskenlerinden gelir. */
+.report-list__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+/* Arama kutusu kaydirma boyunca erisilebilir kalir (design.md: "ust: arama kutusu (sticky)"). */
+.report-list__search {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: var(--space-1) 0;
+  background: var(--color-surface);
+}
+
+/* Mobil: sag-alt sabit FAB (design.md mobil notu + ticket teknik notu). Alt-tab gezinme
+   cubugunun ustunde durur (AppShell alt bar yuksekligi: space-7) ve guvenli alani korur. */
+.report-list__new {
+  position: fixed;
+  right: var(--space-3);
+  bottom: calc(var(--space-7) + env(safe-area-inset-bottom));
+  z-index: 2;
+  /* FAB yaricapi `pill` — design.md §4.4. */
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+  /* Elevation 2 (yuzen oge) — design.md §4.4 prose kurali, marka tonlu golge. */
+  box-shadow: 0 4px 12px rgb(15 42 74 / 15%);
+  /* Link buton gibi davranir: metin dikeyde ortalanir. */
+  display: inline-flex;
+  align-items: center;
+}
+
+/* breakpoint md (768px, tokens.css): FAB ust-sag butona doner (design.md mobil notu). */
+@media (min-width: 768px) {
+  .report-list__new {
+    position: static;
+    box-shadow: none;
+    border-radius: var(--radius-md);
+  }
+}
+
+.report-card-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Kademeli iyilestirme: genis ekranda 2 kolonlu kart izgarasi (design.md mobil notu). */
+@media (min-width: 768px) {
+  .report-card-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.report-card {
+  border: 1px solid var(--color-border);
+  /* Kart yaricapi `md` — design.md §4.4. */
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  /* Elevation 1 (zeminde duran kart) — design.md §4.4 prose kurali. */
+  box-shadow: 0 1px 2px rgb(0 0 0 / 6%);
+}
+
+.report-card--skeleton {
+  /* Iskelet kart: yalnizca yer tutar, icerik yoktur (design.md loading durumu). */
+  min-height: var(--space-7);
+  background: var(--color-surface-muted);
+  box-shadow: none;
+}
+
+.report-card__link {
+  /* Kartin tamami dokunma hedefidir (min 44px — design.md §5). */
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0);
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.report-card__link:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.report-card__title {
+  font-weight: 600;
+}
+
+.report-card__template {
+  color: var(--color-text-muted);
+}
+
+.report-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-text-muted);
+  /* design.md §4.2 "Kucuk/Caption ~13px" (taban 16px / oran 1.25 = 12.8px) adimi; tokens.css
+     bu adim icin degisken uretmiyor, deger sartnamedeki olcekten birebir alindi. */
+  font-size: 0.8125rem;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+}
+
+.pagination__status {
+  color: var(--color-text-muted);
+}
