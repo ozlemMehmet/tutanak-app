@@ -6,6 +6,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { StoragePort } from '../../infra/storage/storage.port';
 import { STORAGE_PORT } from '../../infra/storage/storage.port';
 import { shrinkPhotoForPdf } from './pdf-photo.processor';
+import type { ReportPdfApprovalSection } from './report-pdf.builder';
 import { ReportPdfBuilder } from './report-pdf.builder';
 
 /** PDF'e girecek fotografin kaynagi; icerik depodan SUNUCUDA okunur. */
@@ -20,6 +21,11 @@ export interface ReportPdfInput {
   note: string;
   /** Sira cagiran tarafindan (sort_order, captured_at) ile belirlenir — CLAUDE.md §3.14. */
   photos: ReportPdfPhoto[];
+  /**
+   * Karsi tarafin onayi (T-010). Onay yoksa alan HIC verilmez ve belgede onay blogu
+   * olusmaz; damga veritabanindan gelir, burada uretilmez (§3.7).
+   */
+  approval?: ReportPdfApprovalSection;
 }
 
 @Injectable()
@@ -45,6 +51,10 @@ export class ReportPdfService {
     for (const photo of input.photos) {
       const stored = await this.storage.getObject(photo.storageKey);
       builder.addPhoto({ image: await shrinkPhotoForPdf(stored), capturedAt: photo.capturedAt });
+    }
+
+    if (input.approval !== undefined) {
+      builder.addApproval(input.approval);
     }
 
     return builder.build();

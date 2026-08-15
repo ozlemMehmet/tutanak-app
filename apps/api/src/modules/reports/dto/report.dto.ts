@@ -1,5 +1,6 @@
 // Yanit tipleri — api-contract.yaml → Report, ReportDetail ve ReportListResponse ile birebir.
 
+import type { ApprovalDto } from '../../approvals/dto/approval.dto';
 import type { PhotoDto } from '../../photos/dto/photo.dto';
 
 /** Sozlesmedeki ReportStatus enum'u; tek yonlu yasam dongusu (CLAUDE.md §3.10). */
@@ -35,4 +36,10 @@ export interface ReportDetailDto extends ReportDto {
    * ikilisine gore sabittir (CLAUDE.md §3.14).
    */
   photos: PhotoDto[];
+  /**
+   * Karsi tarafin onayi (T-010). Onay yokken bu alan yanit govdesine HIC KONULMAZ
+   * (`approval: null` gonderilmez); istemci onayin varligini `status` alanindan anlar
+   * (CLAUDE.md §3.5, api-contract.yaml → ReportDetail.approval).
+   */
+  approval?: ApprovalDto;
 }

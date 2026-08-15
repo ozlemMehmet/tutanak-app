@@ -13,6 +13,9 @@ const SECOND_CAPTURED_AT = new Date('2026-08-14T11:00:00.000Z');
 /** Europe/Istanbul karsiliklari (pdf-timestamp.formatter). */
 const FIRST_STAMP = '14.08.2026 13:45:12';
 const SECOND_STAMP = '14.08.2026 14:00:00';
+const APPROVED_AT = new Date('2026-08-15T06:30:00.000Z');
+const APPROVED_AT_STAMP = '15.08.2026 09:30:00';
+const APPROVER_EMAIL = 'kiraci@ornek.test';
 
 function photoBytes(): Promise<Buffer> {
   return sharp({
@@ -101,6 +104,29 @@ describe('ReportPdfService.renderReport', () => {
 
     await expect(uretim).rejects.toBeInstanceOf(ExternalServiceError);
     await expect(uretim).rejects.toMatchObject({ code: 'STORAGE_UNAVAILABLE', httpStatus: 502 });
+  });
+
+  it('onaylanmis tutanakta onaylayanin e-postasini ve onay damgasini PDF`e isler (kriter 5)', async () => {
+    const storage = await storageWithPhotos([FIRST_KEY]);
+
+    const pdf = await new ReportPdfService(storage).renderReport({
+      ...inputWith([{ storageKey: FIRST_KEY, capturedAt: FIRST_CAPTURED_AT }]),
+      approval: { approverEmail: APPROVER_EMAIL, approvedAt: APPROVED_AT },
+    });
+
+    const text = extractPdfText(pdf);
+    expect(text).toContain(APPROVER_EMAIL);
+    expect(text).toContain(APPROVED_AT_STAMP);
+  });
+
+  it('onaylanmamis tutanakta onay blogu HIC yazilmaz', async () => {
+    const storage = await storageWithPhotos([FIRST_KEY]);
+
+    const pdf = await new ReportPdfService(storage).renderReport(
+      inputWith([{ storageKey: FIRST_KEY, capturedAt: FIRST_CAPTURED_AT }]),
+    );
+
+    expect(extractPdfText(pdf)).not.toContain('Onaylayan');
   });
 
   it('fotograf icerigini yalnizca depolama anahtariyla okur (istemci verisi kullanilmaz)', async () => {

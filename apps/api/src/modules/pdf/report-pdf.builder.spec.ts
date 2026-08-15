@@ -5,6 +5,9 @@ import { ReportPdfBuilder } from './report-pdf.builder';
 const CAPTURED_AT = new Date('2026-08-14T10:45:12.000Z');
 /** Europe/Istanbul karsiligi (pdf-timestamp.formatter). */
 const CAPTURED_AT_STAMP = '14.08.2026 13:45:12';
+const APPROVED_AT = new Date('2026-08-15T06:30:00.000Z');
+const APPROVED_AT_STAMP = '15.08.2026 09:30:00';
+const APPROVER_EMAIL = 'kiraci@ornek.test';
 
 function photoBytes(): Promise<Buffer> {
   return sharp({
@@ -59,6 +62,28 @@ describe('ReportPdfBuilder', () => {
     const text = extractPdfText(pdf);
     expect(text.indexOf(CAPTURED_AT_STAMP)).toBeGreaterThanOrEqual(0);
     expect(text.indexOf(CAPTURED_AT_STAMP)).toBeLessThan(text.indexOf('14.08.2026 14:00:00'));
+  });
+
+  it('onay blogunu onaylayanin e-postasi ve onay damgasi ile yazar (T-010 kriter 5)', async () => {
+    const pdf = await new ReportPdfBuilder()
+      .addTitle('Tutanak')
+      .addApproval({ approverEmail: APPROVER_EMAIL, approvedAt: APPROVED_AT })
+      .build();
+
+    const text = extractPdfText(pdf);
+    expect(text).toContain(APPROVER_EMAIL);
+    expect(text).toContain(APPROVED_AT_STAMP);
+  });
+
+  it('onay blogu belgenin SONUNDA yer alir (baslik -> ... -> fotograflar -> onay)', async () => {
+    const pdf = await new ReportPdfBuilder()
+      .addTitle('Tutanak')
+      .addPhoto({ image: await photoBytes(), capturedAt: CAPTURED_AT })
+      .addApproval({ approverEmail: APPROVER_EMAIL, approvedAt: APPROVED_AT })
+      .build();
+
+    const text = extractPdfText(pdf);
+    expect(text.indexOf(CAPTURED_AT_STAMP)).toBeLessThan(text.indexOf(APPROVED_AT_STAMP));
   });
 
   it('bos not verildiginde not bolumu yer tutucu ile yazilir', async () => {

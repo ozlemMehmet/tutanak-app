@@ -6,6 +6,7 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { createThrottlerOptions } from './common/guards/rate-limit.factory';
 import { AppConfigModule } from './config/config.module';
 import type { AppEnv } from './config/env.schema';
+import { ApprovalsModule } from './modules/approvals/approvals.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { HealthModule } from './modules/health/health.module';
@@ -36,6 +37,7 @@ import { UsersModule } from './modules/users/users.module';
     BillingModule,
     PhotosModule,
     SharingModule,
+    ApprovalsModule,
   ],
   providers: [
     // SIRA BAGLAYICI (T-014): hiz siniri kimlik dogrulamasindan ONCE calisir; aksi halde

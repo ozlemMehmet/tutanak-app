@@ -21,11 +21,21 @@ const STORED_REPORT = {
   updatedAt: new Date('2026-08-13T10:00:00.000Z'),
   template: { name: 'Giris/Cikis Teslim Tutanagi' },
   _count: { photos: 0 },
+  approval: null,
+};
+
+/** T-010: onayli tutanagin depo kaydi (PDF ve tutanak detayi bu alani okur). */
+const STORED_APPROVAL = {
+  id: '66666666-6666-4666-8666-666666666666',
+  approverEmail: 'kiraci@ornek.test',
+  approvedAt: new Date('2026-08-15T09:30:00.000Z'),
 };
 
 const EXPECTED_INCLUDE = {
   template: { select: { name: true } },
   _count: { select: { photos: true } },
+  // T-010: onay bilgisi tutanakla AYNI sorguda gelir (ek gidis-donus yok).
+  approval: { select: { id: true, approverEmail: true, approvedAt: true } },
 };
 
 const EXPECTED_RECORD = {
@@ -39,6 +49,7 @@ const EXPECTED_RECORD = {
   photoCount: 0,
   createdAt: STORED_REPORT.createdAt,
   updatedAt: STORED_REPORT.updatedAt,
+  approval: null,
 };
 
 function repositoryWith(reportDelegate: unknown): ReportsRepository {
@@ -120,6 +131,14 @@ describe('ReportsRepository.findById', () => {
       include: EXPECTED_INCLUDE,
     });
     expect(result).toEqual(EXPECTED_RECORD);
+  });
+
+  it('onaylanmis tutanakta onay kaydini (kimlik, e-posta, damga) tasir (T-010)', async () => {
+    const findUnique = jest.fn().mockResolvedValue({ ...STORED_REPORT, approval: STORED_APPROVAL });
+
+    const result = await repositoryWith({ findUnique }).findById(REPORT_ID);
+
+    expect(result?.approval).toEqual(STORED_APPROVAL);
   });
 
   it('kayit yoksa null doner', async () => {

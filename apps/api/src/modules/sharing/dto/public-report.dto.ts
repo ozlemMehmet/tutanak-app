@@ -1,6 +1,7 @@
 // Yanit tipleri — api-contract.yaml → PublicReportView, PublicPhoto ve Approval ile birebir.
 // Bu gorunum SALT-OKUNURDUR: hicbir yazma eylemi/endpoint'i tanimlamaz (T-009 kriter 3).
 
+import type { ApprovalDto } from '../../approvals/dto/approval.dto';
 import type { ReportStatusDto } from '../../reports/dto/report.dto';
 
 /** Kiraciya gosterilen fotograf: yalnizca kimlik, sunucu damgasi ve kisa omurlu okuma URL'si. */
@@ -9,13 +10,6 @@ export interface PublicPhotoDto {
   /** Sunucu tarafinda uretilen, degistirilemez tarih-saat damgasi (CLAUDE.md §3.7). */
   capturedAt: string;
   url: string;
-}
-
-/** Sozlesmedeki Approval; onay OLUSTURMA T-010 kapsamindadir, burada yalnizca okunur. */
-export interface ApprovalDto {
-  id: string;
-  approverEmail: string;
-  approvedAt: string;
 }
 
 export interface PublicReportViewDto {
