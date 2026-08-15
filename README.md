@@ -4,8 +4,10 @@ Mobil oncelikli PWA (React + Vite) ve NestJS API'den olusan npm workspaces monor
 Mimari kurallar ve baglayici gelistirme anayasasi: `factory/04-architecture/CLAUDE.md`.
 
 ```
-apps/api    NestJS backend (GET /health hazir, is modulleri sonraki ticketlarda)
-apps/web    React + Vite PWA (manifest + service worker)
+apps/api    NestJS backend (auth, users, templates, reports, photos, pdf, sharing,
+            approvals, billing modulleri)
+apps/web    React + Vite PWA (giris/kayit, tutanak listesi ve olusturma, tutanak
+            detayi, abonelik ekranlari + oturumsuz paylasim gorunumu)
 scripts/    yardimci dogrulama script'leri
 tools/      repo iskeletini dogrulayan testler
 ```
@@ -67,13 +69,17 @@ npm run test:e2e    # HTTP seviyesi entegrasyon testleri (supertest + gercek Pos
 `test:e2e` calisan bir Postgres ister (`DATABASE_URL`); migration testi kendi izole
 veritabanini olusturup sonunda dusurur, gelistirme veritabanina dokunmaz.
 
-Uygulama acilista ortam degiskenlerini dogrular (eksik sir/ayar varsa ACILMAZ), bu yuzden
-e2e kosumunda `JWT_SECRET`, `SUBSCRIPTION_PRICE_AMOUNT` ve `PUBLIC_APP_URL` de tanimli
-olmalidir — `cp .env.example .env` sonrasi:
+Uygulama acilista ortam degiskenlerini dogrular (eksik sir/ayar varsa ACILMAZ), ama e2e
+icin `.env` YUKLEMEK GEREKMEZ: her e2e spec'i uygulamayi ayaga kaldirmadan once kendi
+ortam degiskenlerini `beforeAll` icinde kendisi kurar. Disaridan verilmesi gereken tek
+deger `DATABASE_URL`'dir — CI de yalnizca bunu tanimlar (`.github/workflows/ci.yml`):
 
 ```bash
-set -a && . ./.env && set +a && npm run test:e2e
+DATABASE_URL='postgresql://tutanak:tutanak@localhost:5432/tutanak' npm run test:e2e
 ```
+
+Bu kosum CI paritesindedir: kabuktan sizan degerlere guvenmedigi icin komsu suite'ten
+gelen bir degiskenin hatayi maskelemesi mumkun degildir.
 
 Tek bir workspace'i kosmak icin:
 
