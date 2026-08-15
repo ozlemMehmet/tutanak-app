@@ -36,9 +36,17 @@ export interface ApiClientOptions {
   baseUrl: string;
   readAccessToken: () => string | null;
   fetchImpl?: typeof fetch;
+  /**
+   * Oturumlu bir istek 401 aldiginda cagrilir (T-017 kriter 5): saklanan oturum burada
+   * temizlenir, yonlendirmeyi rota guard'i yapar. YALNIZCA Authorization basligi gonderilmis
+   * isteklerde tetiklenir — `POST /auth/login` 401 INVALID_CREDENTIALS yaniti bir oturum
+   * sonlanmasi degildir ve mevcut oturumu silmemelidir.
+   */
+  onUnauthorized?: () => void;
 }
 
 const GENERIC_ERROR_MESSAGE = 'Beklenmeyen bir hata olustu, lutfen tekrar deneyin.';
+const UNAUTHORIZED_STATUS = 401;
 
 function isErrorEnvelope(body: unknown): body is ErrorEnvelope {
   if (typeof body !== 'object' || body === null || !('error' in body)) {
@@ -86,6 +94,9 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
 
       const response = await doFetch(`${options.baseUrl}${path}`, { ...init, headers });
       if (!response.ok) {
+        if (response.status === UNAUTHORIZED_STATUS && token !== null) {
+          options.onUnauthorized?.();
+        }
         throw await toApiError(response);
       }
       if (response.status === 204) {

@@ -119,6 +119,96 @@ describe('createApiClient', () => {
     expect((error as ApiError).code).toBe('INTERNAL_ERROR');
   });
 
+  it('token gonderilen bir istek 401 dondugunde onUnauthorized kancasini cagirir', async () => {
+    const onUnauthorized = jest.fn();
+    const fetchImpl = jest
+      .fn()
+      .mockResolvedValue(
+        jsonResponse(
+          { error: { code: 'UNAUTHENTICATED', message: 'Oturum suresi doldu.', traceId: 'iz-1' } },
+          401,
+        ),
+      );
+    const client = createApiClient({
+      baseUrl: '/api/v1',
+      readAccessToken: () => 'token-abc',
+      fetchImpl,
+      onUnauthorized,
+    });
+
+    await expect(client.request('/reports')).rejects.toBeInstanceOf(ApiError);
+
+    expect(onUnauthorized).toHaveBeenCalledTimes(1);
+  });
+
+  it('token GONDERILMEYEN bir istek 401 dondugunde onUnauthorized cagrilmaz (giris denemesi oturumu silmez)', async () => {
+    const onUnauthorized = jest.fn();
+    const fetchImpl = jest.fn().mockResolvedValue(
+      jsonResponse(
+        {
+          error: {
+            code: 'INVALID_CREDENTIALS',
+            message: 'E-posta veya sifre hatali.',
+            traceId: 'iz-1',
+          },
+        },
+        401,
+      ),
+    );
+    const client = createApiClient({
+      baseUrl: '/api/v1',
+      readAccessToken: () => null,
+      fetchImpl,
+      onUnauthorized,
+    });
+
+    await expect(
+      client.request('/auth/login', { method: 'POST', body: '{}' }),
+    ).rejects.toBeInstanceOf(ApiError);
+
+    expect(onUnauthorized).not.toHaveBeenCalled();
+  });
+
+  it('401 disindaki hata kodlarinda onUnauthorized cagrilmaz', async () => {
+    const onUnauthorized = jest.fn();
+    const fetchImpl = jest
+      .fn()
+      .mockResolvedValue(
+        jsonResponse(
+          { error: { code: 'FORBIDDEN', message: 'Bu tutanak size ait degil.', traceId: 'iz-1' } },
+          403,
+        ),
+      );
+    const client = createApiClient({
+      baseUrl: '/api/v1',
+      readAccessToken: () => 'token-abc',
+      fetchImpl,
+      onUnauthorized,
+    });
+
+    await expect(client.request('/reports/r-1')).rejects.toBeInstanceOf(ApiError);
+
+    expect(onUnauthorized).not.toHaveBeenCalled();
+  });
+
+  it('onUnauthorized verilmemisken 401 yaniti yine ApiError firlatir', async () => {
+    const fetchImpl = jest
+      .fn()
+      .mockResolvedValue(
+        jsonResponse(
+          { error: { code: 'UNAUTHENTICATED', message: 'Oturum suresi doldu.', traceId: 'iz-1' } },
+          401,
+        ),
+      );
+    const client = createApiClient({
+      baseUrl: '/api/v1',
+      readAccessToken: () => 'token-abc',
+      fetchImpl,
+    });
+
+    await expect(client.request('/reports')).rejects.toMatchObject({ status: 401 });
+  });
+
   it('204 yanitinda govde cozmeye calismaz', async () => {
     const fetchImpl = jest.fn().mockResolvedValue({
       ok: true,
