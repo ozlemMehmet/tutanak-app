@@ -1,12 +1,15 @@
-// PublicReportPage (`/t/:token`) — kiracinin hesap acmadan tutanagi goruntuledigi
-// SALT-OKUNUR ekran (T-009, design.md → PublicReportPage). AppShell YOKTUR: sayfa
-// kimliksizdir ve genelde e-posta/WhatsApp linkinden mobilde acilir.
+// PublicReportPage (`/t/:token`) — kiracinin hesap acmadan tutanagi goruntuledigi ve
+// TEK TIKLA onayladigi ekran (T-009 + T-010, design.md → PublicReportPage). AppShell
+// YOKTUR: sayfa kimliksizdir ve genelde e-posta/WhatsApp linkinden mobilde acilir.
 //
-// KAPSAM: bu ekran yalnizca GORUNTULER. Tek tikla onay formu ve onay sonrasi
-// SuccessBanner T-010 kapsamindadir ve burada bilerek yoktur.
+// Tutanak icerigi salt-okunurdur; tek yazma etkilesimi onay formudur. Uyari banner'i
+// (H-11) onay bolumunun USTUNDE ve sabit kalir: onay oncesi mutlaka okunur olmalidir.
 import { useParams } from 'react-router-dom';
 import { ApiError } from '../api/client';
 import type { ApiClient } from '../api/client';
+import { ApprovalForm } from '../features/approvals/ApprovalForm';
+import type { Approval } from '../features/approvals/approvals.api';
+import { isAlreadyApprovedError, useApproveReport } from '../features/approvals/useApproveReport';
 import { PhotoGrid } from '../features/photos/PhotoGrid';
 import { usePublicReport } from '../features/sharing/usePublicReport';
 import { formatStamp } from '../lib/format-timestamp';
@@ -32,6 +35,24 @@ function errorMessageOf(error: unknown): string {
   return GENERIC_ERROR_MESSAGE;
 }
 
+/** Gecersiz link onay sirasinda da ortaya cikabilir: sayfa tam sayfa hataya gecer. */
+function isInvalidLinkError(error: unknown): boolean {
+  return (
+    error instanceof ApiError && (error.code === 'SHARE_LINK_NOT_FOUND' || error.status === 404)
+  );
+}
+
+/** Onay sonrasi basari banner'i (design.md → SuccessBanner). */
+function ApprovalBanner({ approval }: { approval?: Approval }): React.JSX.Element {
+  return (
+    <p className="banner banner--success" role="status">
+      {approval === undefined
+        ? 'Onaylandi'
+        : `Onaylandi — ${approval.approverEmail}, ${formatStamp(approval.approvedAt)}`}
+    </p>
+  );
+}
+
 /** Tam sayfa hata durumu: AppShell'siz, bagimsiz (design.md → FullPageErrorState). */
 function FullPageError({ message }: { message: string }): React.JSX.Element {
   return (
@@ -46,6 +67,7 @@ function FullPageError({ message }: { message: string }): React.JSX.Element {
 export function PublicReportPage({ client }: PublicReportPageProps): React.JSX.Element {
   const { token } = useParams<{ token: string }>();
   const report = usePublicReport(client, token ?? '');
+  const approve = useApproveReport(client, token ?? '');
 
   if (report.isPending) {
     // Uyari banner'i iskelet asamasinda gosterilmez: metni API'den gelir (design.md).
@@ -60,7 +82,15 @@ export function PublicReportPage({ client }: PublicReportPageProps): React.JSX.E
     return <FullPageError message={errorMessageOf(report.error)} />;
   }
 
+  // Onay sirasinda linkin gecersiz cikmasi tutanagi gosterilemez kilar (design.md).
+  if (approve.isError && isInvalidLinkError(approve.error)) {
+    return <FullPageError message={INVALID_LINK_MESSAGE} />;
+  }
+
   const view = report.data;
+  // Onay durumu sunucudan gelir; 409 (zaten onayli) da BASARILI sonuc sayilir.
+  const isApproved = view.isApproved || approve.isSuccess || isAlreadyApprovedError(approve.error);
+  const approval = view.approval ?? approve.data;
 
   return (
     <main className="page public-report">
@@ -86,6 +116,20 @@ export function PublicReportPage({ client }: PublicReportPageProps): React.JSX.E
           <p className="empty-state">Bu tutanakta henuz fotograf bulunmuyor</p>
         ) : (
           <PhotoGrid photos={view.photos} />
+        )}
+      </section>
+
+      <section className="public-report__approval">
+        {isApproved ? (
+          <ApprovalBanner approval={approval} />
+        ) : (
+          <ApprovalForm
+            onApprove={(approverEmail) => {
+              approve.mutate(approverEmail);
+            }}
+            isPending={approve.isPending}
+            error={approve.error}
+          />
         )}
       </section>
     </main>

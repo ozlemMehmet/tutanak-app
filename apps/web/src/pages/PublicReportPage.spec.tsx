@@ -4,6 +4,7 @@
 // Authorization basligi TASIMAZ.
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { App } from '../App';
 import { createApiClient } from '../api/client';
@@ -138,13 +139,14 @@ describe('PublicReportPage', () => {
     expect(screen.queryByRole('heading', { name: VIEW.title })).not.toBeInTheDocument();
   });
 
-  it('SALT-OKUNURDUR: sayfada hicbir buton, form veya girdi alani yoktur (kriter 3)', async () => {
+  it('tutanak ICERIGI salt-okunurdur: tek yazma etkilesimi onay formudur (T-009 kriter 3 / T-010)', async () => {
     renderPage(fakeClient(jest.fn().mockResolvedValue(VIEW)));
     await screen.findByRole('heading', { name: VIEW.title });
 
-    expect(screen.queryAllByRole('button')).toHaveLength(0);
-    expect(screen.queryAllByRole('textbox')).toHaveLength(0);
-    expect(document.querySelectorAll('form')).toHaveLength(0);
+    // Tek form + tek buton: onay akisi. Baslik/not/fotograf duzenleme arayuzu YOKTUR.
+    expect(document.querySelectorAll('form')).toHaveLength(1);
+    expect(screen.getAllByRole('button')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Onayla' })).toBeInTheDocument();
   });
 
   it('istek Authorization basligi TASIMAZ: goruntuleme oturum gerektirmez (kriter 4)', async () => {
@@ -165,6 +167,150 @@ describe('PublicReportPage', () => {
     expect(fetchImpl).toHaveBeenCalledWith(
       `/api/v1/public/reports/${TOKEN}`,
       expect.objectContaining({ headers: {} }),
+    );
+  });
+});
+
+describe('PublicReportPage — tek tikla onay (T-010)', () => {
+  const APPROVAL = {
+    id: '66666666-6666-4666-8666-666666666666',
+    approverEmail: 'kiraci@ornek.test',
+    approvedAt: '2026-08-15T09:30:00.000Z',
+  };
+
+  const APPROVED_VIEW = {
+    ...VIEW,
+    status: 'approved' as const,
+    isApproved: true,
+    approval: APPROVAL,
+  };
+
+  it('onay oncesi uyari metnini onay formuyla BIRLIKTE gosterir (kriter 1)', async () => {
+    renderPage(fakeClient(jest.fn().mockResolvedValue(VIEW)));
+
+    expect(await screen.findByRole('note')).toHaveTextContent(VIEW.disclaimer);
+    expect(screen.getByRole('button', { name: 'Onayla' })).toBeInTheDocument();
+  });
+
+  it('onaylandiginda onaylayan e-postasi ve damgasi ile basari banner`i gosterir', async () => {
+    const request = jest
+      .fn()
+      .mockResolvedValueOnce(VIEW)
+      .mockResolvedValueOnce(APPROVAL)
+      .mockResolvedValue(APPROVED_VIEW);
+    renderPage(fakeClient(request));
+
+    await userEvent.type(await screen.findByLabelText('E-posta adresiniz'), APPROVAL.approverEmail);
+    await userEvent.click(screen.getByRole('button', { name: 'Onayla' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Onaylandi');
+    expect(screen.getByRole('status')).toHaveTextContent(APPROVAL.approverEmail);
+    expect(screen.queryByRole('button', { name: 'Onayla' })).not.toBeInTheDocument();
+  });
+
+  it('onay istegini sozlesmedeki yol ve govde ile gonderir', async () => {
+    const request = jest
+      .fn()
+      .mockResolvedValueOnce(VIEW)
+      .mockResolvedValueOnce(APPROVAL)
+      .mockResolvedValue(APPROVED_VIEW);
+    renderPage(fakeClient(request));
+
+    await userEvent.type(await screen.findByLabelText('E-posta adresiniz'), APPROVAL.approverEmail);
+    await userEvent.click(screen.getByRole('button', { name: 'Onayla' }));
+
+    await screen.findByRole('status');
+    expect(request).toHaveBeenCalledWith(`/public/reports/${TOKEN}/approval`, {
+      method: 'POST',
+      body: JSON.stringify({ approverEmail: APPROVAL.approverEmail }),
+    });
+  });
+
+  it('tutanak ZATEN onayliysa onay formu HIC render edilmez (design.md success durumu)', async () => {
+    renderPage(fakeClient(jest.fn().mockResolvedValue(APPROVED_VIEW)));
+
+    expect(await screen.findByRole('status')).toHaveTextContent(APPROVAL.approverEmail);
+    expect(screen.queryByRole('button', { name: 'Onayla' })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('E-posta adresiniz')).not.toBeInTheDocument();
+  });
+
+  it('409 REPORT_ALREADY_APPROVED yanitinda hata degil, basari banner`i gosterir', async () => {
+    const conflict = {
+      error: { code: 'REPORT_ALREADY_APPROVED', message: 'Zaten onayli.', traceId: 'iz-4' },
+    };
+    const fetchImpl = jest
+      .fn()
+      .mockResolvedValueOnce({ ok: true, status: 200, json: () => Promise.resolve(VIEW) })
+      .mockResolvedValueOnce({ ok: false, status: 409, json: () => Promise.resolve(conflict) })
+      .mockResolvedValue({ ok: true, status: 200, json: () => Promise.resolve(APPROVED_VIEW) });
+    renderPage(createApiClient({ baseUrl: '/api/v1', readAccessToken: () => null, fetchImpl }));
+
+    await userEvent.type(await screen.findByLabelText('E-posta adresiniz'), APPROVAL.approverEmail);
+    await userEvent.click(screen.getByRole('button', { name: 'Onayla' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Onaylandi');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('400 yanitinda alan hatasini formun icinde gosterir (sayfa hata ekranina gecmez)', async () => {
+    const validationError = {
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: 'Girdi dogrulanamadi.',
+        details: [{ field: 'approverEmail', message: 'gecerli bir e-posta adresi giriniz' }],
+        traceId: 'iz-5',
+      },
+    };
+    const fetchImpl = jest
+      .fn()
+      .mockResolvedValueOnce({ ok: true, status: 200, json: () => Promise.resolve(VIEW) })
+      .mockResolvedValue({ ok: false, status: 400, json: () => Promise.resolve(validationError) });
+    renderPage(createApiClient({ baseUrl: '/api/v1', readAccessToken: () => null, fetchImpl }));
+
+    await userEvent.type(await screen.findByLabelText('E-posta adresiniz'), 'gecersiz');
+    await userEvent.click(screen.getByRole('button', { name: 'Onayla' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'gecerli bir e-posta adresi giriniz',
+    );
+    expect(screen.getByRole('heading', { name: VIEW.title })).toBeInTheDocument();
+  });
+
+  it('onay sirasinda 404 alinirsa tam sayfa hata ekranina gecer (design.md)', async () => {
+    const notFound = {
+      error: { code: 'SHARE_LINK_NOT_FOUND', message: 'Baglanti gecersiz.', traceId: 'iz-6' },
+    };
+    const fetchImpl = jest
+      .fn()
+      .mockResolvedValueOnce({ ok: true, status: 200, json: () => Promise.resolve(VIEW) })
+      .mockResolvedValue({ ok: false, status: 404, json: () => Promise.resolve(notFound) });
+    renderPage(createApiClient({ baseUrl: '/api/v1', readAccessToken: () => null, fetchImpl }));
+
+    await userEvent.type(await screen.findByLabelText('E-posta adresiniz'), APPROVAL.approverEmail);
+    await userEvent.click(screen.getByRole('button', { name: 'Onayla' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Bu baglanti gecersiz veya suresi dolmus',
+    );
+    expect(screen.queryByRole('heading', { name: VIEW.title })).not.toBeInTheDocument();
+  });
+
+  it('onay istegi Authorization basligi TASIMAZ: kiraci oturum acmaz', async () => {
+    const fetchImpl = jest
+      .fn()
+      .mockResolvedValueOnce({ ok: true, status: 200, json: () => Promise.resolve(VIEW) })
+      .mockResolvedValueOnce({ ok: true, status: 201, json: () => Promise.resolve(APPROVAL) })
+      .mockResolvedValue({ ok: true, status: 200, json: () => Promise.resolve(APPROVED_VIEW) });
+    renderPage(createApiClient({ baseUrl: '/api/v1', readAccessToken: () => null, fetchImpl }));
+
+    await userEvent.type(await screen.findByLabelText('E-posta adresiniz'), APPROVAL.approverEmail);
+    await userEvent.click(screen.getByRole('button', { name: 'Onayla' }));
+
+    await screen.findByRole('status');
+    // Baslik kumesi TAM olarak Content-Type'tir: Authorization eklenmez.
+    expect(fetchImpl).toHaveBeenCalledWith(
+      `/api/v1/public/reports/${TOKEN}/approval`,
+      expect.objectContaining({ headers: { 'Content-Type': 'application/json' } }),
     );
   });
 });
