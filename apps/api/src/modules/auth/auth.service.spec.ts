@@ -230,3 +230,32 @@ describe('AuthService.login sabit-zamanli dogrulama (T-015)', () => {
     ).rejects.toMatchObject({ code: 'INVALID_CREDENTIALS', httpStatus: 401 });
   });
 });
+
+// T-025: dummy hash artik kaynak kodda literal DEGIL, modul yuklenirken uretilir.
+describe('DUMMY_PASSWORD_HASH uretimi (T-025)', () => {
+  /** Modulu izole bir kayit defterinde yeniden yukleyip o yuklemenin dummy hash'ini doner. */
+  async function loadFreshDummyPasswordHash(): Promise<string> {
+    let loaded = '';
+    await jest.isolateModulesAsync(async () => {
+      const freshModule = await import('./auth.service');
+      loaded = freshModule.DUMMY_PASSWORD_HASH;
+    });
+    return loaded;
+  }
+
+  it('modul yuklenirken uretilir: iki bagimsiz yukleme farkli hash verir (literal degil)', async () => {
+    const first = await loadFreshDummyPasswordHash();
+    const second = await loadFreshDummyPasswordHash();
+
+    expect(first).not.toBe(second);
+    expect(first).not.toBe(DUMMY_PASSWORD_HASH);
+  });
+
+  it('gercek parola dogrulamasiyla ayni cost degeriyle (10) uretilir', () => {
+    expect(bcrypt.getRounds(DUMMY_PASSWORD_HASH)).toBe(10);
+  });
+
+  it('gecerli bir bcrypt hash tir: rastgele girdisi hicbir bilinen parolayla eslesmez', async () => {
+    await expect(bcrypt.compare(PASSWORD, DUMMY_PASSWORD_HASH)).resolves.toBe(false);
+  });
+});

@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -14,6 +15,9 @@ import type { RegisterDto } from './dto/register.dto';
 /** CLAUDE.md §6.1: bcrypt cost 10. */
 const BCRYPT_COST = 10;
 
+/** Dummy hash girdisinin entropisi; uretilen girdi hicbir yerde saklanmaz (T-025). */
+const DUMMY_PASSWORD_ENTROPY_BYTES = 32;
+
 /**
  * Servis DI disinda (birim testlerde) dogrudan kurulabildigi icin omur degeri
  * yapilandirma VARSAYILANINDAN turetilir — sabit sayi gomulmez. Uygulamada deger
@@ -22,12 +26,21 @@ const BCRYPT_COST = 10;
 const DEFAULT_ACCESS_TOKEN_TTL_SECONDS = parseAccessTokenTtlSeconds(DEFAULT_JWT_EXPIRES_IN);
 
 /**
- * T-015: kullanici bulunamadiginda da bcrypt maliyeti odemek icin kullanilan sabit dummy
- * hash. Bir defalik uretilen rastgele 32 baytin (girdi atildi, hicbir gercek kullanici
- * sifresinden turetilmedi) cost 10 bcrypt hash'idir; compare sonucu her zaman atilir.
- * Sir DEGILDIR: bilinen bir sifreye karsilik gelmez, yalnizca zamanlama esitler.
+ * T-015: kullanici bulunamadiginda da bcrypt maliyeti odemek icin kullanilan dummy hash;
+ * compare sonucu her zaman atilir. Sir DEGILDIR: girdisi rastgeledir ve hicbir yerde
+ * saklanmaz, dolayisiyla bilinen hicbir parolaya karsilik gelmez — yalnizca zamanlama esitler.
+ *
+ * T-025: deger kaynak koda LITERAL yazilmaz, acilista (modul yuklenirken) bir kez uretilir.
+ * `hashSync` bilerek kullanilir: modul seviyesinde tek seferlik calisir, istek yolunda
+ * senkron bcrypt cagrisi YAPILMAZ. Maliyeti tek bir bcrypt hash'idir (cost 10'da ~50-100 ms)
+ * ve yalnizca uygulama acilisina eklenir. Cost, gercek parola dogrulamasiyla AYNI olmalidir
+ * (§6.1: cost 10); aksi halde dummy dal olculebilir sekilde ayrisir ve T-015'in sagladigi
+ * zamanlama esitligi bozulur.
  */
-export const DUMMY_PASSWORD_HASH = '$2b$10$NtEviXCkx9pvweP70kTG6uyC88kNUO5bKeS1t1tfcUft.9xphfs4i';
+export const DUMMY_PASSWORD_HASH = bcrypt.hashSync(
+  randomBytes(DUMMY_PASSWORD_ENTROPY_BYTES).toString('hex'),
+  BCRYPT_COST,
+);
 
 @Injectable()
 export class AuthService {
