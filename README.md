@@ -27,8 +27,22 @@ docker compose up
 ```
 
 Ayaga kalkan servisler: `web` (http://localhost:5173), `api` (http://localhost:3000),
-`db` (Postgres 16), `minio` (S3 uyumlu obje depolama), `mailpit` (http://localhost:8025).
+`db` (Postgres 16), `minio` (S3 uyumlu obje depolama).
 Hicbir dis hesap/anahtar gerekmez; odeme saglayicisi yerelde `PAYMENT_PROVIDER=fake` ile calisir.
+
+### Yerelde e-posta
+
+Yerelde e-posta GONDERILMEZ ve yakalanmaz — `docker compose` bir SMTP yakalayici konteyner
+calistirmaz.
+E-posta siniri Resend'in HTTPS API istemcisidir (SMTP degil), bu yuzden yerel bir SMTP
+yakalayicisi hicbir zaman e-posta almaz. `RESEND_API_KEY` bos birakildiginda
+`POST /reports/{id}/share-link/email` ucu `202` doner ve gonderim durumu yanitta
+`status: "failed"` olarak raporlanir: bu bir hata degil, BEKLENEN yerel davranistir
+(uygulama anahtarsiz da acilir).
+
+Paylasim linki e-postadan bagimsiz uretilir: `POST /reports/{id}/share-link` ile alinan
+link ve `wa.me` metni her durumda gecerlidir; yerelde paylasimi bu yolla test edin.
+Gercek gonderimi denemek icin `.env` dosyasina gecerli bir `RESEND_API_KEY` yazin.
 
 ### Secenek 2 — Docker'siz
 
