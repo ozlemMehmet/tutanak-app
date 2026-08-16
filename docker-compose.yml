@@ -1,6 +1,8 @@
 # Yerel calistirma: `cp .env.example .env && docker compose up` (CLAUDE.md §10).
-# db/minio/mailpit servisleri sonraki ticketlar (T-002+) icin hazir bekler; T-001 iskeleti
-# yalnizca api ve web servislerini fiilen kullanir.
+# T-023: yerel e-posta YAKALAYICISI YOKTUR. E-posta siniri Resend'in HTTPS API istemcisidir
+# (SMTP degil), bu yuzden bir SMTP konteyneri (mailpit) hicbir zaman e-posta almazdi.
+# RESEND_API_KEY bosken paylasim e-postasi 202 + `status: "failed"` doner; bu BEKLENEN
+# davranistir ve paylasim linki (wa.me/kopyalama) bundan etkilenmez (CLAUDE.md §4.2.2).
 services:
   db:
     image: postgres:16-alpine
@@ -39,12 +41,6 @@ services:
     entrypoint: >-
       sh -c "until mc alias set yerel http://minio:9000 minioadmin minioadmin; do sleep 1; done;
       mc mb --ignore-existing yerel/${R2_BUCKET:-tutanak-photos}"
-
-  mailpit:
-    image: axllent/mailpit:latest
-    ports:
-      - '1025:1025'
-      - '8025:8025'
 
   api:
     build:
