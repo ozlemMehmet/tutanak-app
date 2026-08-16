@@ -19,6 +19,13 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: tutanak
+      # T-027: SonarCloud bu satiri "gomulu sifre" olarak isaretler; BILINCLI olarak
+      # degistirilmedi. Bu, `down -v` ile tumuyle silinen GECICI duman testi yigininin
+      # fixture'idir — host'a port acmayan, yalnizca compose agindan erisilen bir Postgres.
+      # Uretim yolu ayri bir dosyadir ve sifreyi ortamdan alir: `factory/10-release/
+      # runbook.md` §1 compose'unda `POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}` yazar.
+      # Buraya `${...}` koymak duman testini "once .env doldur" adimina bagimli kilar ve
+      # dosyanin tek amacini (tek komutla imaj dogrulama provasi) bozar.
       POSTGRES_PASSWORD: tutanak
       POSTGRES_DB: tutanak
     volumes:
