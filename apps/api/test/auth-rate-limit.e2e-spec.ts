@@ -163,4 +163,62 @@ describe('T-014 /auth/* hiz siniri', () => {
     expect(blockedAuth.status).toBe(429);
     expect(AUTH_LIMIT).toBeLessThan(GENERAL_LIMIT);
   });
+
+  // T-024 / guvenlik denetimi S-01: uretimde API portu disari acilmaz, tum istekler ters
+  // vekilin TEK IP'sinden gelir. Sayac istemci basina degilse tek bir saldirgan dakikada
+  // birkac istekle TUM kullanicilarin giris/kayit olmasini engeller.
+  describe('ters vekil arkasinda istemci basina sayac (S-01)', () => {
+    /** `trust proxy = 1` geregi gercek istemci, XFF zincirinin SON hop'udur. */
+    const loginAs = (forwardedFor: string, email: string) =>
+      request(httpServer())
+        .post('/api/v1/auth/login')
+        .set('X-Forwarded-For', forwardedFor)
+        .send({ email, password: PASSWORD });
+
+    it('iki farkli istemci kendi sayacini tuketir: biri 429 alirken digeri istek yapmaya devam eder', async () => {
+      const saldirgan = '198.51.100.11';
+      const masumKullanici = '198.51.100.22';
+
+      for (let attempt = 0; attempt < AUTH_LIMIT; attempt += 1) {
+        const allowed = await loginAs(saldirgan, freshEmail());
+        // Kullanici yok: 401 doner ama sayaci yine de tuketir (kaba kuvvet korumasi).
+        expect(allowed.status).toBe(401);
+      }
+
+      const blocked = await loginAs(saldirgan, freshEmail());
+      expect(blocked.status).toBe(429);
+      expect((blocked.body as ErrorEnvelopeBody).error.code).toBe('RATE_LIMIT_EXCEEDED');
+
+      // Ayni anda ikinci istemci HIC etkilenmez — sayaclar bagimsizdir.
+      for (let attempt = 0; attempt < AUTH_LIMIT; attempt += 1) {
+        const unaffected = await loginAs(masumKullanici, freshEmail());
+        expect(unaffected.status).toBe(401);
+      }
+
+      // Ve ikinci istemci de yalnizca KENDI limitini asinca kesilir.
+      const blockedSecond = await loginAs(masumKullanici, freshEmail());
+      expect(blockedSecond.status).toBe(429);
+    });
+
+    it('istemcinin uydurdugu XFF onek zinciri sayaci SIFIRLAMAZ (yalnizca guvenilen hop okunur)', async () => {
+      const gercekIstemci = '198.51.100.33';
+      // Saldirgan her istekte baska bir sahte halka ekler; vekil kendi gordugu adresi
+      // zincirin SONUNA yazdigi icin sayac anahtari degismez.
+      const spoofedChains = [
+        `203.0.113.1, ${gercekIstemci}`,
+        `203.0.113.2, 192.0.2.55, ${gercekIstemci}`,
+        `10.1.2.3, ${gercekIstemci}`,
+      ];
+
+      const statuses: number[] = [];
+      for (const chain of spoofedChains) {
+        const response = await loginAs(chain, freshEmail());
+        statuses.push(response.status);
+      }
+
+      // Ilk AUTH_LIMIT istek gecer, sonrasi uydurma onege RAGMEN 429 olur.
+      expect(statuses.slice(0, AUTH_LIMIT)).toEqual(Array<number>(AUTH_LIMIT).fill(401));
+      expect(statuses[AUTH_LIMIT]).toBe(429);
+    });
+  });
 });
