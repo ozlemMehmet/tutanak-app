@@ -12,6 +12,7 @@ import request from 'supertest';
 // degiskenler atandiktan SONRA dinamik import edilir (T-005 e2e testiyle ayni desen).
 import { FakeStorageAdapter } from '../src/infra/storage/fake-storage.adapter';
 import { STORAGE_PORT } from '../src/infra/storage/storage.port';
+import { PHOTO_MAX_EDGE_PX } from '../src/modules/photos/photo-image.processor';
 import {
   CHECK_VIOLATION,
   createEmptyDatabase,
@@ -258,6 +259,51 @@ describe('T-006 tutanaga fotograf ekleme ve sunucu damgasi', () => {
       // Depolama anahtari sunucuda uretilir; kullanicinin dosya adi kullanilmaz.
       expect(stored?.storageKey).toMatch(new RegExp(`^reports/${reportId}/[0-9a-f-]{36}\\.jpg$`));
       expect(stored?.storageKey).not.toContain('kamera');
+    });
+
+    it('depoya yazilan fotografin uzun kenari 1600 px ile sinirlidir (T-026)', async () => {
+      // architecture.md §104: yuklenen fotograf DEPOYA kucultulmus haliyle yazilir.
+      // Dogrulama, yanit alanlarindan degil DEPOLANAN BAYTLARDAN yapilir.
+      const reportId = await createReport(ownerToken);
+      const sharp = (await import('sharp')).default;
+
+      const response = await uploadPhoto(
+        reportId,
+        await createPhotoBytes({ width: 2400, height: 3200 }),
+        { token: ownerToken },
+      );
+
+      expect(response.status).toBe(201);
+      const body = response.body as PhotoBody;
+      const stored = await prisma.reportPhoto.findUnique({ where: { id: body.id } });
+      const storedObject = storage.read(stored?.storageKey ?? '');
+      const { width, height } = await sharp(storedObject?.body ?? Buffer.alloc(0)).metadata();
+
+      expect(Math.max(width, height)).toBeLessThanOrEqual(PHOTO_MAX_EDGE_PX);
+      // En-boy orani korunur ve yanit/veritabani depolanan hali yansitir.
+      expect([width, height]).toEqual([1200, PHOTO_MAX_EDGE_PX]);
+      expect([body.widthPx, body.heightPx]).toEqual([1200, PHOTO_MAX_EDGE_PX]);
+      expect([stored?.widthPx, stored?.heightPx]).toEqual([1200, PHOTO_MAX_EDGE_PX]);
+      expect(stored?.sizeBytes).toBe(storedObject?.body.length);
+    });
+
+    it('sinirin altindaki fotograf depoya OLDUGU GIBI yazilir (buyutulmez)', async () => {
+      const reportId = await createReport(ownerToken);
+      const sharp = (await import('sharp')).default;
+
+      const response = await uploadPhoto(
+        reportId,
+        await createPhotoBytes({ width: 640, height: 480 }),
+        { token: ownerToken },
+      );
+
+      const stored = await prisma.reportPhoto.findUnique({
+        where: { id: (response.body as PhotoBody).id },
+      });
+      const storedObject = storage.read(stored?.storageKey ?? '');
+      const { width, height } = await sharp(storedObject?.body ?? Buffer.alloc(0)).metadata();
+
+      expect([width, height]).toEqual([640, 480]);
     });
 
     it('desteklenmeyen dosya formati (.txt) yuklendiginde 400 + hata mesaji doner', async () => {

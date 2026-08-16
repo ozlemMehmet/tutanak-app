@@ -3,13 +3,11 @@
 // — PDF boyutu ve p95 uretim butcesi buna baglidir).
 
 import sharp from 'sharp';
-
-/**
- * PDF'e gomulen goruntunun uzun kenar siniri (architecture.md §3). Dagitim yapilandirmasi
- * degil BELGE DUZENI sabitidir: A4 sayfada bundan buyugu ek cozunurluk kazandirmaz,
- * yalnizca dosya boyutunu buyutur. CLAUDE.md §5.1 tablosunda karsiligi yoktur.
- */
-export const PDF_PHOTO_MAX_EDGE_PX = 1600;
+// T-026: sinir degeri TEK KAYNAKTAN gelir. Fotograf zaten YUKLEME aninda bu olcuye
+// indirilerek depolandigi icin (`normalizePhoto`) buradaki kucultme cogu fotograf icin
+// etkisizdir (`withoutEnlargement`); yine de KALDIRILMAZ — asagidaki bicim/saydamlik
+// donusumu zorunludur ve T-026 oncesi yuklenmis buyuk fotograflar hala depoda olabilir.
+import { PHOTO_MAX_EDGE_PX } from '../photos/photo-image.processor';
 
 /** Kayipli sikistirma orani: basili belge kalitesi ile dosya boyutu arasindaki denge. */
 const PDF_PHOTO_JPEG_QUALITY = 80;
@@ -26,8 +24,8 @@ const FLATTEN_BACKGROUND = { r: 255, g: 255, b: 255 };
 export function shrinkPhotoForPdf(photo: Buffer): Promise<Buffer> {
   return sharp(photo)
     .resize({
-      width: PDF_PHOTO_MAX_EDGE_PX,
-      height: PDF_PHOTO_MAX_EDGE_PX,
+      width: PHOTO_MAX_EDGE_PX,
+      height: PHOTO_MAX_EDGE_PX,
       fit: 'inside',
       withoutEnlargement: true,
     })
