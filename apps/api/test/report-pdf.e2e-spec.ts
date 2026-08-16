@@ -98,6 +98,8 @@ describe('T-007 tutanak PDF ciktisi', () => {
     process.env.PUBLIC_APP_URL = 'http://localhost:5173';
     // T-008 ile zorunlu hale gelen yapilandirma; uygulama bunlar olmadan ACILMAZ (§5).
     process.env.EMAIL_FROM = 'Tutanak <noreply@ornek.test>';
+    // T-024/S-03 ile zorunlu hale geldi (varsayilani YOK); uygulama bu deger olmadan ACILMAZ.
+    process.env.PAYMENT_PROVIDER = 'fake';
     // Obje depolama testte sahtelendigi icin bu degerler yalnizca sema dogrulamasini
     // gecmek icindir; hicbir ag cagrisi yapilmaz (CLAUDE.md §5).
     process.env.R2_ENDPOINT = 'http://localhost:9000';

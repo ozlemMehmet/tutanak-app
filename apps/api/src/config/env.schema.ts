@@ -61,6 +61,9 @@ const httpUrl = (): z.ZodEffects<z.ZodString, string, string> =>
     .url()
     .refine((value) => /^https?:\/\//.test(value), 'http(s) adresi olmalidir');
 
+/** Sahte odeme saglayicisinin YASAK oldugu ortam (T-024 / S-03). */
+const PRODUCTION_NODE_ENV = 'production';
+
 /** PAYMENT_PROVIDER=iyzico secildiginde zorunlu hale gelen sirlar (CLAUDE.md §5). */
 const IYZICO_SECRET_KEYS = [
   'IYZICO_API_KEY',
@@ -91,8 +94,20 @@ const envObjectSchema = z.object({
     .int()
     .positive()
     .default(DEFAULT_SUBSCRIPTION_PERIOD_DAYS),
-  /** Hangi PaymentPort adapter'inin baglanacagi (CLAUDE.md §5.1). */
-  PAYMENT_PROVIDER: z.enum(['iyzico', 'fake']).default('fake'),
+  /**
+   * Calisma ortami. Uygulama yapilandirmasi DEGILDIR (sir de degildir): imaj/orkestrator
+   * tarafindan verilir, bu yuzden `.env.example`'da anahtar olarak YER ALMAZ — `.env`'e
+   * yazilan bir deger uretim imajindaki `NODE_ENV=production`'i EZER ve asagidaki
+   * fail-open korumasini sessizce devre disi birakirdi (devlog T-024: anayasa boslugu).
+   */
+  NODE_ENV: z.string().min(1).default('development'),
+  /**
+   * Hangi PaymentPort adapter'inin baglanacagi (CLAUDE.md §5.1).
+   * VARSAYILANI YOKTUR (T-024 / S-03): degisken unutuldugunda `fake` adapter'a dusmek
+   * webhook imza dogrulamasini "imza basligi var mi" seviyesine indiriyor ve sahte imzayla
+   * ucretsiz abonelik acilmasina izin veriyordu. Eksikse uygulama ACILMAZ.
+   */
+  PAYMENT_PROVIDER: z.enum(['iyzico', 'fake']),
   /**
    * Uygulamanin genel adresi; odeme sonrasi donus adresinin tabani (CLAUDE.md §5.1).
    * `z.url()` sema disi protokolleri (`localhost:5173`) de gecirdigi icin http/https sarti
@@ -152,6 +167,15 @@ const envObjectSchema = z.object({
 
 export const envSchema = envObjectSchema
   .superRefine((env, ctx) => {
+    // T-024 / S-03: uretimde sahte saglayici imza dogrulamasi YAPMAZ; bu deger uretimde
+    // asla kabul edilmez (yerel/test kosumu `fake` ile calismaya devam eder — §10).
+    if (env.NODE_ENV === PRODUCTION_NODE_ENV && env.PAYMENT_PROVIDER === 'fake') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['PAYMENT_PROVIDER'],
+        message: 'NODE_ENV=production iken "fake" kullanilamaz; "iyzico" olmalidir',
+      });
+    }
     if (env.PAYMENT_PROVIDER !== 'iyzico') {
       // Yerel/test kosumu dis hesap gerektirmez (CLAUDE.md §10).
       return;

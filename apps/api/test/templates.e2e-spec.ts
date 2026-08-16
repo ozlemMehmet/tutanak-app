@@ -75,6 +75,8 @@ describe('T-004 hazir sablon listesi ve secimi', () => {
     process.env.PUBLIC_APP_URL = 'http://localhost:5173';
     // T-008 ile zorunlu hale gelen yapilandirma; uygulama bunlar olmadan ACILMAZ (§5).
     process.env.EMAIL_FROM = 'Tutanak <noreply@ornek.test>';
+    // T-024/S-03 ile zorunlu hale geldi (varsayilani YOK); uygulama bu deger olmadan ACILMAZ.
+    process.env.PAYMENT_PROVIDER = 'fake';
     // Obje depolama yapilandirmasi T-006 ile zorunlu hale geldi; bu testler depolamayi
     // kullanmaz, degerler yalnizca env semasini gecmek icindir (CLAUDE.md §5).
     process.env.R2_ENDPOINT = 'http://localhost:9000';

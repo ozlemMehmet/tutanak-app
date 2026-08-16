@@ -11,13 +11,15 @@ const STORAGE_ENV = {
   R2_SECRET_ACCESS_KEY: 'minioadmin',
 };
 
-// Zorunlu anahtarlarin en kucuk kumesi (T-012 abonelik + T-006 depolama + T-008 e-posta ile buyudu).
+// Zorunlu anahtarlarin en kucuk kumesi (T-012 abonelik + T-006 depolama + T-008 e-posta +
+// T-024 odeme saglayicisi ile buyudu).
 const REQUIRED_ENV = {
   DATABASE_URL,
   JWT_SECRET,
   SUBSCRIPTION_PRICE_AMOUNT: '199.00',
   PUBLIC_APP_URL: 'http://localhost:5173',
   EMAIL_FROM: 'Tutanak <noreply@ornek.test>',
+  PAYMENT_PROVIDER: 'fake',
   ...STORAGE_ENV,
 };
 
@@ -25,7 +27,6 @@ const VALID_ENV = {
   ...REQUIRED_ENV,
   JWT_EXPIRES_IN: '7d',
   SUBSCRIPTION_CURRENCY: 'TRY',
-  PAYMENT_PROVIDER: 'fake',
 };
 
 describe('validateEnv', () => {
@@ -38,7 +39,6 @@ describe('validateEnv', () => {
       JWT_EXPIRES_IN: '7d',
       SUBSCRIPTION_CURRENCY: 'TRY',
       SUBSCRIPTION_PERIOD_DAYS: 30,
-      PAYMENT_PROVIDER: 'fake',
       PHOTO_MAX_BYTES: 10_485_760,
       PHOTO_MAX_PER_REPORT: 30,
       PRESIGNED_URL_TTL_SECONDS: 900,
@@ -300,6 +300,69 @@ describe('validateEnv', () => {
           IYZICO_WEBHOOK_SECRET: 'webhook-sirri',
         }),
       ).not.toThrow();
+    });
+  });
+
+  // T-024 / guvenlik denetimi S-03: odeme saglayicisi varsayilani fail-open'di. Degisken
+  // unutuldugunda uygulama aciliyor ve webhook imza dogrulamasi "imza basligi var mi"
+  // seviyesine dusuyordu (sahte imzayla ucretsiz abonelik acilabiliyordu).
+  describe('PAYMENT_PROVIDER fail-open korumasi (S-03)', () => {
+    const withoutPaymentProvider = (): Record<string, unknown> => {
+      const env: Record<string, unknown> = { ...REQUIRED_ENV };
+      delete env.PAYMENT_PROVIDER;
+      return env;
+    };
+
+    const IYZICO_SECRETS = {
+      IYZICO_API_KEY: 'api-anahtari',
+      IYZICO_SECRET_KEY: 'gizli-anahtar',
+      IYZICO_WEBHOOK_SECRET: 'webhook-sirri',
+    };
+
+    it('PAYMENT_PROVIDER tanimsizken VARSAYILANA DUSMEZ; uygulama acilmaz', () => {
+      expect(() => validateEnv(withoutPaymentProvider())).toThrow(/PAYMENT_PROVIDER/);
+    });
+
+    it('eksik PAYMENT_PROVIDER hatasi hangi degiskenin eksik oldugunu soyler', () => {
+      let message = '';
+      try {
+        validateEnv(withoutPaymentProvider());
+      } catch (error: unknown) {
+        message = error instanceof Error ? error.message : '';
+      }
+
+      expect(message).toContain('PAYMENT_PROVIDER');
+      // Deger degil, yalnizca anahtar adi + kural ihlali raporlanir (CLAUDE.md §4.3, §5).
+      expect(message).not.toContain(JWT_SECRET);
+    });
+
+    it('NODE_ENV=production iken PAYMENT_PROVIDER=fake REDDEDILIR (uygulama acilmaz)', () => {
+      expect(() =>
+        validateEnv({ ...REQUIRED_ENV, NODE_ENV: 'production', PAYMENT_PROVIDER: 'fake' }),
+      ).toThrow(/PAYMENT_PROVIDER/);
+    });
+
+    it('NODE_ENV=production iken PAYMENT_PROVIDER=iyzico kabul edilir', () => {
+      expect(() =>
+        validateEnv({
+          ...REQUIRED_ENV,
+          NODE_ENV: 'production',
+          PAYMENT_PROVIDER: 'iyzico',
+          ...IYZICO_SECRETS,
+        }),
+      ).not.toThrow();
+    });
+
+    it('yerel/test ortaminda PAYMENT_PROVIDER=fake calismaya devam eder', () => {
+      // CLAUDE.md §10: `docker compose up` dis hesap/anahtar GEREKTIRMEZ.
+      expect(() =>
+        validateEnv({ ...REQUIRED_ENV, NODE_ENV: 'development', PAYMENT_PROVIDER: 'fake' }),
+      ).not.toThrow();
+      expect(() =>
+        validateEnv({ ...REQUIRED_ENV, NODE_ENV: 'test', PAYMENT_PROVIDER: 'fake' }),
+      ).not.toThrow();
+      // NODE_ENV hic verilmediginde de yerel kosum varsayilir (uretim ISPATLANMALIDIR).
+      expect(() => validateEnv({ ...REQUIRED_ENV, PAYMENT_PROVIDER: 'fake' })).not.toThrow();
     });
   });
 });
