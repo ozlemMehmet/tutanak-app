@@ -57,6 +57,27 @@ COPY <<'CADDYFILE' /etc/caddy/Caddyfile
 		try_files {path} /index.html
 		file_server
 
+		# T-024 / guvenlik denetimi S-02: JS'i CALISTIRAN koken (SPA belgesi + varliklari)
+		# hicbir guvenlik basligi tasimiyordu; `helmet` yalnizca API yanitlarinda calisiyor.
+		# architecture.md, erisim tokeninin `localStorage`'da tutulmasini acikca "kati CSP"
+		# telafi kontrolune dayandiriyor — o kontrol burasidir. API yanitlarinin basliklarina
+		# DOKUNULMAZ: `/api/*` ve `/health` yukaridaki `handle @api` blogunda vekillenir.
+		#
+		# Obje depolama kokeni CSP metnine KODA GOMULU yazilmaz (CLAUDE.md §5.1): fotograflar
+		# on-imzali URL ile R2/MinIO kokeninden gelir ve bu adres, API'nin imzalarken
+		# kullandigi `R2_PUBLIC_ENDPOINT` ile AYNI olmak zorundadir — web container'ina ayni
+		# deger verilmelidir. Verilmezse yer tutucu bos genisler: CSP gecerli kalir ama
+		# fotograflar tarayicida engellenir.
+		# `blob:` fotograf onizlemesi icindir (PhotoCaptureInput `URL.createObjectURL` kullanir);
+		# `data:` ikon/gomulu kucuk gorseller icin birakilmistir. Inline script/style YOKTUR,
+		# bu yuzden 'unsafe-inline' HICBIR yonergede verilmez.
+		header {
+			Content-Security-Policy "default-src 'self'; script-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob: {$R2_PUBLIC_ENDPOINT}; connect-src 'self' {$R2_PUBLIC_ENDPOINT}"
+			Strict-Transport-Security "max-age=31536000; includeSubDomains"
+			X-Content-Type-Options "nosniff"
+			Referrer-Policy "no-referrer"
+		}
+
 		# Service worker/manifest her zaman en guncel halinin gelmesi icin onbelleklenmez
 		# (vite-plugin-pwa `registerType: autoUpdate` ile calisir, T-001).
 		header /sw.js Cache-Control "no-cache"
