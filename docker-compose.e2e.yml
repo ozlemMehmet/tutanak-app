@@ -65,6 +65,14 @@ services:
       DATABASE_URL: postgresql://tutanak:tutanak@db:5432/tutanak
       R2_ENDPOINT: http://minio:9000
       R2_PUBLIC_ENDPOINT: http://localhost:9000
+      # T-024/S-03: uretim imaji `ENV NODE_ENV=production` tasir ve sema uretimde
+      # `PAYMENT_PROVIDER=fake` degerini REDDEDER (sahte saglayici webhook imzasini
+      # dogrulamaz). Bu yigin ise bilincli olarak DIS HESAP GEREKTIRMEZ (R2 yerine MinIO,
+      # iyzico yerine fake), dolayisiyla burada ortam acikca yerel olarak isaretlenir;
+      # dogrulanan sey imajin kendisi ve kurulum akisidir, ortam bayragi degil.
+      # UYARI: uretimde (runbook §1 compose'u) bu deger ASLA ezilmez — ezilirse sahte
+      # odeme saglayicisi canliya acilir.
+      NODE_ENV: development
     depends_on:
       db:
         condition: service_healthy
@@ -83,6 +91,11 @@ services:
       dockerfile: apps/web/Dockerfile
     environment:
       APP_DOMAIN: ':80'
+      # T-024/S-02: Caddy'nin CSP basligindaki `img-src`/`connect-src` obje depolama kokeni
+      # bu degerden turer (apps/web/Dockerfile). API'nin on-imzali URL uretirken kullandigi
+      # adresle AYNI olmak ZORUNDADIR; farkli olursa (ya da verilmezse) fotograflar
+      # tarayicida sessizce engellenir — sunucu tarafinda hicbir hata gorunmez.
+      R2_PUBLIC_ENDPOINT: http://localhost:9000
     ports:
       - '${HTTP_PORT:-8080}:80'
     depends_on:
