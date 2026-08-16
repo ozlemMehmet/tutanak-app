@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { ClientIpThrottlerGuard } from './common/guards/client-ip-throttler.guard';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { createThrottlerOptions } from './common/guards/rate-limit.factory';
 import { AppConfigModule } from './config/config.module';
@@ -42,7 +43,9 @@ import { UsersModule } from './modules/users/users.module';
   providers: [
     // SIRA BAGLAYICI (T-014): hiz siniri kimlik dogrulamasindan ONCE calisir; aksi halde
     // kimliksiz kaba kuvvet istekleri once auth maliyetini (JWT dogrulama/bcrypt) odetirdi.
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    // T-024 / S-01: sayac anahtari ISTEMCI adresidir (ters vekilin IP'si degil) —
+    // ClientIpThrottlerGuard `req.ip`'i sabitler, `main.ts` de `trust proxy` hop sayisini.
+    { provide: APP_GUARD, useClass: ClientIpThrottlerGuard },
     // Kimlik dogrulama VARSAYILAN OLARAK KAPALI; istisnalar @Public() ile isaretlenir
     // (api-contract.yaml: /public/* disindaki her endpoint bearerAuth ister).
     { provide: APP_GUARD, useClass: JwtAuthGuard },

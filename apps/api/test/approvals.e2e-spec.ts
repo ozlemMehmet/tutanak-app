@@ -152,6 +152,8 @@ describe('T-010 tek tikla taraf onayi', () => {
     process.env.R2_ACCESS_KEY_ID = 'test-erisim';
     process.env.R2_SECRET_ACCESS_KEY = 'test-gizli';
     process.env.EMAIL_FROM = 'Tutanak <noreply@ornek.test>';
+    // T-024/S-03 ile zorunlu hale geldi (varsayilani YOK); uygulama bu deger olmadan ACILMAZ.
+    process.env.PAYMENT_PROVIDER = 'fake';
 
     const { AppModule } = await import('../src/app.module');
     const { configureApiApp } = await import('../src/main');

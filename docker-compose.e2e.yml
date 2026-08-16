@@ -1,0 +1,107 @@
+# Uretim GORUNTULERINI (dev bind-mount/watch modu DEGIL) kullanan tek seferlik duman testi
+# kurulumu — devops-agent, release-prep. Amac: "test edilen imaj = deploy edilen imaj" ilkesi
+# (canliya gidecek Dockerfile hedefleriyle GERCEKTEN ayaga kalkiyor mu, migration+seed calisiyor
+# mu, health endpoint donuyor mu). Dis hesap gerektirmemesi icin R2 yerine MinIO, Resend yerine
+# Mailpit kullanilir (T-012 PAYMENT_PROVIDER=fake, CLAUDE.md §10 ile ayni yerel varsayilanlar).
+#
+# Kullanim: `cp .env.example .env && docker compose -f docker-compose.e2e.yml up --build -d`
+# Duman testi: `curl -f http://localhost:${HTTP_PORT:-8080}/health` (Caddy /health'i API'ye
+# vekiller — apps/web/Dockerfile'daki Caddyfile) ve `curl -f http://localhost:${HTTP_PORT:-8080}/`
+# (statik SPA). `api` servisinin kendi portu host'a acilmaz; container-ici healthcheck'i
+# (Dockerfile HEALTHCHECK) `docker compose ps` ile izlenir.
+# Temizlik: `docker compose -f docker-compose.e2e.yml down -v`.
+#
+# VPS uretim kurulumu bu dosyayi DOGRUDAN calistirmaz (orada gercek R2/Resend/iyzico
+# kullanilir, MinIO/Mailpit olmaz) — uretime ozel dosya factory/10-release/runbook.md §1'de
+# adim adim (heredoc ile) verilir; burasi yalnizca imaj+kurulumun dogrulama provasidir.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: tutanak
+      POSTGRES_PASSWORD: tutanak
+      POSTGRES_DB: tutanak
+    volumes:
+      - e2e-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U tutanak']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - e2e-minio-data:/data
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    entrypoint: >-
+      sh -c "until mc alias set yerel http://minio:9000 minioadmin minioadmin; do sleep 1; done;
+      mc mb --ignore-existing yerel/${R2_BUCKET:-tutanak-photos}"
+
+  mailpit:
+    image: axllent/mailpit:latest
+    # Web arayuzu host'a acilmaz (smoke testinde otomatik dogrulanmiyor, T-023 bekliyor —
+    # bkz. factory/10-release/devops-report.md); baska bir yerel kosumla port catismasini
+    # onlemek icin container ici 8025 disariya yayinlanmaz.
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      # Hedef belirtilmez: Dockerfile'daki varsayilan (son) asama `runtime` kullanilir —
+      # bu, VPS'e gidecek olan AYNI uretim imajidir (dev hedefi degil).
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql://tutanak:tutanak@db:5432/tutanak
+      R2_ENDPOINT: http://minio:9000
+      R2_PUBLIC_ENDPOINT: http://localhost:9000
+      # T-024/S-03: uretim imaji `ENV NODE_ENV=production` tasir ve sema uretimde
+      # `PAYMENT_PROVIDER=fake` degerini REDDEDER (sahte saglayici webhook imzasini
+      # dogrulamaz). Bu yigin ise bilincli olarak DIS HESAP GEREKTIRMEZ (R2 yerine MinIO,
+      # iyzico yerine fake), dolayisiyla burada ortam acikca yerel olarak isaretlenir;
+      # dogrulanan sey imajin kendisi ve kurulum akisidir, ortam bayragi degil.
+      # UYARI: uretimde (runbook §1 compose'u) bu deger ASLA ezilmez — ezilirse sahte
+      # odeme saglayicisi canliya acilir.
+      NODE_ENV: development
+    depends_on:
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:3000/health']
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    environment:
+      APP_DOMAIN: ':80'
+      # T-024/S-02: Caddy'nin CSP basligindaki `img-src`/`connect-src` obje depolama kokeni
+      # bu degerden turer (apps/web/Dockerfile). API'nin on-imzali URL uretirken kullandigi
+      # adresle AYNI olmak ZORUNDADIR; farkli olursa (ya da verilmezse) fotograflar
+      # tarayicida sessizce engellenir — sunucu tarafinda hicbir hata gorunmez.
+      R2_PUBLIC_ENDPOINT: http://localhost:9000
+    ports:
+      - '${HTTP_PORT:-8080}:80'
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  e2e-db-data:
+  e2e-minio-data:

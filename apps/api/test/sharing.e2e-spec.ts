@@ -128,6 +128,8 @@ describe('T-008 paylasim linki ve e-posta/WhatsApp paylasimi', () => {
     process.env.R2_SECRET_ACCESS_KEY = 'test-gizli';
     // T-008: e-posta gonderen adresi zorunlu; saglayici FakeEmailAdapter ile degistirilir.
     process.env.EMAIL_FROM = 'Tutanak <noreply@ornek.test>';
+    // T-024/S-03 ile zorunlu hale geldi (varsayilani YOK); uygulama bu deger olmadan ACILMAZ.
+    process.env.PAYMENT_PROVIDER = 'fake';
 
     const { AppModule } = await import('../src/app.module');
     const { configureApiApp } = await import('../src/main');
