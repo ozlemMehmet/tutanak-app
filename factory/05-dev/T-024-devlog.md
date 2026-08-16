@@ -239,3 +239,80 @@ POST /api/v1/reports/:id/photos → 201; donen on-imzali URL kokeni: http://loca
                  (CSP'deki kokenle AYNI → fotograf CSP tarafindan engellenmez)
 Temizlik: `docker compose ... down -v`, gecici imajlar ve `.env` silindi.
 ```
+
+## Iade turu 2 (code-reviewer: CHANGES, 1 blokaj + 1 test boslugu)
+
+Ticket bu tur ONCESINDE guncellendi: kriter listesi 7 → 8 maddeye cikti, kriter 5 artik
+uretim compose'unun (`factory/10-release/runbook.md`) devops-agent'a ait oldugunu ve BU
+ticket'in onu DEGISTIRMEDIGINI, yalnizca devlog'da TEYIT ettigini soyluyor; kriter 6 ise
+"kriter 4'teki baslik kumesinin otomatik test karsiligi" olarak ayri bir madde oldu.
+
+**Blokaj 1 (uretim compose'unda `R2_PUBLIC_ENDPOINT`) — orkestrator tarafindan kablolandi, TEYIT edildi.**
+Dosyaya DOKUNULMADI (kriter 5 acikca yasakliyor), yalnizca dogrulandi:
+- `factory/10-release/runbook.md:163` → §1 uretim compose heredoc'unda `web:` servisinin
+  `environment:` blogunda `R2_PUBLIC_ENDPOINT: ${R2_PUBLIC_ENDPOINT}` var (uzerinde, degerin
+  eksik olmasinin fotograflari SESSIZCE engelledigini soyleyen aciklama satirlari da var).
+- `factory/10-release/runbook.md:224` → §5 env tablosundaki `R2_PUBLIC_ENDPOINT` satiri
+  "**Bu deger hem `api` hem `web` servisine gecer**" notunu tasiyor.
+- Yani `.env.example`'daki uyari ile dagitim dokumani artik CELISMIYOR; her iki dagitim yolu
+  (duman testi yigini + uretim runbook'u) kokeni web container'ina veriyor.
+- Runbook compose'una test yazilmadi: `tools/` testleri urun repo worktree'sinden kosar ve
+  `factory/10-release/` bu agacta YOKTUR (dosya sistemi kontrolu ile dogrulandi) — boyle bir
+  assert her kosumda kirmizi olurdu. Kilit, dosyanin sahibi devops-agent'ta kalir.
+
+**Blokaj 2 (kriter 4'un otomatik test karsiligi yok — yeni kriter 6) — DUZELTILDI.**
+`tools/smoke-stack-wiring.spec.ts` icine `apps/web/Dockerfile` header blogunu kilitleyen
+9 test eklendi (`uretim imajinda ... guvenlik basliklari` describe'i):
+- CSP taban yonergeleri `default-src 'self'`, `script-src 'self'`, `object-src 'none'`,
+  `base-uri 'self'`, `frame-ancestors 'none'` → `it.each` ile madde madde;
+- `Strict-Transport-Security`, `X-Content-Type-Options "nosniff"`, `Referrer-Policy` ve
+  CSP'nin STATIK BELGE blogunda tanimli oldugu.
+- `webStaticSecurityHeaderBlock()` yardimcisi satir bazli tarar (tek regex ile blok
+  cikarilamaz: CSP degeri `{$R2_PUBLIC_ENDPOINT}` yer tutucusu yuzunden `}` icerir) ve
+  Caddyfile'daki IKI header blogundan CSP tasiyani secer — boylece `/t/*` icin duran
+  `header @public { ... }` blogundaki `Referrer-Policy` yanlis pozitif uretmez.
+
+**Kriter -> test eslemesi (guncel ticket numaralandirmasi):**
+
+| Kabul kriteri | Karsilayan test |
+|---|---|
+| 4. Uretim imajinda CSP + HSTS + nosniff + Referrer-Policy | `tools/smoke-stack-wiring.spec.ts` → "uretim imajinda statik SPA belgesinin guvenlik basliklari" (9 test) + iade turu 1'deki canli imaj dogrulamasi |
+| 5. CSP kokeni `R2_PUBLIC_ENDPOINT`'ten turer, dev'in yazabildigi yolda kablolanir | ayni dosyadaki 3 kablolama testi (`docker-compose.e2e.yml`); uretim compose'u yukarida TEYIT edildi |
+| 6. Baslik kumesinin otomatik karsiligi vardir, biri silinirse kirmizi doner | ayni 9 test + asagidaki mutasyon kanidi |
+
+### Sistematik dogrulama: testin "kirmizi olabildigi" kanitlandi
+
+Kod bu turdan ONCE zaten dogruydu (basliklar iade turu 1'de eklenmisti), dolayisiyla yeni
+testler ilk kosumda yesil geldi. "Yesil ama hicbir seyi kilitlemeyen test" riskini elemek icin
+her assert mutasyonla sinandi (Dockerfile gecici olarak bozuldu → test kosuldu → geri alindi):
+
+| Mutasyon | Sonuc |
+|---|---|
+| Statik bloktan `Strict-Transport-Security` satiri silindi | 1 test KIRMIZI |
+| `X-Content-Type-Options` degeri `"sniff-me"` yapildi | 1 test KIRMIZI |
+| YALNIZCA statik bloktaki `Referrer-Policy` silindi (`@public` blogundaki birakildi) | 1 test KIRMIZI (blok kapsami dogru) |
+| CSP'den `object-src`/`base-uri`/`frame-ancestors` silindi | 3 test KIRMIZI |
+
+Mutasyonlar sonrasi `git diff apps/web/Dockerfile` BOS — urun dosyasi degismedi, degisen tek
+dosya `tools/smoke-stack-wiring.spec.ts`.
+
+### Blokaj olmayan notlara verilen yanit
+- `env.schema.ts` kaynak metnini regex ile dogrulayan assert (satir 106) KORUNDU: amaci
+  davranisi test etmek degil, duman testi yigininin `NODE_ENV != production` secimiyle semadaki
+  uretim reddini AYNI CIFTTE tutmak; ikisinden biri kalkarsa digeri anlamsizlasir. Kirilganligi
+  bilincli, gerekcesi testin kendi yorumunda yazili. Kapsam disi degisiklikten kacinildi.
+- `NODE_ENV` anayasa boslugu kaydi degismedi (§ "Anayasa (CLAUDE.md) Bosluklari").
+
+## Test Kosum Ciktisi — iade turu 2
+
+```
+npx jest --config jest.config.mjs (kok/tools)  → 6 suite, 40 test passed  (onceki: 31)
+npm run test --workspace @tutanak/api          → 56 suite, 368 test passed
+e2e (DATABASE_URL tanimli, --runInBand):
+  auth-rate-limit.e2e-spec.ts + billing.e2e-spec.ts → 2 suite, 25 test passed
+  (bu turda urun kodu DEGISMEDI — degisiklik yalnizca tools/ altinda bir test dosyasi;
+   T-024'un davranis kriterlerini tasiyan iki suite yine de regresyon icin kosuldu)
+eslint . --max-warnings=0   → 0 hata, 0 uyari
+prettier --check .          → All matched files use Prettier code style!
+npm run typecheck (kok + api + web) → temiz
+```
