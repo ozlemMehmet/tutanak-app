@@ -1,6 +1,6 @@
 import sharp from 'sharp';
 import { UnprocessableError } from '../../common/errors/app-error';
-import { normalizePhoto } from './photo-image.processor';
+import { PHOTO_MAX_EDGE_PX, normalizePhoto } from './photo-image.processor';
 
 function jpeg(width = 12, height = 8): Promise<Buffer> {
   return sharp({
@@ -18,6 +18,71 @@ describe('normalizePhoto', () => {
     expect(result.heightPx).toBe(8);
     expect(result.sizeBytes).toBe(result.body.length);
     expect(result.contentType).toBe('image/jpeg');
+  });
+
+  it('uzun kenari sinirdan buyuk goruntuyu sinira indirir (T-026: depolanan hal kucuktur)', async () => {
+    const buyuk = await jpeg(2400, 3200);
+
+    const result = await normalizePhoto(buyuk, 'image/jpeg');
+
+    expect(result.heightPx).toBe(PHOTO_MAX_EDGE_PX);
+    // En-boy orani korunur: 2400x3200 -> 1200x1600.
+    expect(result.widthPx).toBe(1200);
+    // Bildirilen olculer gercekten depolanan baytlardan gelir.
+    const stored = await sharp(result.body).metadata();
+    expect(stored.width).toBe(result.widthPx);
+    expect(stored.height).toBe(result.heightPx);
+  });
+
+  it('genis (yatay) goruntude de sinirlanan kenar UZUN kenardir', async () => {
+    const genis = await jpeg(3200, 2400);
+
+    const result = await normalizePhoto(genis, 'image/jpeg');
+
+    expect(result.widthPx).toBe(PHOTO_MAX_EDGE_PX);
+    expect(result.heightPx).toBe(1200);
+  });
+
+  it('sinirin altindaki goruntuyu BUYUTMEZ (withoutEnlargement)', async () => {
+    const kucuk = await jpeg(320, 240);
+
+    const result = await normalizePhoto(kucuk, 'image/jpeg');
+
+    expect(result.widthPx).toBe(320);
+    expect(result.heightPx).toBe(240);
+  });
+
+  it('sinirin tam ustundeki goruntuyu sinira indirir (sinir degeri dahil edilir)', async () => {
+    const sinirda = await jpeg(PHOTO_MAX_EDGE_PX + 1, 800);
+
+    const result = await normalizePhoto(sinirda, 'image/jpeg');
+
+    expect(result.widthPx).toBe(PHOTO_MAX_EDGE_PX);
+  });
+
+  it('tam sinir olcusundeki goruntu oldugu gibi kalir', async () => {
+    const tamSinir = await jpeg(PHOTO_MAX_EDGE_PX, 800);
+
+    const result = await normalizePhoto(tamSinir, 'image/jpeg');
+
+    expect(result.widthPx).toBe(PHOTO_MAX_EDGE_PX);
+    expect(result.heightPx).toBe(800);
+  });
+
+  it('EXIF yonlendirmesi kucultmeden ONCE uygulanir (dondurulmus olculer sinirlanir)', async () => {
+    // Orientation 6: goruntu 90 derece dondurulerek gosterilir; dondurme uygulandiginda
+    // 3000x1000 girdi 1000x3000 olur ve sinirlanan kenar YUKSEKLIK olmalidir.
+    const dondurulecek = await sharp({
+      create: { width: 3000, height: 1000, channels: 3, background: { r: 9, g: 9, b: 9 } },
+    })
+      .withMetadata({ orientation: 6 })
+      .jpeg()
+      .toBuffer();
+
+    const result = await normalizePhoto(dondurulecek, 'image/jpeg');
+
+    expect(result.heightPx).toBe(PHOTO_MAX_EDGE_PX);
+    expect(result.widthPx).toBe(533);
   });
 
   it('goruntuyu yeniden kodlar; gomulu meta veri ciktiya tasinmaz', async () => {

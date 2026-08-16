@@ -1,5 +1,8 @@
 import sharp from 'sharp';
-import { PDF_PHOTO_MAX_EDGE_PX, shrinkPhotoForPdf } from './pdf-photo.processor';
+// T-026: sinir degeri artik YUKLEME yolunda tanimlidir (depolanan hal o olcudedir);
+// bu spec sabiti bilerek ORADAN alir — PDF yolunda ikinci bir kopya kalirsa test kirilir.
+import { PHOTO_MAX_EDGE_PX } from '../photos/photo-image.processor';
+import { shrinkPhotoForPdf } from './pdf-photo.processor';
 
 function imageBytes(
   width: number,
@@ -15,11 +18,11 @@ function imageBytes(
 
 describe('shrinkPhotoForPdf', () => {
   it('uzun kenari sinirdan buyuk goruntuyu sinira kucultur', async () => {
-    const buyuk = await imageBytes(PDF_PHOTO_MAX_EDGE_PX + 400, 900);
+    const buyuk = await imageBytes(PHOTO_MAX_EDGE_PX + 400, 900);
 
     const { width, height } = await sharp(await shrinkPhotoForPdf(buyuk)).metadata();
 
-    expect(width).toBe(PDF_PHOTO_MAX_EDGE_PX);
+    expect(width).toBe(PHOTO_MAX_EDGE_PX);
     expect(height).toBeLessThan(900);
   });
 
