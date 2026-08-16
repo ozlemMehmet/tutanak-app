@@ -46,6 +46,10 @@ services:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
+      # devops-agent (release-prep): Dockerfile artik cok asamali (dev/build/runtime).
+      # Hedef acikca `dev` secilir; belirtilmezse varsayilan (son) asama `runtime` derlenir
+      # ve asagidaki bind-mount + watch komutu devDependencies'siz bir imajda calismaz.
+      target: dev
     # Acilista once migration + sablon seed, sonra watch modunda sunucu (CLAUDE.md §10).
     command: >-
       sh -c "npm run migrate:deploy --workspace @tutanak/api &&

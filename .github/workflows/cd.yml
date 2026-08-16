@@ -1,0 +1,79 @@
+name: CD
+
+# `ci.yml` (job "quality") main uzerinde YESIL bittiginde tetiklenir; boylece yayinlanan imaj
+# her zaman lint+typecheck+migrate+test+build'i gecmis bir commit'e aittir ("test edilen imaj =
+# deploy edilen imaj" ilkesi, factory/10-release/runbook.md §1). Dogrudan `push` tetikleyicisi
+# KULLANILMAZ: branch protection kurulmamis olsa bile bu is CI'nin conclusion'ini bekler.
+on:
+  workflow_run:
+    workflows: ['CI']
+    types: [completed]
+    branches: [main]
+
+concurrency:
+  group: cd-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: GHCR imajlarini derle ve yayinla
+    runs-on: ubuntu-latest
+    # Tetikleyen kosumun BU depodan ve bir push'tan geldigi dogrulanir (security-audit S-13).
+    # `branches: [main]` yalnizca dal ADINI suzer; bir catal (fork) deposunun varsayilan dali
+    # da `main` adini tasir. Bu kontrol olmadan, catal PR'inin head commit'i checkout edilip
+    # SALDIRGANIN Dockerfile'i ile imaj derlenir ve GHCR'a yayinlanirdi.
+    if: >-
+      github.event.workflow_run.conclusion == 'success'
+      && github.event.workflow_run.head_repository.full_name == github.repository
+      && github.event.workflow_run.event == 'push'
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Dogrulanan commit'i al (CI'nin kosustugu tam SHA)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Buildx kur
+        uses: docker/setup-buildx-action@v3
+
+      - name: GHCR'a giris yap (GITHUB_TOKEN — kalici sir yok)
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Repo adini kucuk harfe indir (GHCR buyuk harf kabul etmez)
+        id: repo
+        run: echo "lower=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      # runbook.md §1 uretim compose'u `ghcr.io/<owner>/<repo>-api:<sha>` bekler
+      # (GHCR_OWNER/GHCR_REPO + "-api"/"-web" son eki, §2 ortam degiskenleri tablosu).
+      - name: API imajini derle ve yayinla (runtime hedefi, Dockerfile varsayilani)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ steps.repo.outputs.lower }}-api:${{ github.event.workflow_run.head_sha }}
+            ghcr.io/${{ steps.repo.outputs.lower }}-api:latest
+
+      - name: Web imajini derle ve yayinla (Caddy + statik PWA build)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ steps.repo.outputs.lower }}-web:${{ github.event.workflow_run.head_sha }}
+            ghcr.io/${{ steps.repo.outputs.lower }}-web:latest
+
+      - name: Yayinlanan etiketleri ozetle (runbook §1 IMAGE_TAG degeri budur)
+        run: |
+          echo "### Yayinlanan imajlar" >> "$GITHUB_STEP_SUMMARY"
+          echo "- ghcr.io/${{ steps.repo.outputs.lower }}-api:${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- ghcr.io/${{ steps.repo.outputs.lower }}-web:${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_STEP_SUMMARY"
