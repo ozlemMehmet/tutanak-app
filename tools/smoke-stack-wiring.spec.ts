@@ -63,6 +63,39 @@ function webCspHeader(): string {
   return match?.[1] ?? '';
 }
 
+/**
+ * `apps/web/Dockerfile` icindeki Caddyfile'da statik SPA belgesine uygulanan
+ * `header { ... }` blogunun govdesini dondurur. Caddyfile birden fazla header blogu
+ * tasir (`header @public { ... }` yalnizca `/t/*` icindir), bu yuzden CSP'yi TASIYAN
+ * blok secilir. Blok, satir bazli taranir: CSP degeri `{$R2_PUBLIC_ENDPOINT}` yer
+ * tutucusu yuzunden suslu parantez icerir, tek regex ile kapanis parantezi bulunamaz.
+ */
+function webStaticSecurityHeaderBlock(): string {
+  const lines = readRepoFile('apps', 'web', 'Dockerfile').split('\n');
+  const blocks: string[] = [];
+  let current: string[] | null = null;
+  let closingLine = '';
+
+  for (const line of lines) {
+    if (current === null) {
+      const opening = /^(\s*)header \{\s*$/.exec(line);
+      if (opening) {
+        current = [];
+        closingLine = `${opening[1] ?? ''}}`;
+      }
+      continue;
+    }
+    if (line === closingLine) {
+      blocks.push(current.join('\n'));
+      current = null;
+      continue;
+    }
+    current.push(line);
+  }
+
+  return blocks.find((block) => block.includes('Content-Security-Policy')) ?? '';
+}
+
 describe('CSP obje depolama kokeni (apps/web/Dockerfile <-> docker-compose.e2e.yml)', () => {
   it('CSP kokeni koda gommez, R2_PUBLIC_ENDPOINT yer tutucusundan turetir', () => {
     const csp = webCspHeader();
@@ -83,6 +116,40 @@ describe('CSP obje depolama kokeni (apps/web/Dockerfile <-> docker-compose.e2e.y
     const api = composeServiceEnvironment('api');
 
     expect(web.R2_PUBLIC_ENDPOINT).toBe(api.R2_PUBLIC_ENDPOINT);
+  });
+});
+
+// T-024 iade turu 2 / kabul kriteri 6: kriter 4'te sayilan baslik kumesinin otomatik
+// karsiligi yoktu (CLAUDE.md §8.7). Basliklar Caddyfile'da tek bir blokta durur; biri
+// silinirse ne birim ne e2e testi kirilir — S-02 sessizce geri gelirdi. Asagidaki
+// testler o blogu kilitler.
+describe('uretim imajinda statik SPA belgesinin guvenlik basliklari (apps/web/Dockerfile)', () => {
+  const BASELINE_CSP_DIRECTIVES = [
+    "default-src 'self'",
+    "script-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "frame-ancestors 'none'",
+  ];
+
+  it.each(BASELINE_CSP_DIRECTIVES)('CSP taban yonergesi "%s" silinmemistir', (directive) => {
+    expect(webCspHeader()).toContain(directive);
+  });
+
+  it('CSP basligi statik belge blogunda tanimlidir (API yanitlarina dokunmaz)', () => {
+    expect(webStaticSecurityHeaderBlock()).toMatch(/Content-Security-Policy "/);
+  });
+
+  it('statik belge blogu Strict-Transport-Security basligi doner', () => {
+    expect(webStaticSecurityHeaderBlock()).toMatch(/Strict-Transport-Security "[^"]+"/);
+  });
+
+  it('statik belge blogu X-Content-Type-Options basligini nosniff olarak doner', () => {
+    expect(webStaticSecurityHeaderBlock()).toMatch(/X-Content-Type-Options "nosniff"/);
+  });
+
+  it('statik belge blogu Referrer-Policy basligi doner', () => {
+    expect(webStaticSecurityHeaderBlock()).toMatch(/Referrer-Policy "[^"]+"/);
   });
 });
 
