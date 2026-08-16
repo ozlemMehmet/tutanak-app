@@ -11,10 +11,16 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY apps/web/package.json apps/web/
 COPY apps/api/package.json apps/api/
-# apps/api'nin postinstall'i (`prisma generate`) workspace kurulumunda otomatik calisir;
-# semaya ihtiyac duyar (apps/api/Dockerfile'daki ayni gerekce, T-002).
-COPY apps/api/prisma/ apps/api/prisma/
-RUN npm ci
+# T-027 (SonarCloud, PR #27): bagimliliklarin lifecycle script'leri
+# (`preinstall`/`install`/`postinstall`/`prepare`) `--ignore-scripts` ile KAPATILIR — aksi
+# halde ele gecirilmis herhangi bir bagimlilik imaj derlemesi sirasinda kod calistirabilir.
+# Web imajinda telafi adimi GEREKMEZ: burada native modul yoktur (`bcrypt`/`sharp` yalnizca
+# apps/api'nin bagimliligidir, bkz. apps/api/Dockerfile) ve Vite/esbuild ikilisini
+# `@esbuild/*` optionalDependencies ile getirir, kurulum script'iyle degil.
+# Bu yuzden `apps/api/prisma/` semasi de ARTIK KOPYALANMAZ: tek gerekcesi apps/api'nin
+# workspace kurulumunda otomatik kosan `prisma generate` postinstall'iydi (T-002); o script
+# bu imajda artik calismiyor ve statik SPA derlemesi Prisma Client'a dokunmuyor.
+RUN npm ci --ignore-scripts
 COPY tsconfig.json ./
 COPY apps/web apps/web
 RUN npm run build --workspace @tutanak/web

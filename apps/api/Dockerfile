@@ -11,10 +11,31 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
-# Prisma semasi bagimlilik kurulumundan ONCE kopyalanir: apps/api postinstall adimi
-# (prisma generate) semaya ihtiyac duyar (T-002).
+# Prisma semasi bagimlilik kurulumundan ONCE kopyalanir: `prisma generate` semaya ihtiyac
+# duyar (T-002 — artik postinstall olarak degil, asagida ACIKCA calistirilir, T-027).
 COPY apps/api/prisma/ apps/api/prisma/
-RUN npm ci
+
+# T-027 (SonarCloud, PR #27): bagimliliklarin lifecycle script'leri
+# (`preinstall`/`install`/`postinstall`/`prepare`) `--ignore-scripts` ile KAPATILIR — aksi
+# halde ele gecirilmis herhangi bir bagimlilik imaj derlemesi sirasinda kod calistirabilir.
+# Kapatmanin bedeli, gercekten ihtiyac duyulan adimlarin ACIKCA ve denetlenebilir bicimde
+# geri getirilmesidir (kok `prepare: husky` bilincli olarak geri GETIRILMEZ: git kancasi
+# uretim imajinda gereksizdir):
+#   1) `npm rebuild bcrypt sharp` — iki NATIVE modulun platforma uygun ikilisini kurar.
+#      Bugun ikisi de ikilisini onceden derlenmis olarak getiriyor (`bcrypt@6` paket ici
+#      `prebuilds/`, `sharp@0.35` `@img/sharp-*` optionalDependencies'i), bu yuzden adim
+#      saniyeler surer ve cogu platformda etkisizdir; eslesen ikili bulunmayan bir
+#      platformda ise kaynaktan derlemeyi dener ve GURULTULU patlar — hata derleme aninda
+#      gorunur, uretimde acilmayan bir container olarak degil.
+#   2) `node -e "require(...)"` — modullerin FIILEN yuklenebildigini derleme aninda kanitlar
+#      (asil kalkan budur; `npm rebuild` sessizce hicbir sey yapmadan da basarili olabilir).
+#   3) `prisma generate` — `apps/api` postinstall'inin isiydi. Uretilmis Prisma Client
+#      olmadan imaj sorunsuz derlenir ama uygulama ACILMAZ
+#      (`Cannot find module '.prisma/client/default'`).
+RUN npm ci --ignore-scripts \
+    && npm rebuild bcrypt sharp \
+    && node -e "require('bcrypt'); require('sharp')" \
+    && npm run prisma:generate --workspace @tutanak/api
 
 # ---- dev: yerel gelistirme (docker-compose.yml, bind-mount + watch, `target: dev`) ----
 FROM deps AS dev
