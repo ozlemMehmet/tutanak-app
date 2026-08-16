@@ -37,16 +37,33 @@ function apiSourceFiles(directory = API_SOURCE_ROOT): string[] {
   });
 }
 
-function dockerfileEnvironment(...segments: string[]): Record<string, string> {
-  const entries: Record<string, string> = {};
-  for (const line of readRepoFile(...segments).split('\n')) {
-    const match = /^ENV\s+([A-Z_][A-Z0-9_]*)=(\S+)/.exec(line.trim());
+/**
+ * Imajin CALISAN katmanindaki ortam degiskenleri. Yalnizca SON `FROM`'dan sonraki `ENV`
+ * satirlari sayilir: cok asamali bir Dockerfile'da derleme asamasina yazilan `ENV` nihai
+ * imaja TASINMAZ, yani `docker exec ... printenv` bos doner. Bu ayrim bugun tek asamali
+ * olan dosyada gorunmez ama devops'un cok asamali imaji devreye girdiginde ayarin sessizce
+ * kaybolmasini engeller.
+ */
+function finalStageEnvironment(dockerfile: string): Record<string, string> {
+  let entries: Record<string, string> = {};
+  for (const line of dockerfile.split('\n')) {
+    const trimmed = line.trim();
+    if (/^FROM\s/i.test(trimmed)) {
+      // Yeni asama basladi: onceki asamanin ortami nihai imaja gecmez.
+      entries = {};
+      continue;
+    }
+    const match = /^ENV\s+([A-Z_][A-Z0-9_]*)=(\S+)/.exec(trimmed);
     const key = match?.[1];
     if (key !== undefined) {
       entries[key] = match?.[2] ?? '';
     }
   }
   return entries;
+}
+
+function dockerfileEnvironment(...segments: string[]): Record<string, string> {
+  return finalStageEnvironment(readRepoFile(...segments));
 }
 
 describe('uretim imajinda is-parcacigi havuzu (apps/api/Dockerfile)', () => {
@@ -62,6 +79,21 @@ describe('uretim imajinda is-parcacigi havuzu (apps/api/Dockerfile)', () => {
 
     expect(Number.isInteger(value)).toBe(true);
     expect(value).toBeGreaterThan(NODE_DEFAULT_THREADPOOL_SIZE);
+  });
+
+  it('yalnizca derleme asamasina yazilan ENV kabul EDILMEZ (nihai imajda gorunmez)', () => {
+    const cokAsamali = [
+      'FROM node:22-alpine AS builder',
+      'ENV UV_THREADPOOL_SIZE=8',
+      'RUN npm ci',
+      'FROM node:22-alpine AS runtime',
+      'CMD ["node", "dist/main.js"]',
+    ].join('\n');
+
+    expect(Object.keys(finalStageEnvironment(cokAsamali))).not.toContain('UV_THREADPOOL_SIZE');
+    expect(
+      finalStageEnvironment(`${cokAsamali}\nENV UV_THREADPOOL_SIZE=8`).UV_THREADPOOL_SIZE,
+    ).toBe('8');
   });
 
   it('deger koda degil imaja yazilir (uygulama kaynagi UV_THREADPOOL_SIZE atamaz)', () => {
