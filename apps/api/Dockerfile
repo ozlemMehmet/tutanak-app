@@ -1,6 +1,10 @@
-# Yerel gelistirme ve uretim icin tek asamali basit imaj (iskelet — T-001).
-FROM node:22-alpine
+# Cok asamali imaj. `deps` bagimlilik katmanini onbellekler; `dev` T-001'den beri
+# docker-compose.yml'nin (bind-mount + watch) kullandigi hedeftir; `build`+`runtime`
+# devops-agent tarafindan release-prep'te eklendi (architecture.md §5.1: tek VPS,
+# `docker compose`, api container `restart: unless-stopped`).
 
+# ---- deps: workspace bagimliliklari (root npm ci tum workspace'leri hoist eder) ----
+FROM node:22-alpine AS deps
 WORKDIR /app
 
 # Workspace manifestleri once kopyalanir: bagimlilik katmani onbelleklenir.
@@ -11,6 +15,9 @@ COPY apps/web/package.json apps/web/
 # (prisma generate) semaya ihtiyac duyar (T-002).
 COPY apps/api/prisma/ apps/api/prisma/
 RUN npm ci
+
+# ---- dev: yerel gelistirme (docker-compose.yml, bind-mount + watch, `target: dev`) ----
+FROM deps AS dev
 
 COPY . .
 
@@ -27,3 +34,37 @@ ENV UV_THREADPOOL_SIZE=8
 EXPOSE 3000
 
 CMD ["npm", "run", "start:dev", "--workspace", "@tutanak/api"]
+
+# ---- build: TypeScript derlemesi (release-prep) ----
+FROM deps AS build
+
+COPY . .
+RUN npm run build --workspace @tutanak/api
+
+# ---- runtime: uretim imaji (release-prep, docker-compose.e2e.yml + VPS runbook varsayilan
+# hedefi kullanir, `docker build` icin acikca --target belirtilmez) ----
+FROM node:22-alpine AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+ENV UV_THREADPOOL_SIZE=8
+
+# `node_modules` tam olarak (devDependencies dahil) `deps` asamasindan tasinir:
+# `prisma migrate deploy` ve `prisma/seed.ts` (node --experimental-strip-types ile
+# derlenmeden calistirilir, bkz. CMD) acilista `prisma` CLI'sini (bir devDependency)
+# gerektirir. `npm prune --omit=dev` burada UYGULANAMAZ (bilinen sinirlama,
+# factory/10-release/devops-report.md'de kayitli); imaj boyutu buna ragmen kucuktur.
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=build /app/apps/api/dist ./apps/api/dist
+COPY apps/api/package.json apps/api/
+COPY apps/api/prisma/ apps/api/prisma/
+COPY package.json ./
+
+EXPOSE 3000
+
+# Acilista once migration + sablon seed (idempotent upsert, prisma/seed.ts basindaki not),
+# sonra derlenmis sunucu (docker-compose.yml'deki dev komutunun uretim karsiligi).
+# Seed her acilista tekrar kosar ama upsert oldugu icin zararsizdir (kayit sayisi sabit 3 kalir).
+CMD ["sh", "-c", "npm run migrate:deploy --workspace @tutanak/api && npm run seed --workspace @tutanak/api && node apps/api/dist/main.js"]
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD wget -qO- http://127.0.0.1:3000/health || exit 1
