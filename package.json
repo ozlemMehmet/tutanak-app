@@ -45,6 +45,9 @@
     "typescript-eslint": "^8.18.2",
     "yaml": "^2.9.0"
   },
+  "overrides": {
+    "deepmerge-ts": "^8.0.1"
+  },
   "engines": {
     "node": ">=22"
   }
