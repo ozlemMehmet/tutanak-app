@@ -25,8 +25,11 @@ const PASSWORD = 'gizli-parola-123';
 const UNKNOWN_UUID = '99999999-9999-4999-8999-999999999999';
 const MALFORMED_ID = 'tutanak-42';
 
-const REPORT_TITLE = 'Bahcelievler 3+1 cikis teslimi';
-const REPORT_NOTE = 'Salon duvarinda cizik var, mutfak dolabi eksiksiz.';
+// H-001: fixture dilin ZOR harflerini (`ş ğ ı Ş İ`) tasir. Eski ASCII'ye katlanmis veri
+// (`cikis teslimi`) PDF font sinirini hic zorlamadigi icin, Turkce harflerin bozuk
+// basildigi urun teslim edilene kadar hicbir kapida gorunmemisti.
+const REPORT_TITLE = 'Şişli Çağlayan 3+1 çıkış teslimi';
+const REPORT_NOTE = 'Mutfak dolabı çizik, ışık düğmesi bozuk, boyası eskimiş.';
 
 interface ErrorBody {
   error: { code: string; message: string; traceId: string };
@@ -167,6 +170,26 @@ describe('T-007 tutanak PDF ciktisi', () => {
         expect(text).toContain(REPORT_TITLE);
         expect(text).toContain(template.name);
         expect(text).toContain(REPORT_NOTE);
+      },
+      PDF_TIMEOUT_MS,
+    );
+
+    it(
+      'uretilen PDF Turkce"ye ozgu harfleri (s g i S I) bozulmadan tasir (H-001)',
+      async () => {
+        const reportId = await createReport(ownerToken);
+        await uploadPhoto(reportId, ownerToken);
+
+        const response = await downloadPdf(reportId, ownerToken);
+
+        // Aranan dizeler ASCII karsiliklari DEGIL, Turkce dizelerin KENDISIDIR.
+        const text = extractPdfText(response.body as Buffer);
+        expect(text).toContain('Şişli Çağlayan');
+        expect(text).toContain('çıkış');
+        expect(text).toContain('ışık düğmesi');
+        expect(text).toContain('boyası eskimiş');
+        // Kayip harf yerine soru isareti/yer tutucu konmasi da bir regresyondur.
+        expect(text).not.toMatch(/[?�]/);
       },
       PDF_TIMEOUT_MS,
     );

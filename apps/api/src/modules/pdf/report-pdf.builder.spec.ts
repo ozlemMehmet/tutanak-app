@@ -8,6 +8,14 @@ const CAPTURED_AT_STAMP = '14.08.2026 13:45:12';
 const APPROVED_AT = new Date('2026-08-15T06:30:00.000Z');
 const APPROVED_AT_STAMP = '15.08.2026 09:30:00';
 const APPROVER_EMAIL = 'kiraci@ornek.test';
+/**
+ * H-001: fixture'lar dilin ZOR harflerini tasir. `ş ğ ı Ş İ` WinAnsi'de YOKTUR; ASCII'ye
+ * katlanmis test verisi (`cikis teslimi`) bu siniri hic zorlamadigi icin font hatasi
+ * urun teslim edilene kadar gorunmez kalmisti.
+ */
+const TURKISH_TITLE = 'Şişli Çağlayan 3+1 çıkış teslimi';
+const TURKISH_NOTE = 'Mutfak dolabı çizik, ışık düğmesi bozuk, boyası eskimiş.';
+const TURKISH_TEMPLATE_NAME = 'Giriş/Çıkış Teslim Tutanağı';
 
 function photoBytes(): Promise<Buffer> {
   return sharp({
@@ -29,6 +37,33 @@ describe('ReportPdfBuilder', () => {
     expect(text).toContain('Kiraci teslim tutanagi 12A');
     expect(text).toContain('Giris/Cikis Teslim Tutanagi');
     expect(text).toContain('Salon duvarinda cizik var.');
+  });
+
+  it('baslik ve govdedeki Turkce harfleri (s g i S I) bozulmadan yazar', async () => {
+    const pdf = await new ReportPdfBuilder()
+      .addTitle(TURKISH_TITLE)
+      .addTemplateName(TURKISH_TEMPLATE_NAME)
+      .addNote(TURKISH_NOTE)
+      .build();
+
+    const text = extractPdfText(pdf);
+    // Aranan dize ASCII karsiligi DEGIL, Turkce dizenin KENDISIDIR.
+    expect(text).toContain(TURKISH_TITLE);
+    expect(text).toContain(TURKISH_TEMPLATE_NAME);
+    expect(text).toContain(TURKISH_NOTE);
+  });
+
+  it('WinAnsi disi harfleri yer tutucu/cop karaktere DUSURMEZ', async () => {
+    const pdf = await new ReportPdfBuilder()
+      .addTitle('ışık düğmesi')
+      .addNote('Şişli İnönü')
+      .build();
+
+    const text = extractPdfText(pdf);
+    expect(text).toContain('ışık düğmesi');
+    expect(text).toContain('Şişli İnönü');
+    // Kayip harf yerine soru isareti/yer tutucu konmasi da bir regresyondur.
+    expect(text).not.toMatch(/[?�]/);
   });
 
   it('uretilen cikti gecerli bir PDF dosyasidir (imza + sonlandirici)', async () => {
