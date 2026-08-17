@@ -9,3 +9,4 @@ apps/web/dev-dist/
 .env.*
 !.env.example
 npm-debug.log*
+apps/api/dist.watch-backup/
