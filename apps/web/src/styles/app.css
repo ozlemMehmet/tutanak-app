@@ -21,6 +21,13 @@ h2 {
   padding: var(--space-3);
   /* Mobil oncelikli: alt guvenli alan (safe-area) korunur — design.md mobil notu. */
   padding-bottom: calc(var(--space-6) + env(safe-area-inset-bottom));
+  /* H-004: masaustunde icerik kenardan kenara yayilmaz, okuma genisligiyle sinirlanir ve
+     yatayda ortalanir. Deger `.auth-page` ile AYNI mantikla tokens.css kirilma
+     noktasindan alinir (`md` = 768px); design.md masaustu kapsayici genisligi
+     tanimlamiyor ve token setinde "container" adimi yok (tasarim sozlesmesi boslugu —
+     devlog). Sinir `md`nin ALTINDA hic devreye girmez: mobil yerlesim aynen korunur. */
+  max-width: 768px;
+  margin-inline: auto;
 }
 
 /* --- Butonlar (dokunma hedefi min 44x44px — design.md §5) --- */
@@ -919,4 +926,38 @@ h2 {
 /* Mobil notu: "Odeme Yap" tam genislik butondur. */
 .subscription__pay {
   width: 100%;
+}
+
+/* --- H-004: masaustu yerlesim duzeltmeleri (kaynak bug: B-004) --- */
+
+/* Tutanak detayindaki "Fotograflar" ve "Paylasim" bolumleri duz zeminde asili kalmaz;
+   liste karti (`.report-card`) ve abonelik durum karti (`.status-card`) ile AYNI
+   Elevation 1 yuzeyinde durur. Yaricap `lg`: design.md §4.4 bu adimi "buyuk kart /
+   panel" icin tanimlar (kucuk kart/buton adimi `md`dir). */
+.photo-section,
+.share-panel {
+  margin: var(--space-3) 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 6%); /* Elevation 1 — design.md §4.4 (token disi, prose kural) */
+}
+
+/* breakpoint md (768px, tokens.css): birincil butonlar tam genislikten cikip icerik
+   genisligine gore boyutlanir. `md` ALTINDA design.md mobil notlarindaki tam genislik
+   davranisi KORUNUR (taban kurallar degistirilmedi).
+   Bu blok bilincli olarak dosyanin SONUNDADIR: uc butonun `width: 100%` taban kurali
+   yukarida tanimli ve ozgullukleri esit — override ancak sonra geldiginde uygulanir. */
+@media (min-width: 768px) {
+  .subscription__pay,
+  .auth-form__submit,
+  .report-create__submit {
+    width: auto;
+    /* Kapsayicilari flex kolon (`align-items: stretch` varsayilani); `width: auto` tek
+       basina gerilmeyi durdurmaz. */
+    align-self: flex-start;
+    /* Token setinde buton genislik olcegi YOK; deger bosluk olceginin en ust adimindan
+       turetildi (3 x space-7 = 192px) — tasarim sozlesmesi boslugu (devlog). */
+    min-width: calc(var(--space-7) * 3);
+  }
 }
