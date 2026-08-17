@@ -2,6 +2,10 @@
 // dosyalarini uretir; uretim imaji ise SADECE `apps/api/dist`'i kopyalar (apps/api/
 // Dockerfile, runtime asamasi). Bu adim olmadan font `dist` icinde bulunmaz ve PDF
 // uretimi uretimde ENOENT ile duser — hata yalnizca calisma zamaninda gorunurdu.
+// Yerel gelistirme yolu (`npm run start:dev` -> `nest start --watch`) bu betigi CALISTIRMAZ;
+// oradaki karsiligi `apps/api/nest-cli.json` icindeki `compilerOptions.assets` kuralidir.
+// Iki yol da ayni kaynak/hedef ciftini kullanir; biri degisirse digeri de guncellenmelidir
+// (ikisi de `tools/pdf-font-asset.spec.ts` ile kilitlidir).
 import { cpSync, existsSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';

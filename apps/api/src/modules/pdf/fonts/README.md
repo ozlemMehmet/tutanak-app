@@ -16,6 +16,11 @@ belgeye GOMULUR (bkz. `../report-pdf.builder.ts`).
   kullanim/dagitim/gomme izni verir, kaynak metin degistirilmeden birlikte tasinir).
 - **Neden depoda:** calisma zamaninda hicbir agdan indirme yapilmaz; e2e testler ve uretim
   imaji fontu depodan alir (ticket H-001 teknik notu, CLAUDE.md §6.2).
-- **Neden `src/` altinda:** `apps/api` derlemesi `dist`'e cikar ve uretim imaji YALNIZCA
-  `dist`'i tasir; fontlar bu yuzden derleme adiminda `dist/modules/pdf/fonts` altina
-  kopyalanir (`apps/api/scripts/copy-pdf-fonts.mjs`).
+- **Neden `src/` altinda:** `apps/api` derlemesi `dist`'e cikar ve uygulama (hem uretim
+  imaji hem yerel watch) `dist`'ten kosar; fontlar bu yuzden **iki derleme yolunun da**
+  ciktisina kopyalanir:
+  - `npm run build` (uretim; `tsc` varlik kopyalamaz) → `apps/api/scripts/copy-pdf-fonts.mjs`
+  - `npm run start:dev` / `nest build` (yerel watch; `docker compose up`) →
+    `apps/api/nest-cli.json` icindeki `compilerOptions.assets` kurali
+- **Eksik kopyanin bedeli:** font baytlari modul yuklenirken okunur; kopya eksikse hata PDF
+  istegi geldiginde degil, uygulama **acilirken** ENOENT ile patlar.

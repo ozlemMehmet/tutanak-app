@@ -134,3 +134,55 @@ tanimlayici adi tasiyordu (CLAUDE.md §2: metinler Turkce, TANIMLAYICILAR Ingili
   56 suite / 379 test PASS; apps/api e2e 13 suite / 201 test PASS (gercek Postgres,
   `DATABASE_URL=postgresql://tutanak:tutanak@localhost:5432/tutanak`); `eslint . --max-warnings=0`
   cikis 0; `tsc --noEmit` (kok + api + web) cikis 0; degisen dosyada prettier temiz.
+
+## Iade turu 2 (code-reviewer: CHANGES)
+
+Rapordaki TEK blokleyici bulgu: fontlar YALNIZCA `build` script'indeki kopyalama adimiyla
+`dist`'e tasiniyordu; yerel gelistirme yolu (`npm run start:dev` -> `nest start --watch`,
+docker-compose `api` servisinin komutu) bu adimi hic calistirmadigi icin API **acilista**
+ENOENT ile duserdi (font baytlari modul yuklenirken okunuyor).
+
+Sistematik hata ayiklama (4 faz):
+
+1. **Izole:** `apps/api/dist` silinip `npx nest build` kosuldu -> `dist/modules/pdf/fonts`
+   dizini URETILMEDI; `node -e "require('./dist/modules/pdf/report-pdf.builder.js')"`
+   `ENOENT: ... dist/modules/pdf/fonts/DejaVuSans-Bold.ttf` firlatti. Bulgu birebir yeniden
+   uretildi; sinir: Nest CLI derleyicisi (tsc) varlik dosyasi kopyalamaz.
+2. **Hipotez (tek):** "Nest CLI'nin derleme/watch yolu `nest-cli.json` yoklugunda hicbir
+   varlik kurali gormuyor; `compilerOptions.assets` kurali eklenirse hem `nest build` hem
+   `nest start --watch` fontlari `dist/modules/pdf/fonts` altina kopyalar."
+3. **Test (en kucuk degisiklik):** `apps/api/nest-cli.json` eklendi
+   (`sourceRoot: "src"` + `assets: [{ include: "modules/pdf/fonts/*", watchAssets: true }]`).
+   Baska hicbir alan yazilmadi; yazilanlar Nest CLI varsayilanlariyla ayni oldugu icin
+   `start:dev` davranisi (entry file, tsconfig) degismedi.
+4. **Dogrula + regresyon testi:** `dist` silinip `npx nest build` -> fontlar kopyalandi;
+   `dist` yeniden silinip **gercek dev komutu** `npx nest start --watch` arka planda
+   kosuldu -> 3 saniye icinde `dist/modules/pdf/fonts/{DejaVuSans.ttf, DejaVuSans-Bold.ttf,
+   LICENSE.txt}` olustu (surec sonra olduruldu). Uretim yolu da yeniden dogrulandi:
+   `npm run build --workspace @tutanak/api` sonrasi derlenmis builder ile Turkce PDF
+   uretildi (14.414 bayt, ENOENT yok).
+
+- **Regresyon testi (raporun "AYRICA" maddesi):** `tools/pdf-font-asset.spec.ts` artik iki
+  yolu AYRI AYRI kilitliyor: (a) "uretim derlemesi (`npm run build`) fontlari dist ciktisina
+  kopyalar" (eski assertion), (b) yeni "yerel watch yolu (`npm run start:dev`) fontlari dist
+  ciktisina kopyalar" — `start:dev`'in Nest CLI'den gectigini, `nest-cli.json`'da
+  `modules/pdf/fonts` varlik kuralinin ve `watchAssets: true`'nun bulundugunu, `sourceRoot`'un
+  `src` oldugunu ve kuralin gosterdigi dizinde font dosyalarinin GERCEKTEN durdugunu
+  (yol yazim hatasi yakalanir) dogruluyor. Test once KIRMIZI gorulmustur (nest-cli.json
+  yokken `ENOENT: ... apps/api/nest-cli.json`), sonra yesile alindi.
+- **Neden `nest-cli.json` (rapor secenegi a):** `start:dev` zincirine kopyalama eklemek
+  (secenek b) watch dist'i tazelediginde tekrar eksilebilirdi; font yolunu paket koke gore
+  cozmek (secenek c) uretim imajinin yalnizca `dist` tasidigi gercegiyle carpisirdi.
+  Uretim `build` yolu (tsc + `scripts/copy-pdf-fonts.mjs`) bilincli olarak DEGISTIRILMEDI:
+  o yol bir onceki turda dogrulanmisti, `tsc`'yi `nest build`'e cevirmek release/CI
+  zincirini bu ticket'in kapsami disinda riske atardi.
+- **Iki mekanizmanin senkron kalmasi:** kaynak/hedef cifti iki yerde tanimli oldugu icin
+  `copy-pdf-fonts.mjs` basina capraz referans yorumu eklendi ve iki yol da ayni testte
+  kilitlendi; `fonts/README.md` "Neden `src/` altinda" maddesi iki yolu da listeliyor.
+- Kapilar bu tur yeniden kosuldu: kok jest 11 suite / 74 test PASS; apps/api birim
+  56 suite / 379 test PASS; apps/web 55 suite / 408 test PASS; apps/api e2e 13 suite /
+  201 test PASS (gercek Postgres); `npm run lint` (eslint `--max-warnings=0`) cikis 0;
+  `npm run typecheck` (kok + api + web) cikis 0; `npm run format:check` temiz.
+- **Bilinen sinirlama (bu tur):** dogrulama host'ta gercek dev komutuyla yapildi; `docker
+  compose up` ile container icinde kosum bu ortamda calistirilmadi (5432/3000/5173
+  portlarinda baska bir yigin acikti). Container komutu ayni (`npm run start:dev`).
