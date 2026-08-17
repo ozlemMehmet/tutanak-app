@@ -9,6 +9,7 @@ import { ApiError } from '../api/client';
 import type { ApiClient } from '../api/client';
 import { currentUserQueryKey } from '../features/auth/useCurrentUser';
 import type { Subscription } from '../features/billing/billing.api';
+import { SUBSCRIPTION_POLL_DELAYS_MS } from '../features/billing/useSubscriptionAutoRefresh';
 import { SubscriptionPage } from './SubscriptionPage';
 
 const INACTIVE: Subscription = {
@@ -17,6 +18,17 @@ const INACTIVE: Subscription = {
   currency: 'TRY',
   currentPeriodEnd: null,
 };
+
+const PENDING: Subscription = { ...INACTIVE, status: 'pending', priceAmount: '199.00' };
+
+const ACTIVE: Subscription = {
+  status: 'active',
+  priceAmount: '199.00',
+  currency: 'TRY',
+  currentPeriodEnd: '2026-09-14T09:30:00.000Z',
+};
+
+const PENDING_WAITING_TEXT = 'Odeme sonucu bekleniyor, abonelik henuz aktif degil';
 
 const CHECKOUT = {
   transactionReference: 'txn-1',
@@ -268,5 +280,150 @@ describe('SubscriptionPage', () => {
     expect(
       await screen.findByText('Beklenmeyen bir hata olustu, lutfen tekrar deneyin.'),
     ).toBeInTheDocument();
+  });
+});
+
+// H-003: odeme saglayicisinin webhook'u ASENKRON geldigi icin `?checkout=return` ve
+// `visibilitychange` tek seferlik tetikleyicileri cogu zaman webhook'tan ONCE ates alir;
+// kullanici hicbir sey yapmadan `pending` ekraninda kilitli kalirdi.
+describe('SubscriptionPage pending yoklamasi (H-003)', () => {
+  const TOTAL_BUDGET_MS = SUBSCRIPTION_POLL_DELAYS_MS.reduce((sum, delay) => sum + delay, 0);
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  /**
+   * Tek bir yoklama adimini ilerletir. Her adim bir oncekinin tazelemesi oturduktan SONRA
+   * planlandigi icin butcenin tamami tek hamlede ilerletilemez; adimlar sirayla kosulur.
+   */
+  async function advancePollStep(index: number): Promise<void> {
+    await act(async () => {
+      jest.advanceTimersByTime(SUBSCRIPTION_POLL_DELAYS_MS[index] ?? 0);
+      await Promise.resolve();
+    });
+  }
+
+  async function runPollSteps(count: number): Promise<void> {
+    for (let index = 0; index < count; index += 1) {
+      await advancePollStep(index);
+    }
+  }
+
+  function setupUser(): ReturnType<typeof userEvent.setup> {
+    return userEvent.setup({
+      advanceTimers: (ms: number) => {
+        jest.advanceTimersByTime(ms);
+      },
+    });
+  }
+
+  it('kullanici hicbir sey yapmadan webhook gelince ekran otomatik olarak aktife gecer (kriter 1)', async () => {
+    // Webhook henuz gelmedi: `GET /me` `pending` donuyor.
+    let subscription: Subscription = PENDING;
+    renderPage({ meResult: () => Promise.resolve(meResponse(subscription)) });
+
+    await screen.findByText(PENDING_WAITING_TEXT);
+
+    // Webhook birkac saniye sonra ulasti; kullanici sekmeyi terk etmedi, tiklamadi.
+    subscription = ACTIVE;
+    await advancePollStep(0);
+
+    expect(await screen.findByText('Aboneliginiz aktif')).toBeInTheDocument();
+    expect(screen.queryByText(PENDING_WAITING_TEXT)).not.toBeInTheDocument();
+  });
+
+  it('pending durumda "Durumu yenile" eylemi gorunur ve tiklaninca GET /me tekrar cagrilir (kriter 2)', async () => {
+    const user = setupUser();
+    const { request } = renderPage({ subscription: PENDING });
+
+    const refreshButton = await screen.findByRole('button', { name: 'Durumu yenile' });
+    expect(refreshButton).toBeEnabled();
+    const callsBefore = meCallCount(request);
+
+    await user.click(refreshButton);
+
+    await waitFor(() => {
+      expect(meCallCount(request)).toBeGreaterThan(callsBefore);
+    });
+  });
+
+  it('yoklama ust siniri tukendikten sonra da "Durumu yenile" tiklanabilir kalir (kriter 2 + 4)', async () => {
+    const user = setupUser();
+    const { request } = renderPage({ subscription: PENDING });
+
+    await screen.findByText(PENDING_WAITING_TEXT);
+    await runPollSteps(SUBSCRIPTION_POLL_DELAYS_MS.length);
+    const callsBefore = meCallCount(request);
+
+    const refreshButton = screen.getByRole('button', { name: 'Durumu yenile' });
+    expect(refreshButton).toBeEnabled();
+    await user.click(refreshButton);
+
+    await waitFor(() => {
+      expect(meCallCount(request)).toBeGreaterThan(callsBefore);
+    });
+  });
+
+  it('abonelik aktiflesince yoklama durur, sonsuz GET /me cagrisi yapmaz (kriter 3)', async () => {
+    let subscription: Subscription = PENDING;
+    const { request } = renderPage({ meResult: () => Promise.resolve(meResponse(subscription)) });
+
+    await screen.findByText(PENDING_WAITING_TEXT);
+    subscription = ACTIVE;
+    await advancePollStep(0);
+    expect(await screen.findByText('Aboneliginiz aktif')).toBeInTheDocument();
+    const callsAfterActive = meCallCount(request);
+
+    await act(async () => {
+      jest.advanceTimersByTime(TOTAL_BUDGET_MS * 2);
+      await Promise.resolve();
+    });
+
+    expect(meCallCount(request)).toBe(callsAfterActive);
+  });
+
+  it('yoklama ust sinirda durur, butce disinda yeni GET /me cagrisi yapmaz (kriter 3)', async () => {
+    const { request } = renderPage({ subscription: PENDING });
+
+    await screen.findByText(PENDING_WAITING_TEXT);
+    await runPollSteps(SUBSCRIPTION_POLL_DELAYS_MS.length);
+    // Ilk yukleme + her yoklama adimi icin birer cagri.
+    const callsAtBudgetEnd = meCallCount(request);
+    expect(callsAtBudgetEnd).toBe(1 + SUBSCRIPTION_POLL_DELAYS_MS.length);
+
+    await act(async () => {
+      jest.advanceTimersByTime(TOTAL_BUDGET_MS * 3);
+      await Promise.resolve();
+    });
+
+    expect(meCallCount(request)).toBe(callsAtBudgetEnd);
+  });
+
+  it('yoklama surerken bekleme metni korunur, zaman asimi mesajina erken gecmez (kriter 4 sinir durumu)', async () => {
+    renderPage({ subscription: PENDING });
+
+    await screen.findByText(PENDING_WAITING_TEXT);
+    await runPollSteps(SUBSCRIPTION_POLL_DELAYS_MS.length - 1);
+
+    expect(screen.getByText(PENDING_WAITING_TEXT)).toBeInTheDocument();
+    expect(screen.queryByTestId('abonelik-bekleme-zaman-asimi')).not.toBeInTheDocument();
+  });
+
+  it('yoklama ust sinirina ulasip abonelik hala pending ise sonraki adim mesajini gosterir (kriter 4)', async () => {
+    renderPage({ subscription: PENDING });
+
+    await screen.findByText(PENDING_WAITING_TEXT);
+    await runPollSteps(SUBSCRIPTION_POLL_DELAYS_MS.length);
+
+    const timeoutMessage = await screen.findByTestId('abonelik-bekleme-zaman-asimi');
+    // Odeme alindiysa ne olacagi VE alinmadiysa ne yapilacagi ayni metinde soylenir.
+    expect(timeoutMessage).toHaveTextContent(/kisa sure icinde aktiflesir/);
+    expect(timeoutMessage).toHaveTextContent(/alinmadiysa/);
+    expect(screen.queryByText(PENDING_WAITING_TEXT)).not.toBeInTheDocument();
   });
 });

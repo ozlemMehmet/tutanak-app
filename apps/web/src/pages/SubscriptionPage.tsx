@@ -23,6 +23,17 @@ interface SubscriptionPageProps {
 
 const GENERIC_ERROR_MESSAGE = 'Beklenmeyen bir hata olustu, lutfen tekrar deneyin.';
 
+const PENDING_WAITING_MESSAGE = 'Odeme sonucu bekleniyor, abonelik henuz aktif degil';
+
+/**
+ * H-003: yoklama butcesi tukendiginde ekran sessiz bir uyari metninde donup kalmaz;
+ * kullaniciya ODEME ALINDIYSA ne olacagini ve ALINMADIYSA ne yapmasi gerektigini soyler.
+ */
+const PENDING_TIMEOUT_MESSAGE =
+  'Odeme sonucu hala alinamadi. Odemeniz alindiysa abonelik kisa sure icinde aktiflesir; ' +
+  '"Durumu yenile" ile kontrol edebilir veya daha sonra bu sayfaya donebilirsiniz. Odemeniz ' +
+  'alinmadiysa odeme adimini bastan baslatmaniz gerekir.';
+
 function errorMessageOf(error: unknown): string {
   if (error instanceof ApiError || error instanceof Error) {
     return error.message === '' ? GENERIC_ERROR_MESSAGE : error.message;
@@ -41,9 +52,9 @@ export function SubscriptionPage({
   const refreshSubscription = useCallback((): void => {
     void refetch();
   }, [refetch]);
-  useSubscriptionAutoRefresh(refreshSubscription);
-
   const subscription = currentUser.data?.subscription;
+  const isAwaitingPayment = subscription?.status === 'pending';
+  const { isPollExhausted } = useSubscriptionAutoRefresh(refreshSubscription, isAwaitingPayment);
 
   return (
     <main className="page">
@@ -109,10 +120,19 @@ export function SubscriptionPage({
             </button>
           )}
 
+          {/* H-003: `pending` cikmaz sokak degildir — durum yoklanir, kullanici her an
+              elle yenileyebilir ve yoklama tukenince sonraki adim acikca soylenir. */}
           {subscription.status === 'pending' && (
-            <p className="banner banner--warning" role="status">
-              Odeme sonucu bekleniyor, abonelik henuz aktif degil
-            </p>
+            <div className="banner banner--warning" role="status">
+              {isPollExhausted ? (
+                <p data-testid="abonelik-bekleme-zaman-asimi">{PENDING_TIMEOUT_MESSAGE}</p>
+              ) : (
+                <p>{PENDING_WAITING_MESSAGE}</p>
+              )}
+              <button type="button" className="button button--ghost" onClick={refreshSubscription}>
+                Durumu yenile
+              </button>
+            </div>
           )}
 
           {subscription.status === 'active' && (
