@@ -13,9 +13,9 @@ const APPROVER_EMAIL = 'kiraci@ornek.test';
  * katlanmis test verisi (`cikis teslimi`) bu siniri hic zorlamadigi icin font hatasi
  * urun teslim edilene kadar gorunmez kalmisti.
  */
-const TURKCE_BASLIK = 'Şişli Çağlayan 3+1 çıkış teslimi';
-const TURKCE_NOT = 'Mutfak dolabı çizik, ışık düğmesi bozuk, boyası eskimiş.';
-const TURKCE_SABLON = 'Giriş/Çıkış Teslim Tutanağı';
+const TURKISH_TITLE = 'Şişli Çağlayan 3+1 çıkış teslimi';
+const TURKISH_NOTE = 'Mutfak dolabı çizik, ışık düğmesi bozuk, boyası eskimiş.';
+const TURKISH_TEMPLATE_NAME = 'Giriş/Çıkış Teslim Tutanağı';
 
 function photoBytes(): Promise<Buffer> {
   return sharp({
@@ -41,16 +41,16 @@ describe('ReportPdfBuilder', () => {
 
   it('baslik ve govdedeki Turkce harfleri (s g i S I) bozulmadan yazar', async () => {
     const pdf = await new ReportPdfBuilder()
-      .addTitle(TURKCE_BASLIK)
-      .addTemplateName(TURKCE_SABLON)
-      .addNote(TURKCE_NOT)
+      .addTitle(TURKISH_TITLE)
+      .addTemplateName(TURKISH_TEMPLATE_NAME)
+      .addNote(TURKISH_NOTE)
       .build();
 
     const text = extractPdfText(pdf);
     // Aranan dize ASCII karsiligi DEGIL, Turkce dizenin KENDISIDIR.
-    expect(text).toContain(TURKCE_BASLIK);
-    expect(text).toContain(TURKCE_SABLON);
-    expect(text).toContain(TURKCE_NOT);
+    expect(text).toContain(TURKISH_TITLE);
+    expect(text).toContain(TURKISH_TEMPLATE_NAME);
+    expect(text).toContain(TURKISH_NOTE);
   });
 
   it('WinAnsi disi harfleri yer tutucu/cop karaktere DUSURMEZ', async () => {

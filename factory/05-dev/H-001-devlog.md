@@ -7,7 +7,7 @@
 | Kabul kriteri | Karsilayacak kod | Karsilayacak test |
 |---|---|---|
 | 1. Yeniden uretim senaryosu duzelir: PDF metni `Şişli Çağlayan`, `çıkış`, `ışık düğmesi` dizelerini GERCEK Turkce harflerle icerir | `report-pdf.builder.ts`: gomulu DejaVu Sans/Sans-Bold + `registerFont`; `test/pdf-text.ts`: gomulu fontun `/ToUnicode` CMap'i uzerinden metin cozumleme | `report-pdf.e2e-spec.ts` → "uretilen PDF Turkce'ye ozgu harfleri (s g i S I) bozulmadan tasir (H-001)"; `report-pdf.builder.spec.ts` → "baslik ve govdedeki Turkce harfleri ... bozulmadan yazar" |
-| 2. ASCII'ye katlanmis fixture'lar Turkcelestirilir, regresyon teste baglanir | — (test verisi) | `report-pdf.e2e-spec.ts`: `REPORT_TITLE`/`REPORT_NOTE` artik `Şişli Çağlayan 3+1 çıkış teslimi` / `Mutfak dolabı çizik, ışık düğmesi bozuk, boyası eskimiş.`; builder spec'inde `TURKCE_BASLIK`/`TURKCE_NOT`/`TURKCE_SABLON` |
+| 2. ASCII'ye katlanmis fixture'lar Turkcelestirilir, regresyon teste baglanir | — (test verisi) | `report-pdf.e2e-spec.ts`: `REPORT_TITLE`/`REPORT_NOTE` artik `Şişli Çağlayan 3+1 çıkış teslimi` / `Mutfak dolabı çizik, ışık düğmesi bozuk, boyası eskimiş.`; builder spec'inde `TURKISH_TITLE`/`TURKISH_NOTE`/`TURKISH_TEMPLATE_NAME` |
 | 3. Regresyon: fotograf gomme, onay blogu, damga davranisi degismez | Builder'da yalnizca font ADLARI degisti; duzen/punto/sira sabitleri korundu | Mevcut `report-pdf.e2e-spec.ts` (9 test), `approvals.e2e-spec.ts`, `report-pdf.service.spec.ts`, `report-pdf.builder.spec.ts` tamami yesil |
 | 4. Font serbest lisansli, lisans dosyasi/atifi depoda | `apps/api/src/modules/pdf/fonts/LICENSE.txt` + `fonts/README.md` (kaynak, surum, kullanim) | `tools/pdf-font-asset.spec.ts` → "font lisansi font dosyalariyla birlikte depoda tasinir" |
 | 5. `test`, `test:e2e`, `lint`, `typecheck` temiz | Tum degisiklikler | Asagidaki kosum ciktisi |
@@ -116,3 +116,21 @@ prettier --check .                   -> All matched files use Prettier code styl
 dist/modules/pdf/fonts/{DejaVuSans.ttf, DejaVuSans-Bold.ttf, LICENSE.txt} olustu
 derlenmis builder ile Turkce PDF uretimi dogrulandi (dist render ok)
 ```
+
+## Iade turu 1 (code-reviewer: CHANGES)
+
+Rapordaki TEK blokleyici bulgu: `report-pdf.builder.spec.ts:16-18` fixture sabitleri Turkce
+tanimlayici adi tasiyordu (CLAUDE.md §2: metinler Turkce, TANIMLAYICILAR Ingilizce).
+
+- Yapilan: saf yeniden adlandirma, davranis degisikligi YOK.
+  `TURKCE_BASLIK` -> `TURKISH_TITLE`, `TURKCE_NOT` -> `TURKISH_NOTE`,
+  `TURKCE_SABLON` -> `TURKISH_TEMPLATE_NAME` (tanim satirlari + 44-46 ve 51-53'teki
+  kullanimlar). Sabitlerin DEGERLERI ve assertion'lar aynen korundu (kriterin kendisi
+  Turkce dizeleri dogrulamak), ustteki Turkce aciklama yorumu da korundu.
+- Kapsam: rapor "baska hicbir seyi degistirme" dedi; baska dosyaya dokunulmadi. Branch'in
+  eklediği diger tanimlayicilar tarandi, hepsi zaten Ingilizce. (Ayni dosyadaki
+  `ikinciDamga` main'den gelen MEVCUT kod, ticket disi — dokunulmadi, not olarak birakildi.)
+- Kapilar bu tur yeniden kosuldu: kok jest 55 suite / 408 test PASS; apps/api birim
+  56 suite / 379 test PASS; apps/api e2e 13 suite / 201 test PASS (gercek Postgres,
+  `DATABASE_URL=postgresql://tutanak:tutanak@localhost:5432/tutanak`); `eslint . --max-warnings=0`
+  cikis 0; `tsc --noEmit` (kok + api + web) cikis 0; degisen dosyada prettier temiz.
