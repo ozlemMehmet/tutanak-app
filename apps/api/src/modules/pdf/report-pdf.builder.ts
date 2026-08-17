@@ -2,6 +2,8 @@
 // baslik -> sablon -> not -> fotograflar -> onay blogu[T-010]). Bu dosya YALNIZCA duzeni
 // bilir: veri okumaz, depolamaya gitmez, is kurali uygulamaz.
 
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import PDFDocument from 'pdfkit';
 import { formatReportStamp } from './pdf-timestamp.formatter';
 
@@ -15,12 +17,22 @@ const PHOTO_MAX_HEIGHT_PT = 640;
 const SECTION_GAP_LINES = 1;
 
 /**
- * PDF'in 14 standart fontundan biri; ek font dosyasi gomulmez. Bilinen sinirlama:
- * WinAnsi kodlamasi Turkce'ye ozgu s/g/i (s-cedilla, g-breve, noktasiz i) harflerini
- * TASIMAZ — gomulu Unicode font karari mimaride yoktur (devlog: "anayasa boslugu").
+ * H-001: belgeye GOMULEN Unicode fontlar. PDFKit'in 14 standart fontu (Helvetica ailesi)
+ * WinAnsi kodlamasindadir ve Turkce'ye ozgu `ş ğ ı Ş İ` harflerini TASIMAZ; tutanak
+ * Turkce bir belgedir, bu yuzden font dosyasi depoda tasinir ve her belgeye gomulur
+ * (lisans + kaynak: `fonts/README.md`, `fonts/LICENSE.txt`).
  */
-const TITLE_FONT = 'Helvetica-Bold';
-const BODY_FONT = 'Helvetica';
+const FONT_DIRECTORY = join(__dirname, 'fonts');
+/** Belge icinde kullanilan font ADLARI; font DOSYASINDAN ayridir (PDFKit registerFont). */
+const TITLE_FONT = 'ReportTitle';
+const BODY_FONT = 'ReportBody';
+/**
+ * Font baytlari surec basina BIR kez okunur: PDF her istekte yeniden uretilir ve dosyayi
+ * her belgede diskten okumak istek basina ~1,4 MB gereksiz G/C demektir. Dosya eksikse
+ * hata acilista/ilk yuklemede GURULTULU bicimde patlar, istek basina 500 olarak degil.
+ */
+const TITLE_FONT_BYTES = readFileSync(join(FONT_DIRECTORY, 'DejaVuSans-Bold.ttf'));
+const BODY_FONT_BYTES = readFileSync(join(FONT_DIRECTORY, 'DejaVuSans.ttf'));
 
 const TEMPLATE_LABEL = 'Sablon: ';
 const NOTE_LABEL = 'Not: ';
@@ -51,6 +63,10 @@ export class ReportPdfBuilder {
 
   constructor() {
     this.document = new PDFDocument({ size: PAGE_SIZE, margin: PAGE_MARGIN_PT });
+    // Fontlar belge kurulmadan ONCE tanitilir; sonraki `.font(...)` cagrilarinin tamami bu
+    // adlari kullanir, standart WinAnsi fontuna hicbir kod yolunda geri dusulmez (H-001).
+    this.document.registerFont(TITLE_FONT, TITLE_FONT_BYTES);
+    this.document.registerFont(BODY_FONT, BODY_FONT_BYTES);
     this.document.on('data', (chunk: Buffer) => this.chunks.push(chunk));
   }
 
