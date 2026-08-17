@@ -1,8 +1,12 @@
 # Uretim GORUNTULERINI (dev bind-mount/watch modu DEGIL) kullanan tek seferlik duman testi
 # kurulumu — devops-agent, release-prep. Amac: "test edilen imaj = deploy edilen imaj" ilkesi
 # (canliya gidecek Dockerfile hedefleriyle GERCEKTEN ayaga kalkiyor mu, migration+seed calisiyor
-# mu, health endpoint donuyor mu). Dis hesap gerektirmemesi icin R2 yerine MinIO, Resend yerine
-# Mailpit kullanilir (T-012 PAYMENT_PROVIDER=fake, CLAUDE.md §10 ile ayni yerel varsayilanlar).
+# mu, health endpoint donuyor mu). Dis hesap gerektirmemesi icin R2 yerine MinIO kullanilir
+# (T-012 PAYMENT_PROVIDER=fake, CLAUDE.md §10 ile ayni yerel varsayilanlar). Uygulama e-postayi
+# Resend'in HTTPS API istemcisiyle gonderir (SMTP degil), bu yuzden burada bir SMTP
+# yakalayicisi (mailpit) YOKTUR — hicbir zaman e-posta almazdi (factory/09-docs/FOUND-ISSUES.md
+# madde 2/5/7/8, docker-compose.yml ile ayni desen); RESEND_API_KEY bosken paylasim e-postasi
+# 202 + status:"failed" doner, bu BEKLENEN davranistir.
 #
 # Kullanim: `cp .env.example .env && docker compose -f docker-compose.e2e.yml up --build -d`
 # Duman testi: `curl -f http://localhost:${HTTP_PORT:-8080}/health` (Caddy /health'i API'ye
@@ -12,7 +16,7 @@
 # Temizlik: `docker compose -f docker-compose.e2e.yml down -v`.
 #
 # VPS uretim kurulumu bu dosyayi DOGRUDAN calistirmaz (orada gercek R2/Resend/iyzico
-# kullanilir, MinIO/Mailpit olmaz) — uretime ozel dosya factory/10-release/runbook.md §1'de
+# kullanilir, MinIO olmaz) — uretime ozel dosya factory/10-release/runbook.md §1'de
 # adim adim (heredoc ile) verilir; burasi yalnizca imaj+kurulumun dogrulama provasidir.
 services:
   db:
@@ -52,12 +56,6 @@ services:
     entrypoint: >-
       sh -c "until mc alias set yerel http://minio:9000 minioadmin minioadmin; do sleep 1; done;
       mc mb --ignore-existing yerel/${R2_BUCKET:-tutanak-photos}"
-
-  mailpit:
-    image: axllent/mailpit:latest
-    # Web arayuzu host'a acilmaz (smoke testinde otomatik dogrulanmiyor, T-023 bekliyor —
-    # bkz. factory/10-release/devops-report.md); baska bir yerel kosumla port catismasini
-    # onlemek icin container ici 8025 disariya yayinlanmaz.
 
   api:
     build:
