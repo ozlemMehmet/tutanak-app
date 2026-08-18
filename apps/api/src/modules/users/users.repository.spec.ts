@@ -53,7 +53,7 @@ describe('UsersRepository.create', () => {
     expect(error).toMatchObject({
       code: 'EMAIL_ALREADY_REGISTERED',
       httpStatus: 409,
-      details: [{ field: 'email', message: 'bu e-posta zaten kayitli' }],
+      details: [{ field: 'email', message: 'bu e-posta zaten kayıtlı' }],
     });
   });
 

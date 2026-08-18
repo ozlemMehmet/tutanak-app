@@ -7,7 +7,7 @@ import { IsEmail, MaxLength } from 'class-validator';
 const RECIPIENT_EMAIL_MAX_LENGTH = 254;
 
 export class SendShareEmailDto {
-  @IsEmail({}, { message: 'gecerli bir e-posta adresi giriniz' })
+  @IsEmail({}, { message: 'geçerli bir e-posta adresi giriniz' })
   @MaxLength(RECIPIENT_EMAIL_MAX_LENGTH, {
     message: 'e-posta adresi en fazla 254 karakter olabilir',
   })

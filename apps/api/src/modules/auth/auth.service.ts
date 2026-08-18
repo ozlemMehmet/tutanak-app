@@ -72,7 +72,7 @@ export class AuthService {
     );
 
     if (user === null || !isPasswordValid) {
-      throw new UnauthenticatedError('INVALID_CREDENTIALS', 'E-posta veya parola hatali.');
+      throw new UnauthenticatedError('INVALID_CREDENTIALS', 'E-posta veya parola hatalı.');
     }
 
     const accessToken = await this.jwtService.signAsync({ sub: user.id, email: user.email });

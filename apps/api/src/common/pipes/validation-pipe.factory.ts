@@ -6,7 +6,7 @@ import type { ValidationError as ClassValidatorError } from 'class-validator';
 import type { ErrorDetail } from '../errors/app-error';
 import { ValidationError } from '../errors/app-error';
 
-const FALLBACK_DETAIL_MESSAGE = 'gecersiz deger';
+const FALLBACK_DETAIL_MESSAGE = 'geçersiz değer';
 
 function firstConstraintMessage(error: ClassValidatorError): string {
   const messages = Object.values(error.constraints ?? {});
@@ -19,7 +19,7 @@ export function toValidationError(errors: ClassValidatorError[]): ValidationErro
     field: error.property,
     message: firstConstraintMessage(error),
   }));
-  return new ValidationError('Girdi dogrulanamadi.', details);
+  return new ValidationError('Girdi doğrulanamadı.', details);
 }
 
 export function createValidationPipe(): ValidationPipe {

@@ -56,8 +56,8 @@ export class UsersRepository {
       return toUserRecord(created);
     } catch (error: unknown) {
       if (isUniqueViolation(error)) {
-        throw new ConflictError('EMAIL_ALREADY_REGISTERED', 'Bu e-posta zaten kayitli.', [
-          { field: 'email', message: 'bu e-posta zaten kayitli' },
+        throw new ConflictError('EMAIL_ALREADY_REGISTERED', 'Bu e-posta zaten kayıtlı.', [
+          { field: 'email', message: 'bu e-posta zaten kayıtlı' },
         ]);
       }
       throw error;

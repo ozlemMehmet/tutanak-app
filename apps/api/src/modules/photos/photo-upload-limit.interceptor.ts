@@ -10,7 +10,7 @@ import { catchError, throwError } from 'rxjs';
 import { UnprocessableError } from '../../common/errors/app-error';
 
 // Sinir degeri yapilandirmadan geldigi icin mesaja SAYI GOMULMEZ (CLAUDE.md §5.1).
-const FILE_TOO_LARGE_MESSAGE = 'Fotograf izin verilen boyut sinirini asiyor.';
+const FILE_TOO_LARGE_MESSAGE = 'Fotoğraf izin verilen boyut sınırını aşıyor.';
 
 @Injectable()
 export class PhotoUploadLimitInterceptor implements NestInterceptor {

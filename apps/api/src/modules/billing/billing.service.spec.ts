@@ -143,7 +143,7 @@ describe('BillingService.startCheckout', () => {
       createCheckout: jest
         .fn()
         .mockRejectedValue(
-          new ExternalServiceError('PAYMENT_PROVIDER_ERROR', 'Odeme saglayicisina ulasilamadi.'),
+          new ExternalServiceError('PAYMENT_PROVIDER_ERROR', 'Ödeme sağlayıcısına ulaşılamadı.'),
         ),
     });
 

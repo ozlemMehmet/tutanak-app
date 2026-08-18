@@ -16,7 +16,7 @@ interface ErrorEnvelope {
   };
 }
 
-const INTERNAL_ERROR_MESSAGE = 'Beklenmeyen bir hata olustu.';
+const INTERNAL_ERROR_MESSAGE = 'Beklenmeyen bir hata oluştu.';
 const SERVER_ERROR_STATUS_THRESHOLD = 500;
 
 /** Framework kaynakli HttpException'lari sozlesmedeki kodlara esler. */

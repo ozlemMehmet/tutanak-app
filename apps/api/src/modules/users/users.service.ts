@@ -17,7 +17,7 @@ export class UsersService {
     if (profile === null) {
       // Token imzali ama kullanici artik yok: oturum gecersizdir (sozlesmede /me icin
       // tanimli tek hata yaniti 401'dir).
-      throw new UnauthenticatedError('UNAUTHENTICATED', 'Oturum gecerli degil.');
+      throw new UnauthenticatedError('UNAUTHENTICATED', 'Oturum geçerli değil.');
     }
     return toMeDto(profile, this.defaultCurrency);
   }

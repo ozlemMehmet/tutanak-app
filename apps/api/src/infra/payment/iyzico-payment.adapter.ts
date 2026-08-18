@@ -30,7 +30,7 @@ export interface IyzicoAdapterOptions {
   webhookSecret: string;
 }
 
-const PROVIDER_ERROR_MESSAGE = 'Odeme saglayicisina ulasilamadi, lutfen tekrar deneyin.';
+const PROVIDER_ERROR_MESSAGE = 'Ödeme sağlayıcısına ulaşılamadı, lütfen tekrar deneyin.';
 const LOCALE_TR = 'tr';
 const PAYMENT_GROUP_SUBSCRIPTION = 'SUBSCRIPTION';
 const BASKET_ITEM_TYPE_VIRTUAL = 'VIRTUAL';
@@ -105,7 +105,7 @@ export class IyzicoPaymentAdapter implements PaymentPort {
   private assertValidSignature(rawBody: Buffer | undefined, signature: string | undefined): void {
     const invalid = new UnauthenticatedError(
       'INVALID_WEBHOOK_SIGNATURE',
-      'Bildirim imzasi dogrulanamadi.',
+      'Bildirim imzası doğrulanamadı.',
     );
     if (rawBody === undefined || signature === undefined || signature.length === 0) {
       throw invalid;

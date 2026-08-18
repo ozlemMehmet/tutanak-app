@@ -44,8 +44,8 @@ export class PhotosController {
     @UploadedFile() file: Express.Multer.File | undefined,
   ): Promise<PhotoDto> {
     if (file === undefined) {
-      throw new ValidationError('Yuklenecek fotograf bulunamadi.', [
-        { field: FILE_FIELD, message: 'fotograf zorunludur' },
+      throw new ValidationError('Yüklenecek fotoğraf bulunamadı.', [
+        { field: FILE_FIELD, message: 'fotoğraf zorunludur' },
       ]);
     }
     return this.photosService.addPhoto(reportId, user.userId, { buffer: file.buffer });

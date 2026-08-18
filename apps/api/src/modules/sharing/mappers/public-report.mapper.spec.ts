@@ -107,7 +107,7 @@ describe('toPublicReportViewDto', () => {
   });
 
   it('uyari metni sozlesmedeki "destekleyici kanit" ifadesini tasir', () => {
-    expect(PUBLIC_REPORT_DISCLAIMER).toContain('resmi hukuki delil degildir');
-    expect(PUBLIC_REPORT_DISCLAIMER).toContain('destekleyici kanittir');
+    expect(PUBLIC_REPORT_DISCLAIMER).toContain('resmi hukuki delil değildir');
+    expect(PUBLIC_REPORT_DISCLAIMER).toContain('destekleyici kanıttır');
   });
 });

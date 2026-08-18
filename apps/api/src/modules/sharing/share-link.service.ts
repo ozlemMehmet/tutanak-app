@@ -16,17 +16,17 @@ import type { ReportAccessRecord } from './sharing.repository';
 import { SharingRepository } from './sharing.repository';
 
 const SHARE_LINK_MISSING_MESSAGE =
-  'Bu tutanak icin henuz paylasim linki uretilmedi; once paylasim linki olusturun.';
-const SHARE_EMAIL_SUBJECT = 'Emlak teslim tutanagi: goruntuleme ve onay baglantisi';
+  'Bu tutanak için henüz paylaşım linki üretilmedi; önce paylaşım linki oluşturun.';
+const SHARE_EMAIL_SUBJECT = 'Emlak teslim tutanağı: görüntüleme ve onay bağlantısı';
 
 function buildShareEmailText(shareUrl: string): string {
   return [
     'Merhaba,',
     '',
-    'Size bir emlak teslim tutanagi paylasildi. Tutanagi goruntulemek ve onaylamak icin:',
+    'Size bir emlak teslim tutanağı paylaşıldı. Tutanağı görüntülemek ve onaylamak için:',
     shareUrl,
     '',
-    'Bu baglanti icin kullanici hesabi gerekmez.',
+    'Bu bağlantı için kullanıcı hesabı gerekmez.',
   ].join('\n');
 }
 
@@ -93,10 +93,10 @@ export class ShareLinkService {
   private async assertOwnership(reportId: string, userId: string): Promise<ReportAccessRecord> {
     const report = await this.sharingRepository.findReportForAccess(reportId);
     if (report === null) {
-      throw new NotFoundError('NOT_FOUND', 'Tutanak bulunamadi.');
+      throw new NotFoundError('NOT_FOUND', 'Tutanak bulunamadı.');
     }
     if (report.ownerId !== userId) {
-      throw new ForbiddenError('Bu tutanaga erisim yetkiniz yok.');
+      throw new ForbiddenError('Bu tutanağa erişim yetkiniz yok.');
     }
     return report;
   }

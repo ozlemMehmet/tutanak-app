@@ -36,7 +36,7 @@ export class FakePaymentAdapter implements PaymentPort {
     signature: string | undefined,
   ): PaymentNotification {
     if (signature === undefined || signature.trim() === '') {
-      throw new UnauthenticatedError('INVALID_WEBHOOK_SIGNATURE', 'Bildirim imzasi dogrulanamadi.');
+      throw new UnauthenticatedError('INVALID_WEBHOOK_SIGNATURE', 'Bildirim imzası doğrulanamadı.');
     }
     return parsePaymentNotification(parseJsonBody(rawBody));
   }

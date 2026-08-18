@@ -21,14 +21,14 @@ describe('FakeEmailAdapter', () => {
 
   it('failNextWith kurgulandiginda bir sonraki gonderim failed doner ve kayit tutulmaz', async () => {
     const adapter = new FakeEmailAdapter();
-    adapter.failNextWith('E-posta saglayicisina ulasilamadi.');
+    adapter.failNextWith('E-posta sağlayıcısına ulaşılamadı.');
 
     const failed = await adapter.sendEmail(EMAIL);
     const recovered = await adapter.sendEmail(EMAIL);
 
     expect(failed).toEqual({
       status: 'failed',
-      errorMessage: 'E-posta saglayicisina ulasilamadi.',
+      errorMessage: 'E-posta sağlayıcısına ulaşılamadı.',
     });
     // Basarisizlik tek seferliktir: sonraki gonderim normale doner.
     expect(recovered.status).toBe('sent');

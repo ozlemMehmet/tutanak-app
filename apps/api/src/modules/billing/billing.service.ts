@@ -18,7 +18,7 @@ const MS_PER_DAY = 86_400_000;
  * `payment_transactions.failure_reason` DB CHECK'i geregi `failed` satirda neden ZORUNLUDUR;
  * saglayici neden bildirmediyse bu sabit metin yazilir, `null` birakilmaz (CLAUDE.md §3.12).
  */
-const DEFAULT_FAILURE_REASON = 'Saglayici odemenin reddedilme nedenini bildirmedi.';
+const DEFAULT_FAILURE_REASON = 'Sağlayıcı ödemenin reddedilme nedenini bildirmedi.';
 
 interface CheckoutActor {
   userId: string;
@@ -43,7 +43,7 @@ export class BillingService {
     });
 
     if (subscription.status === 'active') {
-      throw new ConflictError('SUBSCRIPTION_ALREADY_ACTIVE', 'Aboneliginiz zaten aktif.');
+      throw new ConflictError('SUBSCRIPTION_ALREADY_ACTIVE', 'Aboneliğiniz zaten aktif.');
     }
 
     // Saglayici cagrisi basarisizsa (502) odeme satiri HIC yazilmaz ve abonelik

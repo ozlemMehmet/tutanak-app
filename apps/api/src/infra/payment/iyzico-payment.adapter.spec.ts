@@ -95,6 +95,17 @@ describe('IyzicoPaymentAdapter.createCheckout', () => {
     );
   });
 
+  it('saglayici hatasinda kullaniciya donen mesaj duzgun Turkce yazilir (H-002)', async () => {
+    const adapter = new IyzicoPaymentAdapter(
+      OPTIONS,
+      fakeClient({ error: new Error('baglanti koptu') }),
+    );
+
+    await expect(adapter.createCheckout(CHECKOUT_REQUEST)).rejects.toMatchObject({
+      message: 'Ödeme sağlayıcısına ulaşılamadı, lütfen tekrar deneyin.',
+    });
+  });
+
   it('saglayici yaniti basarisiz durumdayken PAYMENT_PROVIDER_ERROR firlatir', async () => {
     const adapter = new IyzicoPaymentAdapter(
       OPTIONS,

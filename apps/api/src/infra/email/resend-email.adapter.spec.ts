@@ -41,7 +41,7 @@ describe('ResendEmailAdapter.sendEmail', () => {
 
     expect(result.status).toBe('failed');
     if (result.status === 'failed') {
-      expect(result.errorMessage).toBe('E-posta saglayicisi gonderimi reddetti.');
+      expect(result.errorMessage).toBe('E-posta sağlayıcısı gönderimi reddetti.');
       expect(result.errorMessage).not.toContain('sk_test');
     }
   });
@@ -53,7 +53,7 @@ describe('ResendEmailAdapter.sendEmail', () => {
 
     expect(result).toEqual({
       status: 'failed',
-      errorMessage: 'E-posta saglayicisina ulasilamadi.',
+      errorMessage: 'E-posta sağlayıcısına ulaşılamadı.',
     });
   });
 

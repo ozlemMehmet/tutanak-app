@@ -12,7 +12,7 @@ import type { PublicReportViewDto } from './dto/public-report.dto';
 import { toPublicReportViewDto } from './mappers/public-report.mapper';
 import { SharingRepository } from './sharing.repository';
 
-const INVALID_LINK_MESSAGE = 'Bu baglanti gecersiz veya artik kullanilmiyor.';
+const INVALID_LINK_MESSAGE = 'Bu bağlantı geçersiz veya artık kullanılmıyor.';
 
 @Injectable()
 export class PublicReportService {

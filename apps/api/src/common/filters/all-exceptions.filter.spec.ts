@@ -31,8 +31,8 @@ describe('AllExceptionsFilter.catch', () => {
   it("AppError'i sozlesmedeki tek tip hata zarfina cevirir", () => {
     const captured: Partial<CapturedResponse> = {};
     new AllExceptionsFilter().catch(
-      new ConflictError('EMAIL_ALREADY_REGISTERED', 'Bu e-posta zaten kayitli.', [
-        { field: 'email', message: 'bu e-posta zaten kayitli' },
+      new ConflictError('EMAIL_ALREADY_REGISTERED', 'Bu e-posta zaten kayıtlı.', [
+        { field: 'email', message: 'bu e-posta zaten kayıtlı' },
       ]),
       hostCapturing(captured),
     );
@@ -40,8 +40,8 @@ describe('AllExceptionsFilter.catch', () => {
     expect(captured.status).toBe(409);
     const envelope = (captured.body as { error: Record<string, unknown> }).error;
     expect(envelope.code).toBe('EMAIL_ALREADY_REGISTERED');
-    expect(envelope.message).toBe('Bu e-posta zaten kayitli.');
-    expect(envelope.details).toEqual([{ field: 'email', message: 'bu e-posta zaten kayitli' }]);
+    expect(envelope.message).toBe('Bu e-posta zaten kayıtlı.');
+    expect(envelope.details).toEqual([{ field: 'email', message: 'bu e-posta zaten kayıtlı' }]);
     expect(typeof envelope.traceId).toBe('string');
     expect(Object.keys(envelope).sort()).toEqual(['code', 'details', 'message', 'traceId']);
   });
@@ -60,7 +60,7 @@ describe('AllExceptionsFilter.catch', () => {
   it('dogrulama hatasinda alan bazli detaylari korur', () => {
     const captured: Partial<CapturedResponse> = {};
     new AllExceptionsFilter().catch(
-      new ValidationError('Girdi dogrulanamadi.', [
+      new ValidationError('Girdi doğrulanamadı.', [
         { field: 'password', message: 'parola en az 8 karakter olmalidir' },
       ]),
       hostCapturing(captured),

@@ -21,7 +21,7 @@ export class TemplatesService {
   async getTemplate(templateId: string): Promise<TemplateDto> {
     const template = await this.templatesRepository.findById(templateId);
     if (template === null) {
-      throw new NotFoundError('TEMPLATE_NOT_FOUND', 'Secilen sablon bulunamadi.');
+      throw new NotFoundError('TEMPLATE_NOT_FOUND', 'Seçilen şablon bulunamadı.');
     }
     return toTemplateDto(template);
   }

@@ -40,6 +40,6 @@ describe('toValidationError', () => {
   it('kisit bilgisi olmayan hatada alan adini yine de bildirir', () => {
     const error = toValidationError([{ property: 'email' }]);
 
-    expect(error.details).toEqual([{ field: 'email', message: 'gecersiz deger' }]);
+    expect(error.details).toEqual([{ field: 'email', message: 'geçersiz değer' }]);
   });
 });

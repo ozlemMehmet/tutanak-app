@@ -17,6 +17,14 @@ describe('buildWhatsAppShareUrl', () => {
     expect(url.searchParams.get('text')).toContain(SHARE_URL);
   });
 
+  it('onceden doldurulmus metin duzgun Turkce yazilir (H-002)', () => {
+    const url = new URL(buildWhatsAppShareUrl(SHARE_URL));
+
+    expect(url.searchParams.get('text')).toContain(
+      'Emlak teslim tutanağını görüntülemek ve onaylamak için:',
+    );
+  });
+
   it('metni URL icine kacisli (percent-encoded) gomer', () => {
     const raw = buildWhatsAppShareUrl(SHARE_URL);
 

@@ -29,7 +29,7 @@ export class FakeStorageAdapter implements StoragePort {
     if (stored === undefined) {
       throw new ExternalServiceError(
         'STORAGE_UNAVAILABLE',
-        'Fotograf deposuna su anda erisilemiyor, tekrar deneyin.',
+        'Fotoğraf deposuna şu anda erişilemiyor, tekrar deneyin.',
       );
     }
     return Promise.resolve(stored.body);

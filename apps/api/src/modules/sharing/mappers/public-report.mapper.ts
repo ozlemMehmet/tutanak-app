@@ -12,7 +12,7 @@ import type { PublicReportRecord } from '../sharing.repository';
  * Metin sabittir: kullaniciya/ortama gore degismez, bu yuzden yapilandirma degildir (§5.1).
  */
 export const PUBLIC_REPORT_DISCLAIMER =
-  'Bu tutanak resmi hukuki delil degildir, destekleyici kanittir.';
+  'Bu tutanak resmi hukuki delil değildir, destekleyici kanıttır.';
 
 function toPublicPhotoDto(photo: PhotoDto): PublicPhotoDto {
   return { id: photo.id, capturedAt: photo.capturedAt, url: photo.url };

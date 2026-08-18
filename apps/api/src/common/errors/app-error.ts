@@ -52,7 +52,7 @@ export abstract class AppError extends Error {
 }
 
 export class ValidationError extends AppError {
-  constructor(message = 'Girdi dogrulanamadi.', details?: ErrorDetail[]) {
+  constructor(message = 'Girdi doğrulanamadı.', details?: ErrorDetail[]) {
     super('VALIDATION_ERROR', 400, message, details);
   }
 }
@@ -65,14 +65,14 @@ type UnauthenticatedCode = Extract<
 export class UnauthenticatedError extends AppError {
   constructor(
     code: UnauthenticatedCode = 'UNAUTHENTICATED',
-    message = 'Bu islem icin oturum acmaniz gerekiyor.',
+    message = 'Bu işlem için oturum açmanız gerekiyor.',
   ) {
     super(code, 401, message);
   }
 }
 
 export class ForbiddenError extends AppError {
-  constructor(message = 'Bu kaynaga erisim yetkiniz yok.') {
+  constructor(message = 'Bu kaynağa erişim yetkiniz yok.') {
     // 403 yanitlari alan bazli `details` tasimaz (CLAUDE.md §4.2.3).
     super('FORBIDDEN', 403, message);
   }
@@ -81,7 +81,7 @@ export class ForbiddenError extends AppError {
 type NotFoundCode = Extract<ErrorCode, 'NOT_FOUND' | 'TEMPLATE_NOT_FOUND' | 'SHARE_LINK_NOT_FOUND'>;
 
 export class NotFoundError extends AppError {
-  constructor(code: NotFoundCode = 'NOT_FOUND', message = 'Kaynak bulunamadi.') {
+  constructor(code: NotFoundCode = 'NOT_FOUND', message = 'Kaynak bulunamadı.') {
     // 404 yanitlari alan bazli `details` tasimaz (CLAUDE.md §4.2.3).
     super(code, 404, message);
   }

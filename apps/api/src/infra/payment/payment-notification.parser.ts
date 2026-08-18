@@ -10,7 +10,7 @@ const CANONICAL_STATUSES: PaymentNotificationStatus[] = ['succeeded', 'failed'];
 /** Ham govdeyi JSON nesnesine cevirir; govde yoksa/bozuksa 400 uretir. */
 export function parseJsonBody(rawBody: Buffer | undefined): Record<string, unknown> {
   if (rawBody === undefined || rawBody.length === 0) {
-    throw new ValidationError('Bildirim govdesi bos.');
+    throw new ValidationError('Bildirim gövdesi boş.');
   }
 
   let parsed: unknown;
@@ -18,11 +18,11 @@ export function parseJsonBody(rawBody: Buffer | undefined): Record<string, unkno
     parsed = JSON.parse(rawBody.toString('utf8'));
   } catch {
     // Saglayicinin ham govdesi hata mesajina KONULMAZ (CLAUDE.md §4.3).
-    throw new ValidationError('Bildirim govdesi gecerli JSON degil.');
+    throw new ValidationError('Bildirim gövdesi geçerli JSON değil.');
   }
 
   if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-    throw new ValidationError('Bildirim govdesi bir nesne olmalidir.');
+    throw new ValidationError('Bildirim gövdesi bir nesne olmalıdır.');
   }
   return parsed as Record<string, unknown>;
 }
@@ -46,13 +46,13 @@ export function parsePaymentNotification(source: Record<string, unknown>): Payme
   const status = source.status;
 
   if (providerReference === undefined) {
-    throw new ValidationError('Bildirim dogrulanamadi.', [
+    throw new ValidationError('Bildirim doğrulanamadı.', [
       { field: 'providerReference', message: 'zorunlu alan' },
     ]);
   }
   if (!isCanonicalStatus(status)) {
-    throw new ValidationError('Bildirim dogrulanamadi.', [
-      { field: 'status', message: 'succeeded veya failed olmalidir' },
+    throw new ValidationError('Bildirim doğrulanamadı.', [
+      { field: 'status', message: 'succeeded veya failed olmalıdır' },
     ]);
   }
 

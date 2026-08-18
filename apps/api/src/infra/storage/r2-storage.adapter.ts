@@ -12,7 +12,7 @@ import type { StorageObjectInput, StoragePort } from './storage.port';
 
 /** R2 tek bolgelidir; MinIO da bu degeri yok sayar (S3 SDK zorunlu alan istiyor). */
 const STORAGE_REGION = 'auto';
-const STORAGE_UNAVAILABLE_MESSAGE = 'Fotograf deposuna su anda erisilemiyor, tekrar deneyin.';
+const STORAGE_UNAVAILABLE_MESSAGE = 'Fotoğraf deposuna şu anda erişilemiyor, tekrar deneyin.';
 
 interface StorageCredentials {
   accessKeyId: string;
