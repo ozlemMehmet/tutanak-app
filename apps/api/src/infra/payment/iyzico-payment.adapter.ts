@@ -35,7 +35,8 @@ const LOCALE_TR = 'tr';
 const PAYMENT_GROUP_SUBSCRIPTION = 'SUBSCRIPTION';
 const BASKET_ITEM_TYPE_VIRTUAL = 'VIRTUAL';
 const SUBSCRIPTION_BASKET_ITEM_ID = 'aylik-abonelik';
-const SUBSCRIPTION_BASKET_ITEM_NAME = 'Aylik abonelik';
+/** Saglayicinin odeme sayfasinda KULLANICIYA gorunen kalem adi (H-002: duzgun Turkce). */
+const SUBSCRIPTION_BASKET_ITEM_NAME = 'Aylık abonelik';
 const SUBSCRIPTION_BASKET_CATEGORY = 'Abonelik';
 
 // Saglayici bildirimindeki durum degerleri -> kanonik durum (architecture.md §8.5).

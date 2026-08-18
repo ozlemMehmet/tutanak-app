@@ -121,6 +121,28 @@ describe('ReportPdfBuilder', () => {
     expect(text.indexOf(CAPTURED_AT_STAMP)).toBeLessThan(text.indexOf(APPROVED_AT_STAMP));
   });
 
+  it('sabit etiketleri ASCII karsiligiyla degil, duzgun Turkce ile basar (H-002)', async () => {
+    const pdf = await new ReportPdfBuilder()
+      .addTitle(TURKISH_TITLE)
+      .addTemplateName(TURKISH_TEMPLATE_NAME)
+      .addNote(TURKISH_NOTE)
+      .addPhoto({ image: await photoBytes(), capturedAt: CAPTURED_AT })
+      .addApproval({ approverEmail: APPROVER_EMAIL, approvedAt: APPROVED_AT })
+      .build();
+
+    const text = extractPdfText(pdf);
+    // Aranan dize etiketin Turkce KENDISIDIR; ASCII'ye katlanmis hali kalmis olmamalidir.
+    expect(text).toContain('Şablon: ');
+    expect(text).toContain('Not: ');
+    expect(text).toContain('Fotoğraf tarihi: ');
+    expect(text).toContain('Taraf onayı');
+    expect(text).toContain('Onaylayan: ');
+    expect(text).toContain('Onay tarihi: ');
+    expect(text).not.toContain('Sablon: ');
+    expect(text).not.toContain('Fotograf tarihi: ');
+    expect(text).not.toContain('Taraf onayi');
+  });
+
   it('bos not verildiginde not bolumu yer tutucu ile yazilir', async () => {
     const pdf = await new ReportPdfBuilder().addTitle('Tutanak').addNote('').build();
 
