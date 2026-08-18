@@ -53,8 +53,10 @@ const PROVIDER_STATUS_MAP = new Map<string, PaymentNotificationStatus>([
  */
 const BUYER_PLACEHOLDER = {
   name: 'Tutanak',
+  // ascii-tr-ok: saglayici alan sozlesmesine giden ASCII yer tutucu (city/country ile ayni kalip)
   surname: 'Kullanicisi',
   identityNumber: '11111111111',
+  // ascii-tr-ok: saglayici alan sozlesmesine giden ASCII yer tutucu, urun metni degil
   registrationAddress: 'Bilgi toplanmadi',
   city: 'Istanbul',
   country: 'Turkey',
