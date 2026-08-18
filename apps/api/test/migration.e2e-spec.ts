@@ -21,11 +21,28 @@ const TEST_DATABASE_NAME = 'tutanak_t002_migration_test';
 const MIGRATION_TIMEOUT_MS = 180_000;
 
 // PRD kapsam ici madde 3 — adlar birebir eslesmelidir.
+// H-005: bu adlar acilis sirasinin `seed` adiminda (prisma/seed.ts upsert) yazilir; gercek
+// Turkce harflerle assert edilir, ASCII'ye katlanmis karsiligi kabul edilmez
+// (ders: testing/yerellestirilmis-urunde-ascii-katlanmis-test-verisi.md).
 const EXPECTED_TEMPLATE_NAMES = [
-  'Giris/Cikis Teslim Tutanagi',
-  'Sayac/Demirbas Tespiti',
-  'Periyodik Durum Kontrolu',
+  'Giriş/Çıkış Teslim Tutanağı',
+  'Sayaç/Demirbaş Tespiti',
+  'Periyodik Durum Kontrolü',
 ];
+
+// H-005 kriter 2 — daha once ASCII adlarla seed edilmis bir veritabaninin, seed yeniden
+// kosuldugunda kendiliginden duzelmesi beklenir (upsert'in `update` dali).
+// `code` upsert anahtaridir (templates_code_key); sort_order benzersiz DEGILDIR.
+const LEGACY_ASCII_TEMPLATES = [
+  { code: 'move_in_out', name: 'Giris/Cikis Teslim Tutanagi' },
+  { code: 'meter_fixture', name: 'Sayac/Demirbas Tespiti' },
+  { code: 'periodic_check', name: 'Periyodik Durum Kontrolu' },
+];
+
+const LEGACY_ASCII_DESCRIPTION = 'ASCII ye katlanmis eski aciklama';
+
+// Turkce'ye ozgu, ASCII katlamasinda ilk kaybolan harfler.
+const TURKISH_SPECIFIC_LETTERS = /[şğıŞĞİ]/;
 
 const EXPECTED_TABLES = [
   'approvals',
@@ -94,11 +111,51 @@ describe('T-002 veri modeli migration akisi', () => {
       expect(count).toBe(3);
     });
 
-    it('sablon adlari PRD ile birebir eslesir', async () => {
-      const templates = await prisma.template.findMany({ orderBy: { sortOrder: 'asc' } });
+    // Belgelenen acilis sirasi `migrate:deploy && seed`tir (docker-compose.yml, Dockerfile
+    // CMD); sablon adlarinin tek yetkili kaynagi seed adimidir. Bu yuzden ad dogrulamasi
+    // seed kosulduktan SONRA yapilir — migration dosyasindaki INSERT yalnizca satirlarin
+    // var olmasini garanti eder, nihai metni degil (devlog H-005: migration.sql notu).
+    it(
+      'seed sonrasi sablon adlari PRD ile birebir (Turkce) eslesir',
+      async () => {
+        runApiScript('seed', databaseUrl);
 
-      expect(templates.map((template) => template.name)).toEqual(EXPECTED_TEMPLATE_NAMES);
-    });
+        const templates = await prisma.template.findMany({ orderBy: { sortOrder: 'asc' } });
+
+        expect(templates.map((template) => template.name)).toEqual(EXPECTED_TEMPLATE_NAMES);
+      },
+      MIGRATION_TIMEOUT_MS,
+    );
+
+    it(
+      'onceden ASCII adlarla seed edilmis veritabaninda seed yeniden kosulunca adlar Turkce ye guncellenir',
+      async () => {
+        // Kriter 2: eski (hatali) durumu birebir yeniden uret — adlar ve aciklamalar
+        // ASCII'ye katlanmis haldeyken baslayalim.
+        for (const legacy of LEGACY_ASCII_TEMPLATES) {
+          await prisma.template.update({
+            where: { code: legacy.code },
+            data: { name: legacy.name, description: LEGACY_ASCII_DESCRIPTION },
+          });
+        }
+        const before = await prisma.template.findMany({ orderBy: { sortOrder: 'asc' } });
+        expect(before.map((template) => template.name)).toEqual(
+          LEGACY_ASCII_TEMPLATES.map((legacy) => legacy.name),
+        );
+
+        runApiScript('seed', databaseUrl);
+
+        const after = await prisma.template.findMany({ orderBy: { sortOrder: 'asc' } });
+        // Yeni satir eklenmez, mevcut satirlar guncellenir (upsert `update` dali).
+        expect(after).toHaveLength(3);
+        expect(after.map((template) => template.name)).toEqual(EXPECTED_TEMPLATE_NAMES);
+        for (const template of after) {
+          expect(template.description).not.toBe(LEGACY_ASCII_DESCRIPTION);
+          expect(`${template.name} ${template.description}`).toMatch(TURKISH_SPECIFIC_LETTERS);
+        }
+      },
+      MIGRATION_TIMEOUT_MS,
+    );
 
     it(
       'seed script i ikinci kez kosuldugunda kayit sayisi 3 kalir (idempotent)',
