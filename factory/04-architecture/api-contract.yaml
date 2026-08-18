@@ -1,0 +1,996 @@
+openapi: 3.0.3
+
+# ============================================================================
+# Emlak Teslim Tutanagi Platformu (MVP) — API Sozlesmesi
+# Uretici: architect-agent | Tarih: 2026-08-12 | Tur: 5
+# Kaynak: factory/02-prd/prd.md, factory/03-backlog/ (T-003..T-012)
+#
+# Kurallar:
+#  * Tum yollar /api/v1 onekiyle servis edilir.
+#  * Tum hata yanitlari TEK TIP hata zarfini kullanir (ErrorEnvelope).
+#  * /public/* disindaki HER endpoint bearerAuth gerektirir (varsayilan kapali).
+#  * Bu dosya web istemcisinin tip uretimi (openapi-typescript) icin de
+#    tek dogruluk kaynagidir (CLAUDE.md §3.6 — sozlesme onceligi).
+#  * Altyapi/izleme endpoint'leri bu sozlesmenin DISINDADIR: GET /health
+#    (/api/v1 oneki YOK, kimlik dogrulamasi YOK, 200 {"status":"ok"}) yalnizca
+#    container saglik kontrolu icindir, istemci onu cagirmaz (T-001).
+#  * E-posta gonderim basarisizligi bir HATA YANITI DEGILDIR: 202 + govdede
+#    ShareDelivery.status = failed doner (bkz. /reports/{reportId}/share-link/email).
+#  * TUM endpoint'ler hiz siniri asimida `429 RATE_LIMIT_EXCEEDED` + ErrorEnvelope
+#    dondurebilir (architecture.md §7); 429 asagida yalnizca ozel/sikilastirilmis
+#    limiti olan yollarda ayrica listelenmistir, listelenmedigi yerlerde de gecerlidir.
+#  * GOVDE KATILIGI: JSON istek govdeleri `additionalProperties: false` ile katidir
+#    (beyaz liste disi alan 400 VALIDATION_ERROR). SADECE IKI ISTISNA vardir ve bu
+#    liste GENISLETILEMEZ (CLAUDE.md §3.7):
+#      (1) multipart fotograf yuklemesi (POST /reports/{reportId}/photos): `file`
+#          disindaki alanlar REDDEDILMEZ, sessizce YOK SAYILIR (T-006 kriter 3);
+#      (2) odeme saglayicisi bildirimi (POST /billing/webhook): govde BIZE ait
+#          degil saglayiciya aittir; bu route'ta `forbidNonWhitelisted`
+#          UYGULANMAZ, beyaz liste disi alanlar sessizce AYIKLANIR ve 400
+#          URETILMEZ (imza gecerliyken 4xx donmek bildirimin suresiz
+#          tekrarlanmasina yol acar — architecture.md §8.5).
+#    Bu iki route disinda hicbir endpoint'te "ek alani yok say" davranisi yoktur.
+#  * NULL KONVANSIYONU: skaler alanlar `nullable: true` ile null donebilir; NESNE
+#    alanlari (ReportDetail.approval, PublicReportView.approval) null DEGIL, yanitta
+#    HIC BULUNMAYARAK ifade edilir — OpenAPI 3.0'da $ref + nullable kalibi tip
+#    ureticilerinde `| null` uretmedigi icin (CLAUDE.md §3.5).
+# ============================================================================
+
+info:
+  title: Tutanak API
+  version: 1.0.0
+  description: >
+    Emlak teslim tutanagi olusturma, fotograf + degistirilemez tarih damgasi ekleme,
+    PDF ciktisi, oturumsuz paylasim/goruntuleme, tek tikla onay ve aylik abonelik API'si.
+
+servers:
+  - url: https://app.example.com/api/v1
+    description: Production
+  - url: http://localhost:3000/api/v1
+    description: Yerel gelistirme (docker compose)
+
+tags:
+  - name: auth
+    description: Kayit ve giris (T-003)
+  - name: me
+    description: Oturum sahibinin profili ve abonelik durumu (T-003, T-012)
+  - name: templates
+    description: Hazir emlak sablonlari (T-004)
+  - name: reports
+    description: Tutanak taslagi, listeleme/arama, PDF (T-005, T-007, T-011)
+  - name: photos
+    description: Fotograf ekleme + otomatik damga (T-006)
+  - name: sharing
+    description: Paylasim linki ve e-posta/WhatsApp paylasimi (T-008)
+  - name: public
+    description: Kimlik dogrulamasi GEREKTIRMEYEN, token'li endpoint'ler (T-009, T-010)
+  - name: billing
+    description: Abonelik odemesi (T-012)
+
+security:
+  - bearerAuth: []
+
+paths:
+
+  # ---------------------------------------------------------------- auth ----
+  /auth/register:
+    post:
+      tags: [auth]
+      summary: Yeni kullanici kaydi (T-003)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterRequest' }
+      responses:
+        '201':
+          description: Kullanici olusturuldu
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '409':
+          description: >
+            Bu e-posta zaten kayitli (EMAIL_ALREADY_REGISTERED).
+            T-003 kriteri geregi `details` ALAN BAZLI doldurulur.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+              example:
+                error:
+                  code: EMAIL_ALREADY_REGISTERED
+                  message: Bu e-posta zaten kayitli.
+                  details:
+                    - field: email
+                      message: bu e-posta zaten kayitli
+                  traceId: 1f4c2b6a-9f2f-4d7d-8f2a-6c9b0a1d2e3f
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: Giris yap, erisim token'i al (T-003)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: Giris basarili
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LoginResponse' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401':
+          description: E-posta veya sifre hatali (INVALID_CREDENTIALS)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  # ------------------------------------------------------------------ me ----
+  /me:
+    get:
+      tags: [me]
+      summary: Oturum sahibinin profili ve guncel abonelik durumu (T-003, T-012)
+      description: >
+        `subscription` alani HER ZAMAN doludur. Kullanicinin henuz bir abonelik satiri
+        yoksa (satir ilk kez POST /billing/checkout ile olusur — architecture.md §8.3)
+        varsayilan nesne doner: status = inactive, priceAmount = null,
+        currency = SUBSCRIPTION_CURRENCY, currentPeriodEnd = null.
+        Bu endpoint hicbir kosulda abonelik satiri OLUSTURMAZ.
+      responses:
+        '200':
+          description: Profil
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MeResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # ----------------------------------------------------------- templates ----
+  /templates:
+    get:
+      tags: [templates]
+      summary: Hazir sablonlari listele — tam olarak 3 kayit (T-004)
+      responses:
+        '200':
+          description: Sablon listesi
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Template' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /templates/{templateId}:
+    get:
+      tags: [templates]
+      summary: Sablon secimini dogrula/getir (T-004)
+      parameters:
+        - $ref: '#/components/parameters/TemplateId'
+      responses:
+        '200':
+          description: Secilen sablon
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Template' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ------------------------------------------------------------- reports ----
+  /reports:
+    post:
+      tags: [reports]
+      summary: Tutanak taslagi olustur (T-005)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateReportRequest' }
+      responses:
+        '201':
+          description: Taslak olusturuldu (status = draft)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Report' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404':
+          description: Belirtilen sablon bulunamadi (TEMPLATE_NOT_FOUND)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    get:
+      tags: [reports]
+      summary: Kendi tutanaklarini listele ve ara (T-011)
+      parameters:
+        - name: q
+          in: query
+          required: false
+          description: Baslik veya not icinde gecen terim (bos birakilirsa filtre uygulanmaz)
+          schema: { type: string, minLength: 1, maxLength: 100 }
+        - name: page
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: pageSize
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+      responses:
+        '200':
+          description: Kullanicinin kendi tutanaklari, created_at DESC (eslesme yoksa bos liste)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReportListResponse' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /reports/{reportId}:
+    get:
+      tags: [reports]
+      summary: Kendi tutanagini getir (T-005)
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      responses:
+        '200':
+          description: Tutanak detayi (fotograflar dahil)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReportDetail' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /reports/{reportId}/photos:
+    post:
+      tags: [photos]
+      summary: Tutanaga fotograf ekle; damga sunucuda uretilir (T-006)
+      description: >
+        Yuklenen dosya sihirli bayt kontrolu ile dogrulanir (image/jpeg, image/png, image/webp).
+        GOVDE KURALI (baglayici tek kural — basliktaki govde katiligi ISTISNA (1),
+        architecture.md §7, CLAUDE.md §3.7): govdede `file` DISINDAKI TUM ALANLAR YOK SAYILIR;
+        bu endpoint'te `forbidNonWhitelisted` UYGULANMAZ, ek alan 400 URETMEZ. `capturedAt`
+        dahil hicbir istemci tarih degeri okunmaz; damga DB'de `DEFAULT now()` ile uretilir
+        ve hicbir endpoint uzerinden degistirilemez (guncelleme/PATCH route'u TANIMLI DEGILDIR).
+        T-006 kabul kriteri 3 bu davranisla dogrulanir: govdeye tarih alani eklenmis istek
+        201 + SUNUCU damgasi doner.
+        SIRALAMA: `sort_order` sunucuda atanir (mevcut en buyuk + 1); istemci gonderemez.
+        KANIT BUTUNLUGU (architecture.md §8.1, CLAUDE.md §3.10 — baglayici tek kural):
+        reports.status = 'approved' ise yukleme REDDEDILIR (409 REPORT_ALREADY_APPROVED);
+        `draft` ve `shared` durumlarinda yukleme serbesttir. Onay, tutanagin icerigini dondurur.
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              # Bilincli olarak `additionalProperties: false` DEGILDIR: bu endpoint'te
+              # `file` disindaki alanlar reddedilmez, SESSIZCE YOK SAYILIR (bkz. description).
+              additionalProperties: true
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Maksimum 10 MB
+      responses:
+        '201':
+          description: Fotograf eklendi
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Photo' }
+        '400':
+          description: Desteklenmeyen format, bozuk dosya veya boyut asimi (UNSUPPORTED_MEDIA_FORMAT / FILE_TOO_LARGE)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: >
+            Iki durumdan biri: tutanak basina fotograf ust siniri (PHOTO_MAX_PER_REPORT = 30)
+            asildi (PHOTO_LIMIT_REACHED) VEYA tutanak zaten onaylanmis oldugu icin icerigi
+            dondurulmus (REPORT_ALREADY_APPROVED — architecture.md §8.1).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '502': { $ref: '#/components/responses/StorageUnavailable' }
+    get:
+      tags: [photos]
+      summary: Tutanagin fotograflarini damgalariyla listele (T-006)
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      responses:
+        '200':
+          description: Fotograf listesi
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Photo' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /reports/{reportId}/pdf:
+    get:
+      tags: [reports]
+      summary: Tutanagin PDF ciktisini uret ve indir (T-007, T-010)
+      description: >
+        PDF; baslik, sablon adi, not ve tum fotograflari kendi tarih-saat damgalariyla icerir.
+        Tutanak onaylanmissa onay zaman damgasi ve onaylayan e-posta da PDF'e islenir (T-010).
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      responses:
+        '200':
+          description: PDF dosyasi
+          headers:
+            Content-Disposition:
+              schema: { type: string }
+              description: 'attachment; filename="tutanak-<id>.pdf"'
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+        '400':
+          description: Tutanakta hic fotograf yok, PDF uretilemez (REPORT_HAS_NO_PHOTOS)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '502': { $ref: '#/components/responses/StorageUnavailable' }
+
+  # ------------------------------------------------------------- sharing ----
+  /reports/{reportId}/share-link:
+    post:
+      tags: [sharing]
+      summary: Paylasim linki olustur (idempotan) (T-008)
+      description: >
+        Ayni tutanak icin ikinci kez cagrildiginda YENI token uretilmez;
+        mevcut aktif link ayni token ile geri donulur.
+        DURUM GECISI: bu cagri basarili oldugunda reports.status `draft` -> `shared`
+        gecisini yapar (tutanak zaten `shared` veya `approved` ise durum DEGISMEZ).
+        `shared` -> `approved` gecisi YALNIZCA onay kaydiyla olur; geri gecis yoktur.
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      responses:
+        '201':
+          description: Paylasim linki (yeni uretilmis veya mevcut olan)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ShareLink' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    get:
+      tags: [sharing]
+      summary: Tutanagin mevcut paylasim linkini getir (T-008)
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      responses:
+        '200':
+          description: Mevcut paylasim linki
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ShareLink' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: Bu tutanak icin henuz paylasim linki uretilmemis (SHARE_LINK_NOT_FOUND)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+
+  /reports/{reportId}/share-link/email:
+    post:
+      tags: [sharing]
+      summary: Paylasim linkini e-posta ile gonder (T-008)
+      description: >
+        ON KOSUL (architecture.md §8.1, CLAUDE.md §3.10 — baglayici tek kural): bu endpoint
+        paylasim linki URETMEZ; ilgili tutanak icin link yoksa 404 SHARE_LINK_NOT_FOUND doner —
+        once POST /reports/{reportId}/share-link cagrilir. Boylece "linkin varligi durumu
+        belirler" degismezi korunur ve bu endpoint reports.status'u DEGISTIRMEZ.
+        Gonderim senkron yapilir; sonuc (sent/failed) yanitta acikca belirtilir.
+        SAGLAYICI HATASI ISTISNA DEGILDIR: e-posta gonderilemezse de yanit 202'dir ve
+        `status = failed` + `errorMessage` doner (502/ErrorEnvelope DONMEZ).
+        Paylasim linkinin kendisi her durumda gecerli kalir.
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SendShareEmailRequest' }
+      responses:
+        '202':
+          description: Gonderim denendi; sonuc yanitta
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ShareDelivery' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: >
+            Tutanak bulunamadi (NOT_FOUND) VEYA tutanak icin henuz paylasim linki
+            uretilmemis (SHARE_LINK_NOT_FOUND) — bu endpoint link uretmez.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+
+  # -------------------------------------------------------------- public ----
+  /public/reports/{shareToken}:
+    get:
+      tags: [public]
+      summary: Tutanagi paylasim linki ile, oturum acmadan goruntule (T-009, T-010)
+      description: >
+        Salt-okunur gorunum. Yanit, onay oncesi gosterilmesi zorunlu
+        "resmi hukuki delil degildir, destekleyici kanittir" uyari metnini icerir (T-010).
+        Bu endpoint hicbir yazma eylemi sunmaz.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/ShareToken'
+      responses:
+        '200':
+          description: Salt-okunur tutanak gorunumu
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PublicReportView' }
+        '404':
+          description: Gecersiz veya var olmayan paylasim token'i (SHARE_LINK_NOT_FOUND)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /public/reports/{shareToken}/approval:
+    post:
+      tags: [public]
+      summary: Tek tikla onay (T-010)
+      description: Tutanak basina tek onay kaydi olusur; ikinci onay istegi 409 doner.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/ShareToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateApprovalRequest' }
+      responses:
+        '201':
+          description: Onay kaydedildi (zaman damgasi + e-posta)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Approval' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404':
+          description: Gecersiz paylasim token'i (SHARE_LINK_NOT_FOUND)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '409':
+          description: Tutanak zaten onaylanmis (REPORT_ALREADY_APPROVED)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  # ------------------------------------------------------------- billing ----
+  /billing/checkout:
+    post:
+      tags: [billing]
+      summary: Aylik abonelik odemesini baslat (T-012)
+      description: >
+        `payment_transactions` satiri da BURADA yazilir (status='initiated',
+        provider_reference = transactionReference, processed_at = NULL —
+        architecture.md §8.5); webhook bu satiri gunceller, yenisini yazmaz.
+        Abonelik satiri ilk kez BURADA olusur (get-or-create, architecture.md §8.3) ve
+        cagri basariyla dondugunde durum `pending` olur (architecture.md §8.4 — abonelik
+        AKTIFE GECMEZ; aktiflesme yalnizca /billing/webhook `succeeded` ile olur).
+        Tutar ve para birimi `SUBSCRIPTION_PRICE_AMOUNT` / `SUBSCRIPTION_CURRENCY`
+        yapilandirmasindan gelir (CLAUDE.md §5.1).
+      responses:
+        '201':
+          description: Odeme oturumu olusturuldu
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CheckoutResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409':
+          description: Abonelik zaten aktif (SUBSCRIPTION_ALREADY_ACTIVE)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '502':
+          description: Odeme saglayicisina ulasilamadi (PAYMENT_PROVIDER_ERROR)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+
+  /billing/webhook:
+    post:
+      tags: [billing]
+      summary: Odeme saglayicisi bildirimi (T-012)
+      description: >
+        Saglayici imzasi dogrulanmadan hicbir abonelik durumu degismez.
+        ISLEME MEKANIZMASI (architecture.md §8.5, CLAUDE.md §3.13 — baglayici tek kural):
+        bu endpoint YENI `payment_transactions` satiri YAZMAZ; satir checkout'ta dogmustur.
+        Bildirim, satiri `providerReference` ile bulup YALNIZCA `processed_at IS NULL`
+        iken gunceller (`processed_at = now()`), abonelik gecisi ayni transaction'dadir.
+        DURUM ETKISI (architecture.md §8.4): `succeeded` -> abonelik `active` +
+        currentPeriodEnd = now() + SUBSCRIPTION_PERIOD_DAYS gun; `failed` -> `inactive` +
+        currentPeriodEnd NULL; abonelik zaten `active` ise `failed` bildirimi durumu DUSURMEZ.
+        GOVDE POLITIKASI (baglayici — basliktaki istisna (2)): govde saglayiciya aittir;
+        bu route'ta `forbidNonWhitelisted` UYGULANMAZ, asagidaki semada olmayan alanlar
+        sessizce ayiklanir ve 400 URETMEZ. ALAN ADI NORMALIZASYONU (architecture.md §8.5):
+        imza dogrulamasi ve saglayici alan adlarinin asagidaki kanonik sekle cevrilmesi
+        `PaymentPort.verifyAndParseNotification(rawBody, signature)` icinde,
+        yani `IyzicoPaymentAdapter`'da yapilir; controller/service yalnizca kanonik
+        sekli gorur. `PAYMENT_PROVIDER=fake` iken (yerel + QA) govde bu semayla BIREBIR gonderilir.
+        Kimliksiz bir endpoint oldugu icin IP basina hiz siniri uygulanir
+        (60 istek/dk/IP — architecture.md §7); asildiginda 429 doner.
+      security: []
+      parameters:
+        - name: X-Iyzico-Signature
+          in: header
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PaymentWebhookRequest' }
+      responses:
+        '200':
+          description: >
+            Bildirim islendi (idempotan). AYNI YANIT uc durumda da donulur:
+            (1) bildirim ilk kez islendi (abonelik durumu §8.4'e gore degisti);
+            (2) ayni `providerReference` DAHA ONCE islenmis (processed_at dolu) —
+            hicbir alan degismez, `currentPeriodEnd` yeniden HESAPLANMAZ;
+            (3) `providerReference` TANINMIYOR (eslesen satir yok) — durum degismez,
+            olay `warn` seviyesinde loglanir. Imza gecerliyken 4xx donmek saglayicinin
+            bildirimi suresiz tekrarlamasina yol acacagi icin (2) ve (3) hata DEGILDIR.
+        '400':
+          description: >
+            Yalnizca ZORUNLU alanlar (providerReference, status) normalizasyondan sonra
+            eksik/gecersizse doner (VALIDATION_ERROR). Ek/bilinmeyen alanlar 400 URETMEZ,
+            sessizce ayiklanir; TANINMAYAN providerReference de 400 DEGIL 200'dur.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '401':
+          description: Imza dogrulanamadi (INVALID_WEBHOOK_SIGNATURE)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: 'Authorization: Bearer <accessToken> — /auth/login yanitindan alinir.'
+
+  parameters:
+    ReportId:
+      name: reportId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    TemplateId:
+      name: templateId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    ShareToken:
+      name: shareToken
+      in: path
+      required: true
+      schema: { type: string, minLength: 32, maxLength: 128 }
+
+  responses:
+    ValidationError:
+      description: Girdi dogrulama hatasi (VALIDATION_ERROR) — alan bazli detaylar `details` icinde
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    Unauthorized:
+      description: Token yok, gecersiz veya suresi dolmus (UNAUTHENTICATED)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    Forbidden:
+      description: Kaynak baska bir kullaniciya ait (FORBIDDEN)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    NotFound:
+      description: Kaynak bulunamadi (NOT_FOUND)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    TooManyRequests:
+      description: Hiz siniri asildi (RATE_LIMIT_EXCEEDED)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    StorageUnavailable:
+      description: >
+        Obje depolamaya (R2/MinIO) ulasilamadi (STORAGE_UNAVAILABLE).
+        Yukleme basarisizsa DB'ye satir YAZILMAZ; okuma basarisizsa yarim PDF URETILMEZ.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+
+  schemas:
+
+    # ------------------------------------------------ TEK TIP HATA ZARFI ----
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, traceId]
+          properties:
+            code:
+              type: string
+              description: Makine tarafindan okunabilir, stabil hata kodu
+              enum:
+                - VALIDATION_ERROR
+                - UNAUTHENTICATED
+                - INVALID_CREDENTIALS
+                - FORBIDDEN
+                - NOT_FOUND
+                - EMAIL_ALREADY_REGISTERED
+                - TEMPLATE_NOT_FOUND
+                - REPORT_HAS_NO_PHOTOS
+                - UNSUPPORTED_MEDIA_FORMAT
+                - FILE_TOO_LARGE
+                - PHOTO_LIMIT_REACHED
+                - SHARE_LINK_NOT_FOUND
+                - REPORT_ALREADY_APPROVED
+                - SUBSCRIPTION_ALREADY_ACTIVE
+                - INVALID_WEBHOOK_SIGNATURE
+                - STORAGE_UNAVAILABLE
+                - PAYMENT_PROVIDER_ERROR
+                - RATE_LIMIT_EXCEEDED
+                - INTERNAL_ERROR
+              # NOT: e-posta gonderim basarisizligi icin hata kodu YOKTUR —
+              # 202 + ShareDelivery.status = failed ile bildirilir (B-2 karari).
+            message:
+              type: string
+              description: Son kullaniciya gosterilebilir Turkce aciklama (sir/stack icermez)
+            details:
+              type: array
+              description: >
+                Alan bazli hatalar; `VALIDATION_ERROR` ve `EMAIL_ALREADY_REGISTERED`
+                yanitlarinda DOLU, diger hata kodlarinda bos/yoktur.
+              items:
+                type: object
+                required: [field, message]
+                properties:
+                  field:   { type: string, example: title }
+                  message: { type: string, example: baslik zorunludur }
+            traceId:
+              type: string
+              description: Log korelasyon kimligi
+      example:
+        error:
+          code: VALIDATION_ERROR
+          message: Girdi dogrulanamadi.
+          details:
+            - field: title
+              message: baslik zorunludur
+          traceId: 1f4c2b6a-9f2f-4d7d-8f2a-6c9b0a1d2e3f
+
+    # ------------------------------------------------------------- auth ----
+    RegisterRequest:
+      type: object
+      required: [email, password]
+      additionalProperties: false
+      properties:
+        email:    { type: string, format: email, maxLength: 254 }
+        password: { type: string, minLength: 8, maxLength: 128 }
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      additionalProperties: false
+      properties:
+        email:    { type: string, format: email, maxLength: 254 }
+        password: { type: string, minLength: 8, maxLength: 128 }
+
+    LoginResponse:
+      type: object
+      required: [accessToken, expiresIn, user]
+      properties:
+        accessToken: { type: string, description: JWT (HS256) }
+        expiresIn:   { type: integer, description: Saniye cinsinden gecerlilik, example: 604800 }
+        user:        { $ref: '#/components/schemas/User' }
+
+    User:
+      type: object
+      required: [id, email, createdAt]
+      properties:
+        id:        { type: string, format: uuid }
+        email:     { type: string, format: email }
+        createdAt: { type: string, format: date-time }
+
+    MeResponse:
+      type: object
+      required: [id, email, createdAt, subscription]
+      properties:
+        id:        { type: string, format: uuid }
+        email:     { type: string, format: email }
+        createdAt: { type: string, format: date-time }
+        subscription: { $ref: '#/components/schemas/Subscription' }
+
+    # -------------------------------------------------------- templates ----
+    Template:
+      type: object
+      required: [id, code, name, description]
+      properties:
+        id:          { type: string, format: uuid }
+        code:        { type: string, enum: [move_in_out, meter_fixture, periodic_check] }
+        name:        { type: string, example: Giris/Cikis Teslim Tutanagi }
+        description: { type: string }
+
+    # ---------------------------------------------------------- reports ----
+    ReportStatus:
+      type: string
+      enum: [draft, shared, approved]
+      description: >
+        Tek yonlu yasam dongusu: `draft` (olusturuldu) -> `shared` (POST
+        /reports/{reportId}/share-link basariyla cagrildi) -> `approved` (karsi taraf
+        POST /public/reports/{shareToken}/approval ile onayladi). Geri gecis YOKTUR;
+        durumu dogrudan degistiren bir endpoint TANIMLI DEGILDIR.
+
+    CreateReportRequest:
+      type: object
+      required: [templateId, title]
+      additionalProperties: false
+      properties:
+        templateId: { type: string, format: uuid }
+        title:      { type: string, minLength: 1, maxLength: 200 }
+        note:       { type: string, maxLength: 5000, default: '' }
+
+    Report:
+      type: object
+      required: [id, templateId, templateName, title, note, status, photoCount, createdAt, updatedAt]
+      properties:
+        id:           { type: string, format: uuid }
+        templateId:   { type: string, format: uuid }
+        templateName: { type: string }
+        title:        { type: string }
+        note:         { type: string }
+        status:       { $ref: '#/components/schemas/ReportStatus' }
+        photoCount:   { type: integer, minimum: 0, description: Her yanitta hesaplanir (liste ekrani icin) }
+        createdAt:    { type: string, format: date-time }
+        updatedAt:    { type: string, format: date-time }
+
+    ReportDetail:
+      allOf:
+        - $ref: '#/components/schemas/Report'
+        - type: object
+          required: [photos]
+          properties:
+            photos:
+              type: array
+              items: { $ref: '#/components/schemas/Photo' }
+            # approval: YALNIZCA tutanak onaylandiysa (status = approved) yanitta bulunur;
+            # onay yoksa alan yanitta HIC YER ALMAZ ve `null` da GONDERILMEZ — istemci
+            # onayin varligini `status` alanindan anlar (T-010, CLAUDE.md §3.5).
+            # 3.0 notu: $ref + kardes `nullable` kalibi tip ureticilerinde `| null`
+            # uretmedigi icin alan "istege bagli $ref" olarak modellenmistir
+            # (uretilen tip: approval?: Approval). $ref'in kardes anahtari yoktur.
+            approval:
+              $ref: '#/components/schemas/Approval'
+
+    ReportListResponse:
+      type: object
+      required: [items, page, pageSize, total]
+      properties:
+        items:
+          type: array
+          description: created_at DESC siralamasinda, yalnizca oturum sahibinin kayitlari
+          items: { $ref: '#/components/schemas/Report' }
+        page:     { type: integer, minimum: 1 }
+        pageSize: { type: integer, minimum: 1 }
+        total:    { type: integer, minimum: 0 }
+
+    # ----------------------------------------------------------- photos ----
+    Photo:
+      type: object
+      required: [id, reportId, capturedAt, contentType, sizeBytes, widthPx, heightPx, url]
+      properties:
+        id:          { type: string, format: uuid }
+        reportId:    { type: string, format: uuid }
+        capturedAt:
+          type: string
+          format: date-time
+          description: Sunucu tarafinda uretilen, DEGISTIRILEMEZ tarih-saat damgasi (T-006)
+        contentType: { type: string, enum: ['image/jpeg', 'image/png', 'image/webp'] }
+        sizeBytes:   { type: integer }
+        widthPx:     { type: integer }
+        heightPx:    { type: integer }
+        url:
+          type: string
+          format: uri
+          description: Obje depolamadan uretilmis, kisa omurlu (15 dk) on-imzali okuma URL'si
+
+    # ---------------------------------------------------------- sharing ----
+    ShareLink:
+      type: object
+      required: [token, url, whatsAppUrl, createdAt]
+      properties:
+        token:       { type: string, description: 32 bayt entropiden uretilmis base64url deger }
+        url:         { type: string, format: uri, example: 'https://app.example.com/t/AbC...' }
+        whatsAppUrl: { type: string, format: uri, description: Onceden doldurulmus wa.me URL'si }
+        createdAt:   { type: string, format: date-time }
+
+    SendShareEmailRequest:
+      type: object
+      required: [recipientEmail]
+      additionalProperties: false
+      properties:
+        recipientEmail: { type: string, format: email, maxLength: 254 }
+
+    ShareDelivery:
+      type: object
+      required: [id, channel, recipientEmail, status, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        channel:
+          type: string
+          enum: [email]
+          description: >
+            MVP'de TEK kanal: e-posta. Teslim kaydi yalnizca SUNUCUNUN yaptigi gonderim
+            icin yazilir; WhatsApp paylasimi sunucudan gonderim degil, istemcinin actigi
+            bir wa.me URL'sidir (ShareLink.whatsAppUrl) ve teslim kaydi URETMEZ.
+        recipientEmail: { type: string, format: email }
+        status:         { type: string, enum: [sent, failed] }
+        errorMessage:   { type: string, nullable: true, description: status = failed ise DOLU, sent ise null }
+        createdAt:      { type: string, format: date-time }
+
+    # ----------------------------------------------------------- public ----
+    PublicReportView:
+      type: object
+      required: [title, templateName, note, photos, status, createdAt, disclaimer, isApproved]
+      properties:
+        title:        { type: string }
+        templateName: { type: string }
+        note:         { type: string }
+        photos:
+          type: array
+          items: { $ref: '#/components/schemas/PublicPhoto' }
+        status:     { $ref: '#/components/schemas/ReportStatus' }
+        createdAt:  { type: string, format: date-time }
+        isApproved: { type: boolean }
+        approval:
+          # Bkz. ReportDetail.approval: onay yoksa alan yanitta HIC BULUNMAZ
+          # (null gonderilmez); istemci `isApproved` alanina bakar (CLAUDE.md §3.5).
+          $ref: '#/components/schemas/Approval'
+        disclaimer:
+          type: string
+          description: Onay oncesi zorunlu uyari metni (T-010)
+          example: Bu tutanak resmi hukuki delil degildir, destekleyici kanittir.
+
+    PublicPhoto:
+      type: object
+      required: [id, capturedAt, url]
+      properties:
+        id:         { type: string, format: uuid }
+        capturedAt: { type: string, format: date-time }
+        url:        { type: string, format: uri }
+
+    CreateApprovalRequest:
+      type: object
+      required: [approverEmail]
+      additionalProperties: false
+      properties:
+        approverEmail: { type: string, format: email, maxLength: 254 }
+
+    Approval:
+      type: object
+      required: [id, approverEmail, approvedAt]
+      properties:
+        id:            { type: string, format: uuid }
+        approverEmail: { type: string, format: email }
+        approvedAt:
+          type: string
+          format: date-time
+          description: Sunucu tarafinda uretilen, degistirilemez onay damgasi
+
+    # ---------------------------------------------------------- billing ----
+    Subscription:
+      type: object
+      required: [status, currency]
+      properties:
+        status:
+          type: string
+          enum: [inactive, pending, active]
+          description: >
+            DoD'deki "aktif/pasif" gosterimi. GECIS KURALI (architecture.md §8.4,
+            CLAUDE.md §3.12 — baglayici tek kural): POST /billing/checkout basarili
+            oldugunda `inactive` (ya da yeni olusturulmus satir) -> `pending`;
+            webhook `succeeded` -> `active` (+ currentPeriodEnd yazilir);
+            webhook `failed` -> `inactive` (currentPeriodEnd NULL birakilir);
+            durum `active` iken gelen `failed` bildirimi durumu DUSURMEZ.
+            Istemci uc degeri de render eder; `pending` = "odeme sonucu bekleniyor,
+            abonelik henuz aktif degil".
+        priceAmount:
+          type: string
+          nullable: true
+          description: >
+            Ondalikli para degeri metin olarak (numeric); kayan noktali sayi KULLANILMAZ.
+            Odeme baslatildiginda `SUBSCRIPTION_PRICE_AMOUNT` degerinden yazilir.
+          example: '199.00'
+        currency: { type: string, example: TRY }
+        currentPeriodEnd:
+          type: string
+          format: date-time
+          nullable: true
+          description: >
+            Yalnizca `active` durumda doludur (DB CHECK: subscriptions_active_needs_period).
+            Deger webhook `succeeded` islenirken SUNUCUDA hesaplanir:
+            now() + `SUBSCRIPTION_PERIOD_DAYS` gun (CLAUDE.md §5.1, varsayilan 30).
+            Saglayici bildiriminden OKUNMAZ ve koda gomulmez.
+
+    CheckoutResponse:
+      type: object
+      required: [transactionReference, checkoutUrl, amount, currency]
+      properties:
+        transactionReference:
+          type: string
+          description: >
+            Saglayicidaki islem referansi. `payment_transactions.provider_reference`
+            sutununa BIREBIR bu deger yazilir ve webhook idempotans anahtari budur
+            (architecture.md §8.5).
+        checkoutUrl:          { type: string, format: uri, description: Kullanicinin yonlendirilecegi odeme sayfasi }
+        amount:
+          type: string
+          example: '199.00'
+          description: >
+            Ondalikli para degeri METIN olarak. Kaynagi `SUBSCRIPTION_PRICE_AMOUNT`
+            yapilandirmasidir (CLAUDE.md §5.1); kod icine sabit tutar gomulmez ve
+            deger float'a parse EDILMEZ.
+        currency:
+          type: string
+          example: TRY
+          description: Kaynagi `SUBSCRIPTION_CURRENCY` yapilandirmasidir (varsayilan TRY).
+
+    PaymentWebhookRequest:
+      type: object
+      required: [providerReference, status]
+      additionalProperties: true
+      description: >
+        Saglayici bildiriminin KANONIK (normalize edilmis) sekli. Bilincli olarak
+        DONEM BILGISI TASIMAZ: `currentPeriodEnd` sunucuda `SUBSCRIPTION_PERIOD_DAYS`
+        ile hesaplanir (architecture.md §8.4). Gercek saglayici govdesindeki alan adlari
+        bu sekle `IyzicoPaymentAdapter` icinde cevrilir; ek alanlar 400 URETMEDEN yok
+        sayilir (basliktaki istisna (2), CLAUDE.md §3.7) — bu yuzden sema
+        `additionalProperties: false` DEGILDIR. Imza dogrulamasi HAM govde uzerinde
+        yapilir (`NestFactory.create(..., { rawBody: true })`, CLAUDE.md §1).
+      properties:
+        providerReference: { type: string, description: Idempotans anahtari (payment_transactions.provider_reference) }
+        status:            { type: string, enum: [succeeded, failed] }
+        failureReason:
+          type: string
+          nullable: true
+          description: >
+            status = failed oldugunda DB CHECK'i (payment_transactions_failed_needs_reason)
+            geregi bir neden gereklidir; saglayici neden gondermezse sunucu sabit bir
+            varsayilan neden metni yazar (bilgi kaybi olmadan, "saglayici neden bildirmedi").

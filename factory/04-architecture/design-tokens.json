@@ -1,0 +1,153 @@
+{
+  "version": "1",
+  "colors": {
+    "primary": "#0f2a4a",
+    "on-primary": "#ffffff",
+    "surface": "#ffffff",
+    "surface-muted": "#f4f4f5",
+    "text": "#18181b",
+    "text-muted": "#52525b",
+    "border": "#71717a",
+    "danger": "#b91c1c",
+    "on-danger": "#ffffff",
+    "success": "#15803d",
+    "on-success": "#ffffff",
+    "warning": "#b45309",
+    "on-warning": "#ffffff",
+    "focus": "#0f2a4a"
+  },
+  "typography": {
+    "body_family": "system-ui, -apple-system, 'Segoe UI', sans-serif",
+    "heading_family": "system-ui, -apple-system, 'Segoe UI', sans-serif",
+    "mono_family": "ui-monospace, 'SFMono-Regular', monospace",
+    "base_size_px": 16,
+    "scale_ratio": 1.25,
+    "line_height": 1.5
+  },
+  "spacing_px": [
+    4,
+    8,
+    12,
+    16,
+    24,
+    32,
+    48,
+    64
+  ],
+  "radii_px": {
+    "sm": 4,
+    "md": 8,
+    "lg": 16,
+    "pill": 999
+  },
+  "breakpoints_px": {
+    "sm": 480,
+    "md": 768,
+    "lg": 1024,
+    "xl": 1280
+  },
+  "pairs": [
+    {
+      "foreground": "text",
+      "background": "surface",
+      "usage": "govde metni (varsayilan sayfa/kart arka plani uzerinde)",
+      "kind": "text"
+    },
+    {
+      "foreground": "text-muted",
+      "background": "surface",
+      "usage": "ikincil metin, zaman damgasi, yardimci aciklama",
+      "kind": "text"
+    },
+    {
+      "foreground": "text",
+      "background": "surface-muted",
+      "usage": "muted zemin uzerindeki kart/panel govde metni",
+      "kind": "text"
+    },
+    {
+      "foreground": "text-muted",
+      "background": "surface-muted",
+      "usage": "muted zemin uzerindeki ikincil metin",
+      "kind": "text"
+    },
+    {
+      "foreground": "on-primary",
+      "background": "primary",
+      "usage": "birincil buton metni, AppShell header/nav metni, koyu zemin uzerindeki odak halkasi",
+      "kind": "text"
+    },
+    {
+      "foreground": "on-danger",
+      "background": "danger",
+      "usage": "yikici/blok eden hata banner ve buton metni",
+      "kind": "text"
+    },
+    {
+      "foreground": "on-success",
+      "background": "success",
+      "usage": "onaylandi/aktif durum rozeti metni, basari banner metni",
+      "kind": "text"
+    },
+    {
+      "foreground": "on-warning",
+      "background": "warning",
+      "usage": "beklemede durum rozeti metni, destekleyici-kanit uyari banner metni",
+      "kind": "text"
+    },
+    {
+      "foreground": "primary",
+      "background": "surface",
+      "usage": "baglanti metni, ikincil/ghost buton etiketi",
+      "kind": "text"
+    },
+    {
+      "foreground": "primary",
+      "background": "surface-muted",
+      "usage": "\"paylasildi\" durum rozeti metni; secili sablon kartinin kenarligi",
+      "kind": "text"
+    },
+    {
+      "foreground": "danger",
+      "background": "surface",
+      "usage": "form alani hata metni; gecersiz input kenarligi",
+      "kind": "text"
+    },
+    {
+      "foreground": "danger",
+      "background": "surface-muted",
+      "usage": "kart ici hata metni",
+      "kind": "text"
+    },
+    {
+      "foreground": "success",
+      "background": "surface",
+      "usage": "onaylandi durumu metni (rozetsiz kullanim), basari ikonu",
+      "kind": "text"
+    },
+    {
+      "foreground": "warning",
+      "background": "surface",
+      "usage": "beklemede durumu metni (rozetsiz kullanim), uyari ikonu",
+      "kind": "text"
+    },
+    {
+      "foreground": "border",
+      "background": "surface",
+      "usage": "input/kart varsayilan kenarligi (beyaz zemin)",
+      "kind": "non_text"
+    },
+    {
+      "foreground": "border",
+      "background": "surface-muted",
+      "usage": "input varsayilan kenarligi (muted zemin — input arka plani surface-muted'dir)",
+      "kind": "non_text"
+    },
+    {
+      "foreground": "focus",
+      "background": "surface",
+      "usage": "acik zemin uzerindeki odak halkasi",
+      "kind": "non_text"
+    }
+  ]
+}

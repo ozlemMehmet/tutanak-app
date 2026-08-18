@@ -1,0 +1,89 @@
+{
+  "version": "1",
+  "colors": {
+    "primary": "#1d4ed8",
+    "on-primary": "#ffffff",
+    "surface": "#ffffff",
+    "surface-muted": "#f4f4f5",
+    "text": "#18181b",
+    "text-muted": "#52525b",
+    "border": "#8e8e98",
+    "danger": "#b91c1c",
+    "on-danger": "#ffffff",
+    "focus": "#1d4ed8"
+  },
+  "typography": {
+    "body_family": "system-ui, sans-serif",
+    "heading_family": "system-ui, sans-serif",
+    "mono_family": "ui-monospace, monospace",
+    "base_size_px": 16,
+    "scale_ratio": 1.25,
+    "line_height": 1.5
+  },
+  "spacing_px": [
+    4,
+    8,
+    12,
+    16,
+    24,
+    32,
+    48,
+    64
+  ],
+  "radii_px": {
+    "sm": 4,
+    "md": 8,
+    "lg": 16,
+    "pill": 999
+  },
+  "breakpoints_px": {
+    "sm": 480,
+    "md": 768,
+    "lg": 1024,
+    "xl": 1280
+  },
+  "pairs": [
+    {
+      "foreground": "text",
+      "background": "surface",
+      "usage": "govde metni",
+      "kind": "text"
+    },
+    {
+      "foreground": "text-muted",
+      "background": "surface",
+      "usage": "ikincil metin",
+      "kind": "text"
+    },
+    {
+      "foreground": "text",
+      "background": "surface-muted",
+      "usage": "kart icerigi",
+      "kind": "text"
+    },
+    {
+      "foreground": "on-primary",
+      "background": "primary",
+      "usage": "birincil buton",
+      "kind": "text"
+    },
+    {
+      "foreground": "on-danger",
+      "background": "danger",
+      "usage": "hata butonu",
+      "kind": "text"
+    },
+    {
+      "foreground": "border",
+      "background": "surface",
+      "usage": "input kenarligi",
+      "kind": "non_text"
+    },
+    {
+      "foreground": "focus",
+      "background": "surface",
+      "usage": "odak halkasi",
+      "kind": "non_text"
+    }
+  ]
+}

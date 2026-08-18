@@ -2,6 +2,32 @@
 
 Bu proje [Anlamsal Sürümleme](https://semver.org/lang/tr/) kullanır.
 
+## [1.0.1] - 2026-08-18
+
+### Düzeltildi
+
+- PDF çıktısındaki Türkçe karakterler (ş, ğ, ı, İ, ö, ü, ç) artık bozuk basılmıyor.
+- Uygulama arayüzündeki ve e-posta/paylaşım metinlerindeki Türkçe karakterler düzeltildi.
+- Ödeme sonrası "sonuç bekleniyor" ekranı artık çıkmaz sokak değil: durum otomatik olarak
+  aralıklarla yeniden kontrol ediliyor, ayrıca istediğiniz an "Durumu yenile" ile elle de
+  kontrol edebiliyorsunuz.
+
+### Değişti
+
+- Masaüstü tarayıcıda içerik artık ekranın tamamına yayılmıyor; kartlar/yüzeyler ve
+  butonlar düzenli, sınırlı genişlikli bir yerleşime kavuştu (mobil görünüm değişmedi).
+
+<!--
+Ic surum notu (release notlarina girmez): H-001 (PDF Turkce font), H-002 (arayuz/API Turkce
+metin duzeltmesi), H-003 (odeme pending yoklama/elle yenileme), H-004 (masaustu yerlesim).
+Kaynak durum: main @ 5f86403 (T-001..T-028 + H-001..H-004, T-013 iptal). Deployment yuzeyi
+(Dockerfile x2, compose x2, CI+CD, .env.example, runbook) bu revizyonda devops-agent
+tarafindan ucdan uca yeniden dogrulandi, degisiklik gerekmedi (bkz.
+factory/10-release/devops-report.md). Acik, cozulmemis bir bulgu: B-005 (sablon adlari hala
+ASCII'ye katlanmis Turkce, factory/bugs/B-005.md) — urun kodu degisikligi gerektirir, bu
+surume dahil edilmedi.
+-->
+
 ## [1.0.0] - 2026-08-17
 
 ### Eklendi
