@@ -16,11 +16,24 @@ const TEST_JWT_SECRET = 'test-ortami-icin-yeterince-uzun-imzalama-anahtari';
 const PASSWORD = 'gizli-parola-123';
 
 // PRD kapsam ici madde 3 / ticket kriteri 1 — adlar ve siralari birebir eslesmelidir.
+// H-005: adlar gercek Turkce harflerle (s/g/i/c/o/u) assert edilir; ASCII'ye katlanmis
+// karsiligi kabul edilmez, aksi halde dilin kirildigi yer testten gorunmez olur
+// (ders: testing/yerellestirilmis-urunde-ascii-katlanmis-test-verisi.md).
 const EXPECTED_TEMPLATE_NAMES = [
-  'Giris/Cikis Teslim Tutanagi',
-  'Sayac/Demirbas Tespiti',
-  'Periyodik Durum Kontrolu',
+  'Giriş/Çıkış Teslim Tutanağı',
+  'Sayaç/Demirbaş Tespiti',
+  'Periyodik Durum Kontrolü',
 ];
+
+// H-005 — aciklama metinleri de kullaniciya doner; adlarla ayni Turkcelestirme kuralina tabidir.
+const EXPECTED_TEMPLATE_DESCRIPTIONS = [
+  'Kiracı giriş veya çıkış teslimi sırasında mülkün genel durumunun foto ve notlarla kayıt altına alınması.',
+  'Elektrik, su, doğalgaz sayaç değerleri ve mülkte bırakılan demirbaşların tespiti.',
+  'Kira dönemi içinde yapılan periyodik mülk durum kontrolünün belgelenmesi.',
+];
+
+// Turkce'ye ozgu, WinAnsi'de bulunmayan ve ASCII katlamasinda ilk kaybolan harfler.
+const TURKISH_SPECIFIC_LETTERS = /[şğıŞĞİ]/;
 
 const UNKNOWN_TEMPLATE_ID = '11111111-1111-4111-8111-111111111111';
 const MALFORMED_TEMPLATE_ID = 'sablon-42';
@@ -116,6 +129,24 @@ describe('T-004 hazir sablon listesi ve secimi', () => {
       }
     });
 
+    it('aciklama metinlerini Turkce karakterleriyle doner', async () => {
+      const response = await listTemplates(accessToken);
+
+      const body = response.body as TemplateBody[];
+      expect(body.map((template) => template.description)).toEqual(EXPECTED_TEMPLATE_DESCRIPTIONS);
+    });
+
+    it('ad ve aciklamalar ASCII ye katlanmamis, Turkce ye ozgu harfleri tasir', async () => {
+      const response = await listTemplates(accessToken);
+
+      const body = response.body as TemplateBody[];
+      // Her sablonun ad+aciklamasi en az bir tane s/g/i harfi icermelidir; bu harfler
+      // ASCII katlamasinda kaybolan ilk harflerdir, varliklari katlanmamis oldugunu kanitlar.
+      for (const template of body) {
+        expect(`${template.name} ${template.description}`).toMatch(TURKISH_SPECIFIC_LETTERS);
+      }
+    });
+
     it('yalnizca sozlesmedeki Template alanlarini doner (sort_order/created_at sizmaz)', async () => {
       const response = await listTemplates(accessToken);
 
@@ -164,7 +195,7 @@ describe('T-004 hazir sablon listesi ve secimi', () => {
       expect(response.status).toBe(200);
       const body = response.body as TemplateBody;
       expect(body.id).toBe(selected?.id);
-      expect(body.name).toBe('Sayac/Demirbas Tespiti');
+      expect(body.name).toBe('Sayaç/Demirbaş Tespiti');
       expect(body).toEqual(selected);
     });
 
