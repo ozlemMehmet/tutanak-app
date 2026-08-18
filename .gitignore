@@ -10,3 +10,7 @@ apps/web/dev-dist/
 !.env.example
 npm-debug.log*
 apps/api/dist.watch-backup/
+# H-006: tarayici suite'inin kosum ciktilari (oturum durumu, iz/rapor dosyalari).
+apps/web/e2e/.durum/
+apps/web/test-results/
+apps/web/playwright-report/
