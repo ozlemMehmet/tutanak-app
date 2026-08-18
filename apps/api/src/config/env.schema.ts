@@ -117,6 +117,8 @@ const envObjectSchema = z.object({
     .string()
     .url()
     .refine((value) => ALLOWED_APP_URL_PROTOCOLS.has(new URL(value).protocol), {
+      // Sema ihlalinde uygulama hic acilmaz; mesaj yalnizca operatorun konsoluna dusar (§5).
+      // ascii-tr-ok: acilis/operator yuzeyi, son kullaniciya ulasan bir urun metni degil
       message: 'http veya https ile baslayan mutlak bir adres olmalidir',
     }),
   /** T-008 paylasim e-postasinin gonderen adresi (CLAUDE.md §5.1) — koda gomulmez. */

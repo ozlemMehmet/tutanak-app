@@ -69,6 +69,7 @@ export class R2StorageAdapter implements StoragePort {
         }),
       );
     } catch (error: unknown) {
+      // ascii-tr-ok: `fail()` bu metni yalnizca loglar; kullaniciya STORAGE_UNAVAILABLE_MESSAGE gider
       this.fail('Obje depolamaya yazilamadi', error);
     }
   }
@@ -100,6 +101,7 @@ export class R2StorageAdapter implements StoragePort {
       }
       return Buffer.from(await response.Body.transformToByteArray());
     } catch (error: unknown) {
+      // ascii-tr-ok: `fail()` bu metni yalnizca loglar; kullaniciya STORAGE_UNAVAILABLE_MESSAGE gider
       this.fail('Obje depolamadan okunamadi', error);
     }
   }

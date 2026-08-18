@@ -20,6 +20,7 @@ const SECONDS_PER_YEAR = 31_557_600;
 
 /** Deger loglanmaz/mesaja yazilmaz; yalnizca anahtar adi ve beklenen bicim bildirilir. */
 const FORMAT_ERROR_MESSAGE =
+  // ascii-tr-ok: yalnizca `new Error(...)` ile acilista firlatilir; yapilandirma hatasi metnidir
   'JWT_EXPIRES_IN gecersiz: <pozitif sayi><s|m|h|d|w|y> bicimi bekleniyor (ornek: 7d).';
 
 function secondsPerUnit(unit: string): number {

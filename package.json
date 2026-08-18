@@ -16,6 +16,7 @@
     "test:browser": "npm run test:browser --workspaces --if-present",
     "build": "npm run build --workspaces --if-present",
     "verify:pwa": "node scripts/verify-pwa-build.mjs",
+    "lint:tr": "jest --config jest.config.mjs tools/ascii-folded-turkish.spec.ts",
     "gen:api-types": "openapi-typescript factory/04-architecture/api-contract.yaml -o apps/web/src/api/schema.d.ts",
     "prepare": "husky || true"
   },
