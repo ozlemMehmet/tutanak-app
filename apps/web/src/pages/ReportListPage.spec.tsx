@@ -36,7 +36,7 @@ const REPORTS: Report[] = [
 
 const NEW_REPORT_LABEL = '+ Yeni Tutanak';
 const SEARCH_LABEL = 'Tutanaklarda ara';
-const LIST_ERROR_MESSAGE = 'Tutanaklar yuklenemedi';
+const LIST_ERROR_MESSAGE = 'Tutanaklar yüklenemedi';
 
 function listResponse(overrides: Partial<ReportListResponse> = {}): ReportListResponse {
   return { items: REPORTS, page: 1, pageSize: 20, total: REPORTS.length, ...overrides };
@@ -110,15 +110,15 @@ describe('ReportListPage', () => {
       expect(first.getByText('Bahce Kat Teslimi')).toBeInTheDocument();
       expect(first.getByText('Giris/Cikis Teslim Tutanagi')).toBeInTheDocument();
       expect(first.getByText('Taslak')).toBeInTheDocument();
-      expect(first.getByText('4 fotograf')).toBeInTheDocument();
+      expect(first.getByText('4 fotoğraf')).toBeInTheDocument();
       expect(first.getByText((_content, element) => element?.tagName === 'TIME')).toHaveAttribute(
         'dateTime',
         '2026-08-15T09:00:00.000Z',
       );
 
       const second = within(screen.getByRole('link', { name: /Kat 3 Sayac Okumasi/ }));
-      expect(second.getByText('Onaylandi')).toBeInTheDocument();
-      expect(second.getByText('0 fotograf')).toBeInTheDocument();
+      expect(second.getByText('Onaylandı')).toBeInTheDocument();
+      expect(second.getByText('0 fotoğraf')).toBeInTheDocument();
     });
   });
 
@@ -174,17 +174,17 @@ describe('ReportListPage', () => {
     const emptyList = (): jest.Mock =>
       createRequestMock(() => Promise.resolve(listResponse({ items: [], total: 0 })));
 
-    it('"Henuz tutanaginiz yok" bos durumunu gosterir', async () => {
+    it('"Henüz tutanağınız yok" bos durumunu gosterir', async () => {
       renderPage(emptyList());
 
-      expect(await screen.findByText('Henuz tutanaginiz yok')).toBeInTheDocument();
+      expect(await screen.findByText('Henüz tutanağınız yok')).toBeInTheDocument();
       expect(screen.queryByRole('list', { name: 'Tutanaklar' })).not.toBeInTheDocument();
     });
 
-    it('"Ilk tutanagini olustur" CTA-si /reports/new rotasina goturur', async () => {
+    it('"İlk tutanağını oluştur" CTA-si /reports/new rotasina goturur', async () => {
       renderPage(emptyList());
 
-      await userEvent.click(await screen.findByRole('link', { name: 'Ilk tutanagini olustur' }));
+      await userEvent.click(await screen.findByRole('link', { name: 'İlk tutanağını oluştur' }));
 
       expect(screen.getByTestId('konum')).toHaveTextContent('/reports/new');
     });
@@ -205,17 +205,17 @@ describe('ReportListPage', () => {
 
       await userEvent.type(screen.getByLabelText(SEARCH_LABEL), 'zzz');
 
-      expect(await screen.findByText("'zzz' icin sonuc bulunamadi")).toBeInTheDocument();
-      expect(screen.queryByText('Henuz tutanaginiz yok')).not.toBeInTheDocument();
+      expect(await screen.findByText("'zzz' için sonuç bulunamadı")).toBeInTheDocument();
+      expect(screen.queryByText('Henüz tutanağınız yok')).not.toBeInTheDocument();
     });
 
-    it('"Aramayi temizle" aramayi sifirlar ve tam liste geri gelir', async () => {
+    it('"Aramayı temizle" aramayi sifirlar ve tam liste geri gelir', async () => {
       renderPage(searchAware());
       await screen.findByRole('list', { name: 'Tutanaklar' });
       await userEvent.type(screen.getByLabelText(SEARCH_LABEL), 'zzz');
-      await screen.findByText("'zzz' icin sonuc bulunamadi");
+      await screen.findByText("'zzz' için sonuç bulunamadı");
 
-      await userEvent.click(screen.getByRole('button', { name: 'Aramayi temizle' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Aramayı temizle' }));
 
       expect(await screen.findByRole('list', { name: 'Tutanaklar' })).toBeInTheDocument();
       expect(screen.getByLabelText(SEARCH_LABEL)).toHaveValue('');
@@ -307,7 +307,7 @@ describe('ReportListPage', () => {
     it('sozlesme disi govde donerse sayfa cokmez, bos durum gosterir', async () => {
       renderPage(createRequestMock(() => Promise.resolve({})));
 
-      expect(await screen.findByText('Henuz tutanaginiz yok')).toBeInTheDocument();
+      expect(await screen.findByText('Henüz tutanağınız yok')).toBeInTheDocument();
     });
   });
 

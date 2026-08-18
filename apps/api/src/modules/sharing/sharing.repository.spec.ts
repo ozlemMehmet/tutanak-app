@@ -121,7 +121,7 @@ describe('SharingRepository.createDelivery', () => {
       recipientEmail: 'kiraci@ornek.test',
       status: 'failed',
       providerMessageId: null,
-      errorMessage: 'E-posta saglayicisina ulasilamadi.',
+      errorMessage: 'E-posta sağlayıcısına ulaşılamadı.',
       createdAt: new Date('2026-08-14T09:05:00.000Z'),
     });
 
@@ -130,18 +130,18 @@ describe('SharingRepository.createDelivery', () => {
       recipientEmail: 'kiraci@ornek.test',
       status: 'failed',
       providerMessageId: null,
-      errorMessage: 'E-posta saglayicisina ulasilamadi.',
+      errorMessage: 'E-posta sağlayıcısına ulaşılamadı.',
     });
 
     expect(record.status).toBe('failed');
-    expect(record.errorMessage).toBe('E-posta saglayicisina ulasilamadi.');
+    expect(record.errorMessage).toBe('E-posta sağlayıcısına ulaşılamadı.');
     expect(create).toHaveBeenCalledWith({
       data: {
         shareLinkId: STORED_LINK.id,
         recipientEmail: 'kiraci@ornek.test',
         status: 'failed',
         providerMessageId: null,
-        errorMessage: 'E-posta saglayicisina ulasilamadi.',
+        errorMessage: 'E-posta sağlayıcısına ulaşılamadı.',
       },
     });
   });

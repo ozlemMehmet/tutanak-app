@@ -64,7 +64,7 @@ describe('AppShell', () => {
 
     renderShell(request);
 
-    expect(screen.getByText('Emlak Teslim Tutanagi')).toBeInTheDocument();
+    expect(screen.getByText('Emlak Teslim Tutanağı')).toBeInTheDocument();
     expect(screen.getByText('tutanak listesi')).toBeInTheDocument();
     await screen.findByText('selin@ornek.com');
   });
@@ -74,7 +74,7 @@ describe('AppShell', () => {
 
     renderShell(request);
 
-    expect(screen.getByRole('link', { name: 'Tutanaklarim' })).toHaveAttribute('href', '/reports');
+    expect(screen.getByRole('link', { name: 'Tutanaklarım' })).toHaveAttribute('href', '/reports');
     expect(screen.getByRole('link', { name: 'Yeni Tutanak' })).toHaveAttribute(
       'href',
       '/reports/new',
@@ -88,7 +88,7 @@ describe('AppShell', () => {
 
     renderShell(request);
 
-    expect(screen.getByRole('link', { name: 'Icerige gec' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'İçeriğe geç' })).toHaveAttribute(
       'href',
       '#main-content',
     );
@@ -100,7 +100,7 @@ describe('AppShell', () => {
     const { store } = renderShell(request);
     await screen.findByText('selin@ornek.com');
 
-    await userEvent.click(screen.getByRole('button', { name: 'Cikis' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Çıkış' }));
 
     await waitFor(() => {
       expect(store.getAccessToken()).toBeNull();
@@ -113,7 +113,7 @@ describe('AppShell', () => {
 
     renderShell(request);
 
-    expect(screen.getByText('Emlak Teslim Tutanagi')).toBeInTheDocument();
+    expect(screen.getByText('Emlak Teslim Tutanağı')).toBeInTheDocument();
     expect(screen.getByText('tutanak listesi')).toBeInTheDocument();
     expect(screen.queryByText('selin@ornek.com')).not.toBeInTheDocument();
   });

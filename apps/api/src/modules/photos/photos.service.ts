@@ -30,9 +30,9 @@ export interface PhotoSource {
   capturedAt: Date;
 }
 
-const UNSUPPORTED_MEDIA_MESSAGE = 'Yalnizca JPEG, PNG veya WEBP fotograf yukleyebilirsiniz.';
+const UNSUPPORTED_MEDIA_MESSAGE = 'Yalnızca JPEG, PNG veya WEBP fotoğraf yükleyebilirsiniz.';
 const APPROVED_REPORT_MESSAGE =
-  'Bu tutanak onaylandigi icin icerigi dondurulmustur; yeni fotograf eklenemez.';
+  'Bu tutanak onaylandığı için içeriği dondurulmuştur; yeni fotoğraf eklenemez.';
 
 @Injectable()
 export class PhotosService {
@@ -58,7 +58,7 @@ export class PhotosService {
     if (photoCount >= this.maxPhotosPerReport) {
       throw new ConflictError(
         'PHOTO_LIMIT_REACHED',
-        `Bir tutanaga en fazla ${String(this.maxPhotosPerReport)} fotograf eklenebilir.`,
+        `Bir tutanağa en fazla ${String(this.maxPhotosPerReport)} fotoğraf eklenebilir.`,
       );
     }
 
@@ -126,10 +126,10 @@ export class PhotosService {
   private async assertOwnership(reportId: string, userId: string): Promise<ReportAccessRecord> {
     const report = await this.photosRepository.findReportForAccess(reportId);
     if (report === null) {
-      throw new NotFoundError('NOT_FOUND', 'Tutanak bulunamadi.');
+      throw new NotFoundError('NOT_FOUND', 'Tutanak bulunamadı.');
     }
     if (report.ownerId !== userId) {
-      throw new ForbiddenError('Bu tutanaga erisim yetkiniz yok.');
+      throw new ForbiddenError('Bu tutanağa erişim yetkiniz yok.');
     }
     return report;
   }

@@ -14,9 +14,9 @@ interface RegisterPageProps {
 
 /** Sunucudan alan bazli hata gelebilecek alanlar; `passwordConfirm` sozlesmede YOKTUR. */
 const FORM_FIELDS = ['email', 'password'] as const;
-const FALLBACK_ERROR_MESSAGE = 'Kayit tamamlanamadi, birazdan tekrar deneyin';
+const FALLBACK_ERROR_MESSAGE = 'Kayıt tamamlanamadı, birazdan tekrar deneyin';
 const PASSWORD_HINT = 'En az 8 karakter';
-const PASSWORD_MISMATCH_MESSAGE = 'sifreler eslesmiyor';
+const PASSWORD_MISMATCH_MESSAGE = 'şifreler eşleşmiyor';
 
 export function RegisterPage({ client }: RegisterPageProps): React.JSX.Element {
   const navigate = useNavigate();
@@ -59,7 +59,7 @@ export function RegisterPage({ client }: RegisterPageProps): React.JSX.Element {
   return (
     <main className="page auth-page">
       <p className="auth-page__brand">Tutanak</p>
-      <h1>Kayit Ol</h1>
+      <h1>Kayıt Ol</h1>
 
       {formError.banner !== null && (
         <p className="banner banner--danger" role="alert">
@@ -92,7 +92,7 @@ export function RegisterPage({ client }: RegisterPageProps): React.JSX.Element {
 
         <PasswordField
           id="register-password"
-          label="Sifre"
+          label="Şifre"
           value={password}
           onChange={setPassword}
           disabled={register.isPending}
@@ -105,14 +105,14 @@ export function RegisterPage({ client }: RegisterPageProps): React.JSX.Element {
 
         <PasswordField
           id="register-password-confirm"
-          label="Sifre (tekrar)"
+          label="Şifre (tekrar)"
           value={passwordConfirm}
           onChange={setPasswordConfirm}
           disabled={register.isPending}
           autoComplete="new-password"
           error={isPasswordMismatch ? PASSWORD_MISMATCH_MESSAGE : undefined}
-          showToggleLabel="Sifre tekrarini goster"
-          hideToggleLabel="Sifre tekrarini gizle"
+          showToggleLabel="Şifre tekrarını göster"
+          hideToggleLabel="Şifre tekrarını gizle"
         />
 
         <button
@@ -120,12 +120,12 @@ export function RegisterPage({ client }: RegisterPageProps): React.JSX.Element {
           className="button button--primary auth-form__submit"
           disabled={register.isPending}
         >
-          {register.isPending ? 'Hesap olusturuluyor...' : 'Hesap Olustur'}
+          {register.isPending ? 'Hesap oluşturuluyor...' : 'Hesap Oluştur'}
         </button>
       </form>
 
       <p className="auth-page__alternative">
-        Zaten hesabiniz var mi? <Link to="/login">Giris yapin</Link>
+        Zaten hesabınız var mı? <Link to="/login">Giriş yapın</Link>
       </p>
     </main>
   );

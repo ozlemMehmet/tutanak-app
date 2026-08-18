@@ -11,8 +11,8 @@ import type { ApprovalDto } from './dto/approval.dto';
 import { toApprovalDto } from './mappers/approval.mapper';
 import { ApprovalsRepository } from './approvals.repository';
 
-const INVALID_LINK_MESSAGE = 'Bu baglanti gecersiz veya artik kullanilmiyor.';
-const ALREADY_APPROVED_MESSAGE = 'Bu tutanak zaten onaylanmis; ikinci bir onay kaydedilmez.';
+const INVALID_LINK_MESSAGE = 'Bu bağlantı geçersiz veya artık kullanılmıyor.';
+const ALREADY_APPROVED_MESSAGE = 'Bu tutanak zaten onaylanmış; ikinci bir onay kaydedilmez.';
 
 @Injectable()
 export class ApprovalsService {

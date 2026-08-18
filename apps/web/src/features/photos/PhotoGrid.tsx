@@ -19,14 +19,14 @@ interface PhotoGridProps {
 
 export function PhotoGrid({ photos }: PhotoGridProps): React.JSX.Element {
   if (photos.length === 0) {
-    return <p className="empty-state">Henuz fotograf eklenmedi</p>;
+    return <p className="empty-state">Henüz fotoğraf eklenmedi</p>;
   }
 
   return (
     <ul className="photo-grid">
       {photos.map((photo) => (
         <li key={photo.id} className="photo-thumbnail">
-          <img src={photo.url} alt="Tutanak fotografi" loading="lazy" />
+          <img src={photo.url} alt="Tutanak fotoğrafı" loading="lazy" />
           <time className="photo-thumbnail__stamp" dateTime={photo.capturedAt}>
             {formatStamp(photo.capturedAt)}
           </time>

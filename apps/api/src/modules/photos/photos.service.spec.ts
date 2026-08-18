@@ -159,6 +159,14 @@ describe('PhotosService.addPhoto', () => {
     ).rejects.toBeInstanceOf(NotFoundError);
   });
 
+  it('tutanak yoksa donen mesaj duzgun Turkce yazilir (H-002)', async () => {
+    const service = serviceWith({ findReportForAccess: jest.fn().mockResolvedValue(null) });
+
+    await expect(
+      service.addPhoto(REPORT_ID, OWNER_ID, { buffer: await jpegBuffer() }),
+    ).rejects.toMatchObject({ message: 'Tutanak bulunamadı.' });
+  });
+
   it('tutanak baskasina aitse ForbiddenError firlatir', async () => {
     const create = jest.fn();
     const service = serviceWith({

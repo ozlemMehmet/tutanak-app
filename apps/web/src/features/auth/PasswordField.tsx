@@ -29,8 +29,8 @@ export function PasswordField({
   autoComplete,
   hint,
   error,
-  showToggleLabel = 'Sifreyi goster',
-  hideToggleLabel = 'Sifreyi gizle',
+  showToggleLabel = 'Şifreyi göster',
+  hideToggleLabel = 'Şifreyi gizle',
 }: PasswordFieldProps): React.JSX.Element {
   const [isRevealed, setIsRevealed] = useState(false);
 
@@ -70,7 +70,7 @@ export function PasswordField({
             setIsRevealed((revealed) => !revealed);
           }}
         >
-          {isRevealed ? 'Gizle' : 'Goster'}
+          {isRevealed ? 'Gizle' : 'Göster'}
         </button>
       </div>
       {hint !== undefined && (

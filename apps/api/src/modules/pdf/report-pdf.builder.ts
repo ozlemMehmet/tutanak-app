@@ -34,11 +34,15 @@ const BODY_FONT = 'ReportBody';
 const TITLE_FONT_BYTES = readFileSync(join(FONT_DIRECTORY, 'DejaVuSans-Bold.ttf'));
 const BODY_FONT_BYTES = readFileSync(join(FONT_DIRECTORY, 'DejaVuSans.ttf'));
 
-const TEMPLATE_LABEL = 'Sablon: ';
+/**
+ * H-002: kullaniciya donuk etiketler duzgun Turkce yazilir (ASCII'ye katlanmis hali degil).
+ * Gomulu Unicode font (H-001) bu harfleri tasidigi icin PDF ciktisinda bozulmadan basilir.
+ */
+const TEMPLATE_LABEL = 'Şablon: ';
 const NOTE_LABEL = 'Not: ';
-const PHOTO_STAMP_LABEL = 'Fotograf tarihi: ';
+const PHOTO_STAMP_LABEL = 'Fotoğraf tarihi: ';
 /** T-010: onay blogunun etiketleri (delil degerinin tasiyicisi bu iki satirdir). */
-const APPROVAL_HEADING = 'Taraf onayi';
+const APPROVAL_HEADING = 'Taraf onayı';
 const APPROVER_LABEL = 'Onaylayan: ';
 const APPROVED_AT_LABEL = 'Onay tarihi: ';
 /** Bos not, bolumun kaybolmasi yerine yer tutucu ile yazilir (belge alanlari sabittir). */

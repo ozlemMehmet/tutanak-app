@@ -14,7 +14,7 @@ import { ReportsRepository } from './reports.repository';
 const DEFAULT_NOTE = '';
 
 const NO_PHOTOS_MESSAGE =
-  'PDF olusturmak icin tutanakta en az bir fotograf olmalidir; once fotograf ekleyin.';
+  'PDF oluşturmak için tutanakta en az bir fotoğraf olmalıdır; önce fotoğraf ekleyin.';
 
 @Injectable()
 export class ReportsService {
@@ -38,7 +38,7 @@ export class ReportsService {
     });
 
     if (report === null) {
-      throw new NotFoundError('TEMPLATE_NOT_FOUND', 'Secilen sablon bulunamadi.');
+      throw new NotFoundError('TEMPLATE_NOT_FOUND', 'Seçilen şablon bulunamadı.');
     }
     return toReportDto(report);
   }
@@ -115,10 +115,10 @@ export class ReportsService {
   private async assertOwnership(reportId: string, userId: string): Promise<ReportRecord> {
     const report = await this.reportsRepository.findById(reportId);
     if (report === null) {
-      throw new NotFoundError('NOT_FOUND', 'Tutanak bulunamadi.');
+      throw new NotFoundError('NOT_FOUND', 'Tutanak bulunamadı.');
     }
     if (report.ownerId !== userId) {
-      throw new ForbiddenError('Bu tutanaga erisim yetkiniz yok.');
+      throw new ForbiddenError('Bu tutanağa erişim yetkiniz yok.');
     }
     return report;
   }

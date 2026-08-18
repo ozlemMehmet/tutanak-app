@@ -58,7 +58,7 @@ describe('createSessionAwareClient', () => {
     session.subscribe(listener);
     const fetchImpl = jest.fn().mockResolvedValue(
       responseOf(401, {
-        error: { code: 'INVALID_CREDENTIALS', message: 'E-posta veya sifre hatali.', traceId: 'i' },
+        error: { code: 'INVALID_CREDENTIALS', message: 'E-posta veya şifre hatalı.', traceId: 'i' },
       }),
     );
     const client = createSessionAwareClient({

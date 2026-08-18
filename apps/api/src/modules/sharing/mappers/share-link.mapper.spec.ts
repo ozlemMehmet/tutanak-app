@@ -73,10 +73,10 @@ describe('toShareDeliveryDto', () => {
     const dto = toShareDeliveryDto({
       ...DELIVERY,
       status: 'failed',
-      errorMessage: 'E-posta saglayicisina ulasilamadi.',
+      errorMessage: 'E-posta sağlayıcısına ulaşılamadı.',
     });
 
     expect(dto.status).toBe('failed');
-    expect(dto.errorMessage).toBe('E-posta saglayicisina ulasilamadi.');
+    expect(dto.errorMessage).toBe('E-posta sağlayıcısına ulaşılamadı.');
   });
 });

@@ -34,7 +34,7 @@ const UNKNOWN_TOKEN = 'bilinmeyen-token_bilinmeyen-token_bilinmey1';
 const CLOCK_SKEW_TOLERANCE_MS = 5000;
 
 /** Sozlesmedeki uyari metninin cekirdegi (PublicReportView.disclaimer). */
-const DISCLAIMER_CORE = 'resmi hukuki delil degildir, destekleyici kanittir';
+const DISCLAIMER_CORE = 'resmi hukuki delil değildir, destekleyici kanıttır';
 
 interface ApprovalBody {
   id: string;
@@ -182,7 +182,7 @@ describe('T-010 tek tikla taraf onayi', () => {
   }, MIGRATION_TIMEOUT_MS);
 
   describe('uyari metni — kriter 1', () => {
-    it('onay ONCESI goruntuleme yaniti "resmi hukuki delil degildir, destekleyici kanittir" uyarisini tasir', async () => {
+    it('onay ONCESI goruntuleme yaniti "resmi hukuki delil değildir, destekleyici kanıttır" uyarisini tasir', async () => {
       const { shareToken } = await sharedReport();
 
       const response = await viewPublic(shareToken);

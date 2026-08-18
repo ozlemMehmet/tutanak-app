@@ -84,6 +84,24 @@ describe('IyzicoPaymentAdapter.createCheckout', () => {
     expect(request.callbackUrl).toBe(CHECKOUT_REQUEST.callbackUrl);
   });
 
+  it('odeme sayfasinda gorunen sepet kalemi adini duzgun Turkce gonderir (H-002)', async () => {
+    const calls: ClientCall[] = [];
+    const adapter = new IyzicoPaymentAdapter(
+      OPTIONS,
+      fakeClient(
+        { result: { status: 'success', token: 't', paymentPageUrl: 'https://odeme.example/t' } },
+        calls,
+      ),
+    );
+
+    await adapter.createCheckout(CHECKOUT_REQUEST);
+
+    // Sepet kalemi adi saglayicinin odeme sayfasinda KULLANICIYA gosterilir; ASCII'ye
+    // katlanmis hali degil, Turkce dizenin kendisi gonderilir.
+    const basketItems = (calls[0]?.request.basketItems ?? []) as { name?: string }[];
+    expect(basketItems[0]?.name).toBe('Aylık abonelik');
+  });
+
   it('saglayici hata dondurdugunde PAYMENT_PROVIDER_ERROR firlatir', async () => {
     const adapter = new IyzicoPaymentAdapter(
       OPTIONS,
@@ -93,6 +111,17 @@ describe('IyzicoPaymentAdapter.createCheckout', () => {
     await expect(adapter.createCheckout(CHECKOUT_REQUEST)).rejects.toBeInstanceOf(
       ExternalServiceError,
     );
+  });
+
+  it('saglayici hatasinda kullaniciya donen mesaj duzgun Turkce yazilir (H-002)', async () => {
+    const adapter = new IyzicoPaymentAdapter(
+      OPTIONS,
+      fakeClient({ error: new Error('baglanti koptu') }),
+    );
+
+    await expect(adapter.createCheckout(CHECKOUT_REQUEST)).rejects.toMatchObject({
+      message: 'Ödeme sağlayıcısına ulaşılamadı, lütfen tekrar deneyin.',
+    });
   });
 
   it('saglayici yaniti basarisiz durumdayken PAYMENT_PROVIDER_ERROR firlatir', async () => {

@@ -324,19 +324,19 @@ describe('T-008 paylasim linki ve e-posta/WhatsApp paylasimi', () => {
     it('saglayici hatasinda 202 + status=failed + errorMessage doner (502 DONMEZ, §4.2.2)', async () => {
       const reportId = await createReport();
       await createLink(reportId, ownerToken);
-      email.failNextWith('E-posta saglayicisina ulasilamadi.');
+      email.failNextWith('E-posta sağlayıcısına ulaşılamadı.');
 
       const response = await sendEmail(reportId, { recipientEmail: RECIPIENT }, ownerToken);
 
       expect(response.status).toBe(202);
       const body = response.body as ShareDeliveryBody;
       expect(body.status).toBe('failed');
-      expect(body.errorMessage).toBe('E-posta saglayicisina ulasilamadi.');
+      expect(body.errorMessage).toBe('E-posta sağlayıcısına ulaşılamadı.');
 
       // Kayit `failed` + neden ile yazilir (DDL CHECK: failed ise error_message zorunlu).
       const delivery = await prisma.shareDelivery.findUniqueOrThrow({ where: { id: body.id } });
       expect(delivery.status).toBe('failed');
-      expect(delivery.errorMessage).toBe('E-posta saglayicisina ulasilamadi.');
+      expect(delivery.errorMessage).toBe('E-posta sağlayıcısına ulaşılamadı.');
 
       // Paylasim linki gecerliligini korur: kullanici wa.me/kopyalama ile devam edebilir.
       const linkAfter = await getLink(reportId, ownerToken);

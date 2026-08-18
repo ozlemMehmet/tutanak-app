@@ -155,6 +155,14 @@ describe('ReportsService.getReport', () => {
     await expect(promise).rejects.toMatchObject({ code: 'NOT_FOUND', httpStatus: 404 });
   });
 
+  it('tutanak yoksa donen mesaj duzgun Turkce yazilir (H-002)', async () => {
+    const findById = jest.fn().mockResolvedValue(null);
+
+    const promise = serviceWith({ findById }).getReport(REPORT_ID, OWNER_ID);
+
+    await expect(promise).rejects.toMatchObject({ message: 'Tutanak bulunamadı.' });
+  });
+
   it('tutanak baska kullaniciya aitse ForbiddenError firlatir (icerik sizdirmadan)', async () => {
     const findById = jest.fn().mockResolvedValue(STORED_REPORT);
 

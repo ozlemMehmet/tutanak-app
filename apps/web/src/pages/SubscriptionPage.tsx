@@ -21,18 +21,18 @@ interface SubscriptionPageProps {
   redirect?: (url: string) => void;
 }
 
-const GENERIC_ERROR_MESSAGE = 'Beklenmeyen bir hata olustu, lutfen tekrar deneyin.';
+const GENERIC_ERROR_MESSAGE = 'Beklenmeyen bir hata oluştu, lütfen tekrar deneyin.';
 
-const PENDING_WAITING_MESSAGE = 'Odeme sonucu bekleniyor, abonelik henuz aktif degil';
+const PENDING_WAITING_MESSAGE = 'Ödeme sonucu bekleniyor, abonelik henüz aktif değil';
 
 /**
  * H-003: yoklama butcesi tukendiginde ekran sessiz bir uyari metninde donup kalmaz;
  * kullaniciya ODEME ALINDIYSA ne olacagini ve ALINMADIYSA ne yapmasi gerektigini soyler.
  */
 const PENDING_TIMEOUT_MESSAGE =
-  'Odeme sonucu hala alinamadi. Odemeniz alindiysa abonelik kisa sure icinde aktiflesir; ' +
-  '"Durumu yenile" ile kontrol edebilir veya daha sonra bu sayfaya donebilirsiniz. Odemeniz ' +
-  'alinmadiysa odeme adimini bastan baslatmaniz gerekir.';
+  'Ödeme sonucu hâlâ alınamadı. Ödemeniz alındıysa abonelik kısa süre içinde aktifleşir; ' +
+  '"Durumu yenile" ile kontrol edebilir veya daha sonra bu sayfaya dönebilirsiniz. Ödemeniz ' +
+  'alınmadıysa ödeme adımını baştan başlatmanız gerekir.';
 
 function errorMessageOf(error: unknown): string {
   if (error instanceof ApiError || error instanceof Error) {
@@ -61,14 +61,14 @@ export function SubscriptionPage({
       <h1>Abonelik</h1>
 
       {/* loading: durum karti iskeleti (design.md SubscriptionPage durumlari). */}
-      {currentUser.isPending && <p className="skeleton-text">Abonelik durumu yukleniyor...</p>}
+      {currentUser.isPending && <p className="skeleton-text">Abonelik durumu yükleniyor...</p>}
 
       {/* `GET /me` basarisiz: ekranin tek isi durum gostermek oldugu icin sessiz kalamaz.
           Kod tabanindaki sorgu-hatasi deseni (PhotoSection) birebir uygulanir: danger
           banner + "Tekrar Dene". */}
       {currentUser.isError && (
         <div className="banner banner--danger" role="alert">
-          <p>Abonelik durumu yuklenemedi</p>
+          <p>Abonelik durumu yüklenemedi</p>
           <button
             type="button"
             className="button button--ghost"
@@ -88,14 +88,14 @@ export function SubscriptionPage({
           {/* Odeme saglayicisina ulasilamadi: gercekten BLOKE eden hata -> `danger`. */}
           {isApiErrorWithCode(checkout.error, PAYMENT_PROVIDER_ERROR) && (
             <p className="banner banner--danger" role="alert">
-              Odeme saglayicisina ulasilamadi, tekrar deneyin
+              Ödeme sağlayıcısına ulaşılamadı, tekrar deneyin
             </p>
           )}
 
           {/* Akisi durdurmayan bilgi durumu -> `warning` (design.md §4.1 renk anlami). */}
           {isApiErrorWithCode(checkout.error, SUBSCRIPTION_ALREADY_ACTIVE) && (
             <p className="banner banner--warning" role="status">
-              Aboneliginiz zaten aktif.
+              Aboneliğiniz zaten aktif.
             </p>
           )}
 
@@ -116,7 +116,7 @@ export function SubscriptionPage({
                 checkout.mutate();
               }}
             >
-              Odeme Yap
+              Ödeme Yap
             </button>
           )}
 
@@ -137,7 +137,7 @@ export function SubscriptionPage({
 
           {subscription.status === 'active' && (
             <p className="banner banner--success" role="status">
-              Aboneliginiz aktif
+              Aboneliğiniz aktif
             </p>
           )}
         </>

@@ -7,7 +7,7 @@ import sharp from 'sharp';
 import { UnprocessableError } from '../../common/errors/app-error';
 import type { PhotoContentTypeDto } from './dto/photo.dto';
 
-const CORRUPT_IMAGE_MESSAGE = 'Fotograf okunamadi; dosya bozuk ya da desteklenmeyen bicimde.';
+const CORRUPT_IMAGE_MESSAGE = 'Fotoğraf okunamadı; dosya bozuk ya da desteklenmeyen biçimde.';
 
 /**
  * Fotografin uzun kenar siniri — DEPOLANAN hal bu olcudedir (architecture.md §104:

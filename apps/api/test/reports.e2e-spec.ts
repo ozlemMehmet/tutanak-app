@@ -211,7 +211,7 @@ describe('T-005 tutanak taslagi olusturma', () => {
       expect(response.status).toBe(400);
       const envelope = (response.body as ErrorBody).error;
       expect(envelope.code).toBe('VALIDATION_ERROR');
-      expect(envelope.details).toEqual([{ field: 'title', message: 'baslik zorunludur' }]);
+      expect(envelope.details).toEqual([{ field: 'title', message: 'başlık zorunludur' }]);
     });
 
     it('yalnizca bosluktan olusan baslik da 400 baslik zorunludur doner', async () => {
@@ -219,7 +219,7 @@ describe('T-005 tutanak taslagi olusturma', () => {
 
       expect(response.status).toBe(400);
       expect((response.body as ErrorBody).error.details).toEqual([
-        { field: 'title', message: 'baslik zorunludur' },
+        { field: 'title', message: 'başlık zorunludur' },
       ]);
     });
 

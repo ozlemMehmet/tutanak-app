@@ -22,7 +22,7 @@ const VIEW: PublicReportView = {
   status: 'shared',
   createdAt: '2026-08-14T09:00:00.000Z',
   isApproved: false,
-  disclaimer: 'Bu tutanak resmi hukuki delil degildir, destekleyici kanittir.',
+  disclaimer: 'Bu tutanak resmi hukuki delil değildir, destekleyici kanıttır.',
   photos: [
     {
       id: 'foto-1',
@@ -64,7 +64,7 @@ describe('PublicReportPage', () => {
   it('yuklenirken iskelet durumu gosterir', () => {
     renderPage(fakeClient(jest.fn().mockReturnValue(new Promise(() => undefined))));
 
-    expect(screen.getByText('Tutanak yukleniyor...')).toBeInTheDocument();
+    expect(screen.getByText('Tutanak yükleniyor...')).toBeInTheDocument();
   });
 
   it('tutanagin basligini, sablon adini ve notunu gosterir (kriter 1)', async () => {
@@ -89,13 +89,13 @@ describe('PublicReportPage', () => {
   it('tutanagin olusturulma damgasini gosterir', async () => {
     renderPage(fakeClient(jest.fn().mockResolvedValue(VIEW)));
 
-    expect(await screen.findByText(/Olusturulma/)).toBeInTheDocument();
+    expect(await screen.findByText(/Oluşturulma/)).toBeInTheDocument();
   });
 
   it('fotograf yoksa akisi engellemeden bilgilendirme gosterir (design.md empty durumu)', async () => {
     renderPage(fakeClient(jest.fn().mockResolvedValue({ ...VIEW, photos: [] })));
 
-    expect(await screen.findByText('Bu tutanakta henuz fotograf bulunmuyor')).toBeInTheDocument();
+    expect(await screen.findByText('Bu tutanakta henüz fotoğraf bulunmuyor')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: VIEW.title })).toBeInTheDocument();
   });
 
@@ -113,7 +113,7 @@ describe('PublicReportPage', () => {
     renderPage(clientReturning(notFound, 404));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Bu baglanti gecersiz veya suresi dolmus',
+      'Bu bağlantı geçersiz veya süresi dolmuş',
     );
     expect(screen.queryByRole('heading', { name: VIEW.title })).not.toBeInTheDocument();
   });
@@ -126,7 +126,7 @@ describe('PublicReportPage', () => {
     renderPage(clientReturning(rateLimited, 429));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Cok fazla istek, birazdan tekrar deneyin',
+      'Çok fazla istek, birazdan tekrar deneyin',
     );
   });
 
@@ -137,7 +137,7 @@ describe('PublicReportPage', () => {
 
     renderPage(clientReturning(unexpected, 403));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Tutanak su anda goruntulenemiyor');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Tutanak şu anda görüntülenemiyor');
     expect(screen.queryByRole('heading', { name: VIEW.title })).not.toBeInTheDocument();
   });
 
@@ -205,7 +205,7 @@ describe('PublicReportPage — tek tikla onay (T-010)', () => {
     await userEvent.type(await screen.findByLabelText('E-posta adresiniz'), APPROVAL.approverEmail);
     await userEvent.click(screen.getByRole('button', { name: 'Onayla' }));
 
-    expect(await screen.findByRole('status')).toHaveTextContent('Onaylandi');
+    expect(await screen.findByRole('status')).toHaveTextContent('Onaylandı');
     expect(screen.getByRole('status')).toHaveTextContent(APPROVAL.approverEmail);
     expect(screen.queryByRole('button', { name: 'Onayla' })).not.toBeInTheDocument();
   });
@@ -250,7 +250,7 @@ describe('PublicReportPage — tek tikla onay (T-010)', () => {
     await userEvent.type(await screen.findByLabelText('E-posta adresiniz'), APPROVAL.approverEmail);
     await userEvent.click(screen.getByRole('button', { name: 'Onayla' }));
 
-    expect(await screen.findByRole('status')).toHaveTextContent('Onaylandi');
+    expect(await screen.findByRole('status')).toHaveTextContent('Onaylandı');
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
@@ -258,7 +258,7 @@ describe('PublicReportPage — tek tikla onay (T-010)', () => {
     const validationError = {
       error: {
         code: 'VALIDATION_ERROR',
-        message: 'Girdi dogrulanamadi.',
+        message: 'Girdi doğrulanamadı.',
         details: [{ field: 'approverEmail', message: 'gecerli bir e-posta adresi giriniz' }],
         traceId: 'iz-5',
       },
@@ -292,7 +292,7 @@ describe('PublicReportPage — tek tikla onay (T-010)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Onayla' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Bu baglanti gecersiz veya suresi dolmus',
+      'Bu bağlantı geçersiz veya süresi dolmuş',
     );
     expect(screen.queryByRole('heading', { name: VIEW.title })).not.toBeInTheDocument();
   });

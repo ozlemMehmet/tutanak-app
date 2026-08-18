@@ -14,12 +14,12 @@ describe('StatusChip', () => {
   it('paylasildi durumunu primary tonda gosterir', () => {
     render(<StatusChip status="shared" />);
 
-    expect(screen.getByText('Paylasildi')).toHaveClass('status-chip--primary');
+    expect(screen.getByText('Paylaşıldı')).toHaveClass('status-chip--primary');
   });
 
   it('onaylandi durumunu success tonda gosterir', () => {
     render(<StatusChip status="approved" />);
 
-    expect(screen.getByText('Onaylandi')).toHaveClass('status-chip--success');
+    expect(screen.getByText('Onaylandı')).toHaveClass('status-chip--success');
   });
 });

@@ -28,7 +28,7 @@ const ACTIVE: Subscription = {
   currentPeriodEnd: '2026-09-14T09:30:00.000Z',
 };
 
-const PENDING_WAITING_TEXT = 'Odeme sonucu bekleniyor, abonelik henuz aktif degil';
+const PENDING_WAITING_TEXT = 'Ödeme sonucu bekleniyor, abonelik henüz aktif değil';
 
 const CHECKOUT = {
   transactionReference: 'txn-1',
@@ -115,7 +115,7 @@ describe('SubscriptionPage', () => {
   it('durum yuklenirken iskelet gosterir (kriter 1 loading durumu)', () => {
     renderPage();
 
-    expect(screen.getByText('Abonelik durumu yukleniyor...')).toBeInTheDocument();
+    expect(screen.getByText('Abonelik durumu yükleniyor...')).toBeInTheDocument();
   });
 
   it('GET /me basarisiz olunca hata banner"i gosterir, sayfa sessizce bos kalmaz (kriter 1 hata durumu)', async () => {
@@ -123,9 +123,9 @@ describe('SubscriptionPage', () => {
       meResult: () => Promise.reject(new ApiError('INTERNAL_ERROR', 'Sunucu hatasi olustu.', 500)),
     });
 
-    expect(await screen.findByText('Abonelik durumu yuklenemedi')).toBeInTheDocument();
+    expect(await screen.findByText('Abonelik durumu yüklenemedi')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Tekrar Dene' })).toBeInTheDocument();
-    expect(screen.queryByText('Abonelik durumu yukleniyor...')).not.toBeInTheDocument();
+    expect(screen.queryByText('Abonelik durumu yükleniyor...')).not.toBeInTheDocument();
   });
 
   it('GET /me hatasindan sonra "Tekrar Dene" durumu yeniden ceker (kriter 1 hata durumu)', async () => {
@@ -133,7 +133,7 @@ describe('SubscriptionPage', () => {
       meResult: () => Promise.reject(new ApiError('INTERNAL_ERROR', 'Sunucu hatasi olustu.', 500)),
     });
 
-    await screen.findByText('Abonelik durumu yuklenemedi');
+    await screen.findByText('Abonelik durumu yüklenemedi');
     // 5xx'te hook 2 kez yeniden denedigi icin ilk yuklemede 3 cagri olur; onemli olan
     // butonun YENI bir cekim baslatmasidir.
     const callsBeforeRetry = meCallCount(request);
@@ -148,7 +148,7 @@ describe('SubscriptionPage', () => {
   it('inactive durumda odeme butonu aktiftir ve checkout cagrisini yapar (kriter 2)', async () => {
     const { request } = renderPage();
 
-    const payButton = await screen.findByRole('button', { name: 'Odeme Yap' });
+    const payButton = await screen.findByRole('button', { name: 'Ödeme Yap' });
     expect(payButton).toBeEnabled();
 
     await userEvent.click(payButton);
@@ -162,13 +162,13 @@ describe('SubscriptionPage', () => {
     const open = jest.spyOn(window, 'open').mockImplementation(() => null);
     const { redirect } = renderPage();
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Odeme Yap' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Ödeme Yap' }));
 
     await waitFor(() => {
       expect(redirect).toHaveBeenCalledWith(CHECKOUT.checkoutUrl);
     });
     expect(open).not.toHaveBeenCalled();
-    expect(screen.queryByRole('link', { name: 'Odeme Yap' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Ödeme Yap' })).not.toBeInTheDocument();
     open.mockRestore();
   });
 
@@ -176,9 +176,9 @@ describe('SubscriptionPage', () => {
     renderPage({ subscription: { ...INACTIVE, status: 'pending', priceAmount: '199.00' } });
 
     expect(
-      await screen.findByText('Odeme sonucu bekleniyor, abonelik henuz aktif degil'),
+      await screen.findByText('Ödeme sonucu bekleniyor, abonelik henüz aktif değil'),
     ).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Odeme Yap' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ödeme Yap' })).not.toBeInTheDocument();
   });
 
   it('active durumda aktiflik metnini ve donem sonunu gosterir, odeme butonu gostermez (kriter 4)', async () => {
@@ -191,9 +191,9 @@ describe('SubscriptionPage', () => {
       },
     });
 
-    expect(await screen.findByText('Aboneliginiz aktif')).toBeInTheDocument();
+    expect(await screen.findByText('Aboneliğiniz aktif')).toBeInTheDocument();
     expect(screen.getByTestId('abonelik-donem-sonu')).toHaveTextContent(/\d{2}\.\d{2}\.\d{4}/);
-    expect(screen.queryByRole('button', { name: 'Odeme Yap' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ödeme Yap' })).not.toBeInTheDocument();
   });
 
   it('?checkout=return ile acilinca GET /me otomatik yeniden cekilir (kriter 5)', async () => {
@@ -235,14 +235,14 @@ describe('SubscriptionPage', () => {
     renderPage({
       checkoutResult: () =>
         Promise.reject(
-          new ApiError('PAYMENT_PROVIDER_ERROR', 'Odeme saglayicisina ulasilamadi.', 502),
+          new ApiError('PAYMENT_PROVIDER_ERROR', 'Ödeme sağlayıcısına ulaşılamadı.', 502),
         ),
     });
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Odeme Yap' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Ödeme Yap' }));
 
     expect(
-      await screen.findByText('Odeme saglayicisina ulasilamadi, tekrar deneyin'),
+      await screen.findByText('Ödeme sağlayıcısına ulaşılamadı, tekrar deneyin'),
     ).toBeInTheDocument();
   });
 
@@ -253,9 +253,9 @@ describe('SubscriptionPage', () => {
     });
 
     await screen.findByTestId('abonelik-rozeti');
-    await userEvent.click(screen.getByRole('button', { name: 'Odeme Yap' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Ödeme Yap' }));
 
-    expect(await screen.findByText('Aboneliginiz zaten aktif.')).toBeInTheDocument();
+    expect(await screen.findByText('Aboneliğiniz zaten aktif.')).toBeInTheDocument();
     await waitFor(() => {
       expect(meCallCount(request)).toBe(2);
     });
@@ -267,7 +267,7 @@ describe('SubscriptionPage', () => {
         Promise.reject(new ApiError('INTERNAL_ERROR', 'Beklenmeyen bir hata olustu.', 500)),
     });
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Odeme Yap' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Ödeme Yap' }));
 
     expect(await screen.findByText('Beklenmeyen bir hata olustu.')).toBeInTheDocument();
   });
@@ -275,10 +275,10 @@ describe('SubscriptionPage', () => {
   it('mesajsiz (zarfsiz) hatada genel hata mesajini gosterir', async () => {
     renderPage({ checkoutResult: () => Promise.reject(new Error('')) });
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Odeme Yap' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Ödeme Yap' }));
 
     expect(
-      await screen.findByText('Beklenmeyen bir hata olustu, lutfen tekrar deneyin.'),
+      await screen.findByText('Beklenmeyen bir hata oluştu, lütfen tekrar deneyin.'),
     ).toBeInTheDocument();
   });
 });
@@ -333,7 +333,7 @@ describe('SubscriptionPage pending yoklamasi (H-003)', () => {
     subscription = ACTIVE;
     await advancePollStep(0);
 
-    expect(await screen.findByText('Aboneliginiz aktif')).toBeInTheDocument();
+    expect(await screen.findByText('Aboneliğiniz aktif')).toBeInTheDocument();
     expect(screen.queryByText(PENDING_WAITING_TEXT)).not.toBeInTheDocument();
   });
 
@@ -376,7 +376,7 @@ describe('SubscriptionPage pending yoklamasi (H-003)', () => {
     await screen.findByText(PENDING_WAITING_TEXT);
     subscription = ACTIVE;
     await advancePollStep(0);
-    expect(await screen.findByText('Aboneliginiz aktif')).toBeInTheDocument();
+    expect(await screen.findByText('Aboneliğiniz aktif')).toBeInTheDocument();
     const callsAfterActive = meCallCount(request);
 
     await act(async () => {
@@ -422,8 +422,8 @@ describe('SubscriptionPage pending yoklamasi (H-003)', () => {
 
     const timeoutMessage = await screen.findByTestId('abonelik-bekleme-zaman-asimi');
     // Odeme alindiysa ne olacagi VE alinmadiysa ne yapilacagi ayni metinde soylenir.
-    expect(timeoutMessage).toHaveTextContent(/kisa sure icinde aktiflesir/);
-    expect(timeoutMessage).toHaveTextContent(/alinmadiysa/);
+    expect(timeoutMessage).toHaveTextContent(/kısa süre içinde aktifleşir/);
+    expect(timeoutMessage).toHaveTextContent(/alınmadıysa/);
     expect(screen.queryByText(PENDING_WAITING_TEXT)).not.toBeInTheDocument();
   });
 });

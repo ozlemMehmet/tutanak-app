@@ -11,11 +11,11 @@ interface AppShellProps {
   client: ApiClient;
 }
 
-const APP_NAME = 'Emlak Teslim Tutanagi';
+const APP_NAME = 'Emlak Teslim Tutanağı';
 
 const NAV_ITEMS: { to: string; label: string; end: boolean }[] = [
   // `/reports` icin `end`: aksi halde `/reports/new` ve `/reports/:id` ustunde de aktif gorunurdu.
-  { to: '/reports', label: 'Tutanaklarim', end: true },
+  { to: '/reports', label: 'Tutanaklarım', end: true },
   { to: '/reports/new', label: 'Yeni Tutanak', end: false },
   { to: '/subscription', label: 'Abonelik', end: false },
 ];
@@ -39,7 +39,7 @@ export function AppShell({ client }: AppShellProps): React.JSX.Element {
     <div className="app-shell">
       {/* design.md §5: AppShell ustunde "Icerige gec" skip-link'i bulunur. */}
       <a className="skip-link" href="#main-content">
-        Icerige gec
+        İçeriğe geç
       </a>
 
       <header className="app-shell__header">
@@ -53,7 +53,7 @@ export function AppShell({ client }: AppShellProps): React.JSX.Element {
             className="button button--on-primary app-shell__signout"
             onClick={handleSignOut}
           >
-            Cikis
+            Çıkış
           </button>
         </div>
       </header>

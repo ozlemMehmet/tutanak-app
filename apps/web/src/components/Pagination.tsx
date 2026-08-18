@@ -33,7 +33,7 @@ export function Pagination({
           onPageChange(page - 1);
         }}
       >
-        Onceki sayfa
+        Önceki sayfa
       </button>
       <span className="pagination__status" aria-live="polite">
         {`Sayfa ${String(page)} / ${String(pageCount)}`}

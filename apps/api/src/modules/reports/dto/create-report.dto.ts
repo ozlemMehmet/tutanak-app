@@ -17,17 +17,17 @@ function trimText({ value }: { value: unknown }): unknown {
 }
 
 export class CreateReportDto {
-  @IsUUID(undefined, { message: 'gecerli bir sablon seciniz' })
+  @IsUUID(undefined, { message: 'geçerli bir şablon seçiniz' })
   templateId!: string;
 
   @Transform(trimText)
-  @IsString({ message: 'baslik zorunludur' })
-  @MinLength(TITLE_MIN_LENGTH, { message: 'baslik zorunludur' })
-  @MaxLength(TITLE_MAX_LENGTH, { message: 'baslik en fazla 200 karakter olabilir' })
+  @IsString({ message: 'başlık zorunludur' })
+  @MinLength(TITLE_MIN_LENGTH, { message: 'başlık zorunludur' })
+  @MaxLength(TITLE_MAX_LENGTH, { message: 'başlık en fazla 200 karakter olabilir' })
   title!: string;
 
   @IsOptional()
-  @IsString({ message: 'not metin olmalidir' })
+  @IsString({ message: 'not metin olmalıdır' })
   @MaxLength(NOTE_MAX_LENGTH, { message: 'not en fazla 5000 karakter olabilir' })
   note?: string;
 }

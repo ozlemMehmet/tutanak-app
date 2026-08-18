@@ -20,7 +20,7 @@ const SEARCH_DEBOUNCE_MS = 400;
 const SEARCH_MAX_LENGTH = 100;
 /** design.md loading durumu: "3-5 iskelet kart". */
 const SKELETON_COUNT = 3;
-const LIST_ERROR_MESSAGE = 'Tutanaklar yuklenemedi';
+const LIST_ERROR_MESSAGE = 'Tutanaklar yüklenemedi';
 const FIRST_PAGE = 1;
 
 export function ReportListPage({ client }: ReportListPageProps): React.JSX.Element {
@@ -48,7 +48,7 @@ export function ReportListPage({ client }: ReportListPageProps): React.JSX.Eleme
   return (
     <main className="page report-list">
       <div className="report-list__header">
-        <h1>Tutanaklarim</h1>
+        <h1>Tutanaklarım</h1>
         {/* "+ Yeni Tutanak" her durumda (yukleme/hata/bos) DOM'da kalir — kriter 7. */}
         <Link className="button button--primary report-list__new" to="/reports/new">
           + Yeni Tutanak
@@ -65,7 +65,7 @@ export function ReportListPage({ client }: ReportListPageProps): React.JSX.Eleme
           type="search"
           value={searchTerm}
           maxLength={SEARCH_MAX_LENGTH}
-          placeholder="Baslik veya not icinde ara"
+          placeholder="Başlık veya not içinde ara"
           onChange={(event) => {
             handleSearchChange(event.target.value);
           }}
@@ -103,18 +103,18 @@ export function ReportListPage({ client }: ReportListPageProps): React.JSX.Eleme
 
       {isEmpty && activeQuery === '' && (
         <div className="empty-state">
-          <p>Henuz tutanaginiz yok</p>
+          <p>Henüz tutanağınız yok</p>
           <Link className="button button--primary" to="/reports/new">
-            Ilk tutanagini olustur
+            İlk tutanağını oluştur
           </Link>
         </div>
       )}
 
       {isEmpty && activeQuery !== '' && (
         <div className="empty-state">
-          <p>{`'${activeQuery}' icin sonuc bulunamadi`}</p>
+          <p>{`'${activeQuery}' için sonuç bulunamadı`}</p>
           <button type="button" className="button button--ghost" onClick={handleClearSearch}>
-            Aramayi temizle
+            Aramayı temizle
           </button>
         </div>
       )}

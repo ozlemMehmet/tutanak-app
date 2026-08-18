@@ -65,8 +65,8 @@ describe('AuthService.register', () => {
   });
 
   it('e-posta zaten kayitliysa depo katmanindan gelen ConflictError yutulmaz', async () => {
-    const conflict = new ConflictError('EMAIL_ALREADY_REGISTERED', 'Bu e-posta zaten kayitli.', [
-      { field: 'email', message: 'bu e-posta zaten kayitli' },
+    const conflict = new ConflictError('EMAIL_ALREADY_REGISTERED', 'Bu e-posta zaten kayıtlı.', [
+      { field: 'email', message: 'bu e-posta zaten kayıtlı' },
     ]);
     const repository = {
       create: jest.fn().mockRejectedValue(conflict),

@@ -107,6 +107,14 @@ describe('ShareLinkService.getShareLink', () => {
     expect(dto.token).toBe(STORED_LINK.token);
   });
 
+  it('tutanak yoksa donen mesaj duzgun Turkce yazilir (H-002)', async () => {
+    const service = serviceWith({ findReportForAccess: jest.fn().mockResolvedValue(null) });
+
+    await expect(service.issueShareLink(REPORT_ID, OWNER_ID)).rejects.toMatchObject({
+      message: 'Tutanak bulunamadı.',
+    });
+  });
+
   it('link henuz uretilmemisse SHARE_LINK_NOT_FOUND kodlu NotFoundError firlatir', async () => {
     const service = serviceWith({
       findReportForAccess: jest.fn().mockResolvedValue(DRAFT_REPORT),
@@ -147,11 +155,11 @@ describe('ShareLinkService.sendShareEmail', () => {
 
   it('saglayici hatasinda ISTISNA FIRLATMAZ; failed kaydini yazar ve yanitta doner (§4.2.2)', async () => {
     const email = new FakeEmailAdapter();
-    email.failNextWith('E-posta saglayicisina ulasilamadi.');
+    email.failNextWith('E-posta sağlayıcısına ulaşılamadı.');
     const createDelivery = jest
       .fn()
       .mockResolvedValue(
-        deliveryRecord({ status: 'failed', errorMessage: 'E-posta saglayicisina ulasilamadi.' }),
+        deliveryRecord({ status: 'failed', errorMessage: 'E-posta sağlayıcısına ulaşılamadı.' }),
       );
     const service = serviceWith(
       {
@@ -165,11 +173,11 @@ describe('ShareLinkService.sendShareEmail', () => {
     const dto = await service.sendShareEmail(REPORT_ID, OWNER_ID, RECIPIENT);
 
     expect(dto.status).toBe('failed');
-    expect(dto.errorMessage).toBe('E-posta saglayicisina ulasilamadi.');
+    expect(dto.errorMessage).toBe('E-posta sağlayıcısına ulaşılamadı.');
     expect(createDelivery).toHaveBeenCalledWith(
       expect.objectContaining({
         status: 'failed',
-        errorMessage: 'E-posta saglayicisina ulasilamadi.',
+        errorMessage: 'E-posta sağlayıcısına ulaşılamadı.',
       }),
     );
   });

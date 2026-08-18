@@ -11,7 +11,7 @@ import { IS_STRICT_RATE_LIMIT_KEY } from '../decorators/strict-rate-limit.decora
 const MS_PER_SECOND = 1000;
 
 /** Istemciye gosterilen Turkce mesaj; framework metni sizdirilmaz (CLAUDE.md §4.3). */
-const RATE_LIMIT_MESSAGE = 'Cok fazla istek gonderildi. Lutfen bir sure sonra tekrar deneyin.';
+const RATE_LIMIT_MESSAGE = 'Çok fazla istek gönderildi. Lütfen bir süre sonra tekrar deneyin.';
 
 export interface RateLimitSettings {
   /** Sayacin sifirlandigi pencere, saniye (`RATE_LIMIT_WINDOW_SECONDS`). */

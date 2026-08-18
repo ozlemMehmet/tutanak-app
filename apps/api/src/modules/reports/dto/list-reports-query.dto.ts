@@ -29,20 +29,20 @@ function trimSearchTerm({ value }: { value: unknown }): unknown {
 export class ListReportsQueryDto {
   @IsOptional()
   @Transform(trimSearchTerm)
-  @IsString({ message: 'arama terimi metin olmalidir' })
+  @IsString({ message: 'arama terimi metin olmalıdır' })
   @MaxLength(SEARCH_TERM_MAX_LENGTH, { message: 'arama terimi en fazla 100 karakter olabilir' })
   q?: string;
 
   @IsOptional()
   @Type(() => Number)
-  @IsInt({ message: 'sayfa numarasi tam sayi olmalidir' })
-  @Min(MIN_PAGE, { message: 'sayfa numarasi en az 1 olmalidir' })
+  @IsInt({ message: 'sayfa numarası tam sayı olmalıdır' })
+  @Min(MIN_PAGE, { message: 'sayfa numarası en az 1 olmalıdır' })
   page?: number;
 
   @IsOptional()
   @Type(() => Number)
-  @IsInt({ message: 'sayfa boyutu tam sayi olmalidir' })
-  @Min(MIN_PAGE_SIZE, { message: 'sayfa boyutu en az 1 olmalidir' })
+  @IsInt({ message: 'sayfa boyutu tam sayı olmalıdır' })
+  @Min(MIN_PAGE_SIZE, { message: 'sayfa boyutu en az 1 olmalıdır' })
   @Max(MAX_PAGE_SIZE, { message: 'sayfa boyutu en fazla 50 olabilir' })
   pageSize?: number;
 }

@@ -17,16 +17,16 @@ interface ReportDetailPageProps {
   client: ApiClient;
 }
 
-const PDF_ERROR_MESSAGE = 'PDF olusturulamadi, tekrar deneyin';
-const NO_PHOTOS_HINT = 'PDF olusturmak icin en az 1 fotograf ekleyin';
+const PDF_ERROR_MESSAGE = 'PDF oluşturulamadı, tekrar deneyin';
+const NO_PHOTOS_HINT = 'PDF oluşturmak için en az 1 fotoğraf ekleyin';
 
 /** Onay gorunumu (design.md → SuccessBanner): onaylayan e-posta + sunucu damgasi. */
 function ApprovedBanner({ approval }: { approval?: Approval }): React.JSX.Element {
   return (
     <p className="banner banner--success" role="status">
       {approval === undefined
-        ? 'Bu tutanak onaylandi'
-        : `Bu tutanak onaylandi — ${approval.approverEmail}, ${formatStamp(approval.approvedAt)}`}
+        ? 'Bu tutanak onaylandı'
+        : `Bu tutanak onaylandı — ${approval.approverEmail}, ${formatStamp(approval.approvedAt)}`}
     </p>
   );
 }
@@ -38,7 +38,7 @@ export function ReportDetailPage({ client }: ReportDetailPageProps): React.JSX.E
     return (
       <main className="page">
         <p className="banner banner--danger" role="alert">
-          Tutanak bulunamadi
+          Tutanak bulunamadı
         </p>
       </main>
     );
@@ -63,7 +63,7 @@ function ReportDetailView({
   if (report.isPending) {
     return (
       <main className="page">
-        <p className="skeleton-text">Tutanak yukleniyor...</p>
+        <p className="skeleton-text">Tutanak yükleniyor...</p>
       </main>
     );
   }
@@ -72,7 +72,7 @@ function ReportDetailView({
     return (
       <main className="page">
         <div className="banner banner--danger" role="alert">
-          <p>Tutanak yuklenemedi</p>
+          <p>Tutanak yüklenemedi</p>
           <button
             type="button"
             className="button button--ghost"
@@ -116,7 +116,7 @@ function ReportDetailView({
             downloadPdf.mutate();
           }}
         >
-          {downloadPdf.isPending ? 'PDF hazirlaniyor...' : 'PDF Indir'}
+          {downloadPdf.isPending ? 'PDF hazırlanıyor...' : 'PDF İndir'}
         </button>
         {!hasPhotos && <p className="report-actions__hint">{NO_PHOTOS_HINT}</p>}
         {downloadPdf.isError && (

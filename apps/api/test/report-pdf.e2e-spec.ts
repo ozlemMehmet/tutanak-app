@@ -195,6 +195,25 @@ describe('T-007 tutanak PDF ciktisi', () => {
     );
 
     it(
+      'indirilen PDF"in sabit etiketleri duzgun Turkce basilir (H-002)',
+      async () => {
+        const reportId = await createReport(ownerToken);
+        await uploadPhoto(reportId, ownerToken);
+
+        const response = await downloadPdf(reportId, ownerToken);
+
+        // Etiketler kullaniciya donuk metindir: uctan uca ciktida da ASCII'ye katlanmis
+        // hali degil, Turkce dizelerin KENDISI gorunur.
+        const text = extractPdfText(response.body as Buffer);
+        expect(text).toContain('Şablon: ');
+        expect(text).toContain('Fotoğraf tarihi: ');
+        expect(text).not.toContain('Sablon: ');
+        expect(text).not.toContain('Fotograf tarihi: ');
+      },
+      PDF_TIMEOUT_MS,
+    );
+
+    it(
       'uretilen PDF eklenen fotografi ve o fotografin tarih-saat damgasini icerir',
       async () => {
         const reportId = await createReport(ownerToken);

@@ -5,7 +5,7 @@ import { INVALID_CREDENTIALS_MESSAGE, RATE_LIMITED_MESSAGE, toAuthFormError } fr
 
 const LOGIN_OPTIONS = {
   knownFields: ['email', 'password'] as const,
-  fallbackMessage: 'Giris yapilamadi, birazdan tekrar deneyin',
+  fallbackMessage: 'Giriş yapılamadı, birazdan tekrar deneyin',
 };
 
 describe('toAuthFormError', () => {
@@ -14,7 +14,7 @@ describe('toAuthFormError', () => {
   });
 
   it('401 INVALID_CREDENTIALS icin form-genel banner doner ve HICBIR alan hatasi baglamaz', () => {
-    const error = new ApiError('INVALID_CREDENTIALS', 'E-posta veya sifre hatali.', 401);
+    const error = new ApiError('INVALID_CREDENTIALS', 'E-posta veya şifre hatalı.', 401);
 
     expect(toAuthFormError(error, LOGIN_OPTIONS)).toEqual({
       banner: INVALID_CREDENTIALS_MESSAGE,
@@ -23,7 +23,7 @@ describe('toAuthFormError', () => {
   });
 
   it('401 yaniti alan bazli detay tasisa bile alan hatasina cevirmez (kullanici numaralandirma)', () => {
-    const error = new ApiError('INVALID_CREDENTIALS', 'E-posta veya sifre hatali.', 401, [
+    const error = new ApiError('INVALID_CREDENTIALS', 'E-posta veya şifre hatalı.', 401, [
       { field: 'email', message: 'bu e-posta kayitli degil' },
     ]);
 
@@ -49,7 +49,7 @@ describe('toAuthFormError', () => {
   });
 
   it('400 VALIDATION_ERROR detaylarini ilgili alanlara baglar, banner gostermez', () => {
-    const error = new ApiError('VALIDATION_ERROR', 'Girdi dogrulanamadi.', 400, [
+    const error = new ApiError('VALIDATION_ERROR', 'Girdi doğrulanamadı.', 400, [
       { field: 'email', message: 'gecerli bir e-posta adresi giriniz' },
       { field: 'password', message: 'en az 8 karakter olmalidir' },
     ]);
@@ -65,24 +65,24 @@ describe('toAuthFormError', () => {
 
   it('409 EMAIL_ALREADY_REGISTERED detayini e-posta alaninin altina baglar', () => {
     const error = new ApiError('EMAIL_ALREADY_REGISTERED', 'Bu e-posta zaten kayitli.', 409, [
-      { field: 'email', message: 'bu e-posta zaten kayitli' },
+      { field: 'email', message: 'bu e-posta zaten kayıtlı' },
     ]);
 
     expect(
       toAuthFormError(error, {
         knownFields: ['email', 'password', 'passwordConfirm'],
-        fallbackMessage: 'Kayit tamamlanamadi, birazdan tekrar deneyin',
+        fallbackMessage: 'Kayıt tamamlanamadı, birazdan tekrar deneyin',
       }),
-    ).toEqual({ banner: null, fields: { email: 'bu e-posta zaten kayitli' } });
+    ).toEqual({ banner: null, fields: { email: 'bu e-posta zaten kayıtlı' } });
   });
 
   it('formda karsiligi olmayan alan detayini banner olarak gosterir (mesaj kaybolmaz)', () => {
-    const error = new ApiError('VALIDATION_ERROR', 'Girdi dogrulanamadi.', 400, [
-      { field: 'bilinmeyenAlan', message: 'gecersiz deger' },
+    const error = new ApiError('VALIDATION_ERROR', 'Girdi doğrulanamadı.', 400, [
+      { field: 'bilinmeyenAlan', message: 'geçersiz değer' },
     ]);
 
     expect(toAuthFormError(error, LOGIN_OPTIONS)).toEqual({
-      banner: 'Girdi dogrulanamadi.',
+      banner: 'Girdi doğrulanamadı.',
       fields: {},
     });
   });

@@ -17,7 +17,7 @@ export function ReportCard({ report }: ReportCardProps): React.JSX.Element {
         <span className="report-card__template">{report.templateName}</span>
         <span className="report-card__meta">
           <StatusChip status={report.status} />
-          <span className="report-card__photos">{`${String(report.photoCount)} fotograf`}</span>
+          <span className="report-card__photos">{`${String(report.photoCount)} fotoğraf`}</span>
           {/* Damga sunucudan gelir; `dateTime` ham ISO degeri korur, metin okunur bicimdir. */}
           <time className="report-card__created" dateTime={report.createdAt}>
             {formatStamp(report.createdAt)}

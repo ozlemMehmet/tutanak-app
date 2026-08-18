@@ -24,8 +24,8 @@ export interface ResendEmailConfig {
   from: string;
 }
 
-const REJECTED_MESSAGE = 'E-posta saglayicisi gonderimi reddetti.';
-const UNREACHABLE_MESSAGE = 'E-posta saglayicisina ulasilamadi.';
+const REJECTED_MESSAGE = 'E-posta sağlayıcısı gönderimi reddetti.';
+const UNREACHABLE_MESSAGE = 'E-posta sağlayıcısına ulaşılamadı.';
 
 /** Log kaydinda alici adresi maskelenir (§4.3): `kiraci@ornek.test` -> `k***@ornek.test`. */
 function maskEmail(address: string): string {

@@ -68,7 +68,7 @@ export function PhotoCaptureInput({
   return (
     <div className="photo-capture">
       <label className="photo-capture__trigger">
-        Fotograf Ekle
+        Fotoğraf Ekle
         <input
           className="photo-capture__input"
           type="file"
@@ -81,7 +81,7 @@ export function PhotoCaptureInput({
 
       {captured !== null && (
         <div className="photo-capture__preview">
-          <img src={captured.previewUrl} alt="Cekilen fotografin onizlemesi" />
+          <img src={captured.previewUrl} alt="Çekilen fotoğrafın önizlemesi" />
           <div className="photo-capture__actions">
             <button
               type="button"
@@ -91,7 +91,7 @@ export function PhotoCaptureInput({
                 void submit();
               }}
             >
-              {isUploading ? 'Yukleniyor...' : 'Yukle'}
+              {isUploading ? 'Yükleniyor...' : 'Yükle'}
             </button>
             <button
               type="button"
@@ -99,7 +99,7 @@ export function PhotoCaptureInput({
               disabled={isUploading}
               onClick={discard}
             >
-              Vazgec
+              Vazgeç
             </button>
           </div>
         </div>

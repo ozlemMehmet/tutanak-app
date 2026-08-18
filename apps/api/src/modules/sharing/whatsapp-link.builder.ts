@@ -6,6 +6,6 @@ const WHATSAPP_SHARE_BASE_URL = 'https://wa.me/';
 
 /** Paylasim linkini iceren, onceden doldurulmus WhatsApp paylasma URL'si (T-008 kriter 5). */
 export function buildWhatsAppShareUrl(shareUrl: string): string {
-  const text = `Emlak teslim tutanagini goruntulemek ve onaylamak icin: ${shareUrl}`;
+  const text = `Emlak teslim tutanağını görüntülemek ve onaylamak için: ${shareUrl}`;
   return `${WHATSAPP_SHARE_BASE_URL}?text=${encodeURIComponent(text)}`;
 }

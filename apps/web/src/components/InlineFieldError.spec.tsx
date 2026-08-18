@@ -4,16 +4,16 @@ import { InlineFieldError } from './InlineFieldError';
 
 describe('InlineFieldError', () => {
   it('hata mesajini verilen kimlikle render eder (alan `aria-describedby` ile baglanabilsin)', () => {
-    render(<InlineFieldError id="eposta-hatasi" message="bu e-posta zaten kayitli" />);
+    render(<InlineFieldError id="eposta-hatasi" message="bu e-posta zaten kayıtlı" />);
 
-    const error = screen.getByText('bu e-posta zaten kayitli');
+    const error = screen.getByText('bu e-posta zaten kayıtlı');
     expect(error).toHaveAttribute('id', 'eposta-hatasi');
   });
 
   it('hatayi nazikce anons eder (aria-live=polite — design.md §5)', () => {
-    render(<InlineFieldError id="eposta-hatasi" message="bu e-posta zaten kayitli" />);
+    render(<InlineFieldError id="eposta-hatasi" message="bu e-posta zaten kayıtlı" />);
 
-    expect(screen.getByText('bu e-posta zaten kayitli')).toHaveAttribute('aria-live', 'polite');
+    expect(screen.getByText('bu e-posta zaten kayıtlı')).toHaveAttribute('aria-live', 'polite');
   });
 
   it('hatayi yalnizca renkle degil, ikon esliginde gosterir (renk korlugu — design.md §5)', () => {
