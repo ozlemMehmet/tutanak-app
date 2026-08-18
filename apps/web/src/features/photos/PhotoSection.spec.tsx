@@ -41,7 +41,7 @@ describe('PhotoSection', () => {
 
   const captureFrame = async (): Promise<void> => {
     await userEvent.upload(
-      screen.getByLabelText('Fotograf Ekle'),
+      screen.getByLabelText('Fotoğraf Ekle'),
       new File(['kare'], 'kamera.jpg', { type: 'image/jpeg' }),
     );
   };
@@ -57,7 +57,7 @@ describe('PhotoSection', () => {
   it('yuklenirken iskelet durumu gosterir', () => {
     renderSection(jest.fn().mockReturnValue(new Promise(() => undefined)));
 
-    expect(screen.getByText('Fotograflar yukleniyor...')).toBeInTheDocument();
+    expect(screen.getByText('Fotoğraflar yükleniyor...')).toBeInTheDocument();
   });
 
   it('tutanagin fotograflarini damgalariyla listeler', async () => {
@@ -72,7 +72,7 @@ describe('PhotoSection', () => {
     const request = jest.fn().mockRejectedValue(new ApiError('INTERNAL_ERROR', 'patladi', 500));
     renderSection(request);
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Fotograflar yuklenemedi');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Fotoğraflar yüklenemedi');
     request.mockResolvedValue([photo()]);
     await userEvent.click(screen.getByRole('button', { name: 'Tekrar Dene' }));
 
@@ -84,11 +84,11 @@ describe('PhotoSection', () => {
   it('cekilen kare yuklendiginde listeye sunucudan gelen damgasiyla eklenir', async () => {
     const request = jest.fn().mockResolvedValueOnce([]);
     renderSection(request);
-    await screen.findByText('Henuz fotograf eklenmedi');
+    await screen.findByText('Henüz fotoğraf eklenmedi');
 
     request.mockResolvedValueOnce(photo()).mockResolvedValue([photo()]);
     await captureFrame();
-    await userEvent.click(screen.getByRole('button', { name: 'Yukle' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Yükle' }));
 
     await waitFor(() => {
       expect(screen.getAllByRole('img')).toHaveLength(1);
@@ -101,26 +101,26 @@ describe('PhotoSection', () => {
   it('desteklenmeyen formatta tasarim sartnamesindeki uyariyi gosterir', async () => {
     const request = jest.fn().mockResolvedValueOnce([]);
     renderSection(request);
-    await screen.findByText('Henuz fotograf eklenmedi');
+    await screen.findByText('Henüz fotoğraf eklenmedi');
 
     request.mockRejectedValueOnce(new ApiError('UNSUPPORTED_MEDIA_FORMAT', 'sunucu metni', 400));
     await captureFrame();
-    await userEvent.click(screen.getByRole('button', { name: 'Yukle' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Yükle' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Desteklenmeyen dosya turu');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Desteklenmeyen dosya türü');
   });
 
   it('ust sinira ulasilinca kamera girisi devre disi kalir', async () => {
     const request = jest.fn().mockResolvedValueOnce([]);
     renderSection(request);
-    await screen.findByText('Henuz fotograf eklenmedi');
+    await screen.findByText('Henüz fotoğraf eklenmedi');
 
     request.mockRejectedValueOnce(new ApiError('PHOTO_LIMIT_REACHED', 'sinir doldu', 409));
     await captureFrame();
-    await userEvent.click(screen.getByRole('button', { name: 'Yukle' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Yükle' }));
 
     await waitFor(() => {
-      expect(screen.getByLabelText('Fotograf Ekle')).toBeDisabled();
+      expect(screen.getByLabelText('Fotoğraf Ekle')).toBeDisabled();
     });
   });
 
@@ -132,11 +132,11 @@ describe('PhotoSection', () => {
     renderSection(request);
 
     await waitFor(() => {
-      expect(screen.getByLabelText('Fotograf Ekle')).toBeDisabled();
+      expect(screen.getByLabelText('Fotoğraf Ekle')).toBeDisabled();
     });
     // Proaktif kapatma: sunucuya tek bir yukleme denemesi bile yapilmaz.
     expect(request).toHaveBeenCalledTimes(1);
-    expect(screen.getByText('Bu tutanakta fotograf ust sinirina ulastiniz')).toBeInTheDocument();
+    expect(screen.getByText('Bu tutanakta fotoğraf üst sınırına ulaştınız')).toBeInTheDocument();
   });
 
   it('ust sinirin altindaki listede kamera girisi acik kalir', async () => {
@@ -146,7 +146,7 @@ describe('PhotoSection', () => {
     renderSection(jest.fn().mockResolvedValue(almostFull));
 
     await waitFor(() => {
-      expect(screen.getByLabelText('Fotograf Ekle')).toBeEnabled();
+      expect(screen.getByLabelText('Fotoğraf Ekle')).toBeEnabled();
     });
   });
 
@@ -156,6 +156,6 @@ describe('PhotoSection', () => {
     await waitFor(() => {
       expect(screen.getAllByRole('img')).toHaveLength(1);
     });
-    expect(screen.queryByLabelText('Fotograf Ekle')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Fotoğraf Ekle')).not.toBeInTheDocument();
   });
 });

@@ -40,8 +40,8 @@ function renderLoginPage(request: jest.Mock, initialPath = '/login'): { session:
           <LocationProbe />
           <Routes>
             <Route path="/login" element={<LoginPage client={client} />} />
-            <Route path="/register" element={<h1>Kayit Ol</h1>} />
-            <Route path="/reports" element={<h1>Tutanaklarim</h1>} />
+            <Route path="/register" element={<h1>Kayıt Ol</h1>} />
+            <Route path="/reports" element={<h1>Tutanaklarım</h1>} />
             <Route path="/reports/:reportId" element={<h1>Tutanak</h1>} />
           </Routes>
         </MemoryRouter>
@@ -54,8 +54,8 @@ function renderLoginPage(request: jest.Mock, initialPath = '/login'): { session:
 
 async function fillAndSubmit(): Promise<void> {
   await userEvent.type(screen.getByLabelText('E-posta'), EMAIL);
-  await userEvent.type(screen.getByLabelText('Sifre'), PASSWORD);
-  await userEvent.click(screen.getByRole('button', { name: 'Giris Yap' }));
+  await userEvent.type(screen.getByLabelText('Şifre'), PASSWORD);
+  await userEvent.click(screen.getByRole('button', { name: 'Giriş Yap' }));
 }
 
 describe('LoginPage', () => {
@@ -64,27 +64,27 @@ describe('LoginPage', () => {
   });
 
   describe('render (kriter 1)', () => {
-    it('e-posta, sifre alanlari ve Giris Yap butonu ile render edilir', () => {
+    it('e-posta, sifre alanlari ve Giriş Yap butonu ile render edilir', () => {
       renderLoginPage(jest.fn());
 
-      expect(screen.getByRole('heading', { name: 'Giris Yap' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Giriş Yap' })).toBeInTheDocument();
       expect(screen.getByLabelText('E-posta')).toBeInTheDocument();
-      expect(screen.getByLabelText('Sifre')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Giris Yap' })).toBeInTheDocument();
+      expect(screen.getByLabelText('Şifre')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Giriş Yap' })).toBeInTheDocument();
     });
 
     it('sifre alaninda goster/gizle kontrolu sunar', async () => {
       renderLoginPage(jest.fn());
 
-      expect(screen.getByLabelText('Sifre')).toHaveAttribute('type', 'password');
-      await userEvent.click(screen.getByRole('button', { name: 'Sifreyi goster' }));
-      expect(screen.getByLabelText('Sifre')).toHaveAttribute('type', 'text');
+      expect(screen.getByLabelText('Şifre')).toHaveAttribute('type', 'password');
+      await userEvent.click(screen.getByRole('button', { name: 'Şifreyi göster' }));
+      expect(screen.getByLabelText('Şifre')).toHaveAttribute('type', 'text');
     });
 
     it('kayit ekranina giden bir baglanti gosterir (design.md alt bolge)', () => {
       renderLoginPage(jest.fn());
 
-      expect(screen.getByRole('link', { name: 'Kayit olun' })).toHaveAttribute('href', '/register');
+      expect(screen.getByRole('link', { name: 'Kayıt olun' })).toHaveAttribute('href', '/register');
     });
   });
 
@@ -143,32 +143,32 @@ describe('LoginPage', () => {
     it('401 INVALID_CREDENTIALS icin form-genel banner gosterir', async () => {
       const request = jest
         .fn()
-        .mockRejectedValue(new ApiError('INVALID_CREDENTIALS', 'E-posta veya sifre hatali.', 401));
+        .mockRejectedValue(new ApiError('INVALID_CREDENTIALS', 'E-posta veya şifre hatalı.', 401));
       renderLoginPage(request);
 
       await fillAndSubmit();
 
-      expect(await screen.findByRole('alert')).toHaveTextContent('E-posta veya sifre hatali');
+      expect(await screen.findByRole('alert')).toHaveTextContent('E-posta veya şifre hatalı');
     });
 
     it('401 yanitinda HANGI alanin hatali oldugunu belirtmez (kullanici numaralandirma onlenir)', async () => {
       const request = jest
         .fn()
-        .mockRejectedValue(new ApiError('INVALID_CREDENTIALS', 'E-posta veya sifre hatali.', 401));
+        .mockRejectedValue(new ApiError('INVALID_CREDENTIALS', 'E-posta veya şifre hatalı.', 401));
       renderLoginPage(request);
 
       await fillAndSubmit();
       await screen.findByRole('alert');
 
       expect(screen.getByLabelText('E-posta')).not.toHaveAttribute('aria-invalid', 'true');
-      expect(screen.getByLabelText('Sifre')).not.toHaveAttribute('aria-invalid', 'true');
+      expect(screen.getByLabelText('Şifre')).not.toHaveAttribute('aria-invalid', 'true');
       expect(screen.getByLabelText('E-posta')).not.toHaveAttribute('aria-describedby');
     });
 
     it('401 yanitinda oturum acmaz ve /login ekraninda kalir', async () => {
       const request = jest
         .fn()
-        .mockRejectedValue(new ApiError('INVALID_CREDENTIALS', 'E-posta veya sifre hatali.', 401));
+        .mockRejectedValue(new ApiError('INVALID_CREDENTIALS', 'E-posta veya şifre hatalı.', 401));
       const { session } = renderLoginPage(request);
 
       await fillAndSubmit();
@@ -187,7 +187,7 @@ describe('LoginPage', () => {
       await fillAndSubmit();
 
       expect(await screen.findByRole('alert')).toHaveTextContent(
-        'Cok fazla deneme yaptiniz, birazdan tekrar deneyin',
+        'Çok fazla deneme yaptınız, birazdan tekrar deneyin',
       );
     });
 
@@ -195,7 +195,7 @@ describe('LoginPage', () => {
       const request = jest
         .fn()
         .mockRejectedValue(
-          new ApiError('VALIDATION_ERROR', 'Girdi dogrulanamadi.', 400, [
+          new ApiError('VALIDATION_ERROR', 'Girdi doğrulanamadı.', 400, [
             { field: 'email', message: 'gecerli bir e-posta adresi giriniz' },
           ]),
         );
@@ -221,7 +221,7 @@ describe('LoginPage', () => {
       await fillAndSubmit();
       await screen.findByRole('alert');
 
-      await userEvent.click(screen.getByRole('button', { name: 'Giris Yap' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Giriş Yap' }));
 
       await waitFor(() => {
         expect(screen.getByTestId('konum')).toHaveTextContent('/reports');
@@ -237,10 +237,10 @@ describe('LoginPage', () => {
       await fillAndSubmit();
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: 'Giris yapiliyor...' })).toBeDisabled();
+        expect(screen.getByRole('button', { name: 'Giriş yapılıyor...' })).toBeDisabled();
       });
       expect(screen.getByLabelText('E-posta')).toBeDisabled();
-      expect(screen.getByLabelText('Sifre')).toBeDisabled();
+      expect(screen.getByLabelText('Şifre')).toBeDisabled();
     });
   });
 
@@ -248,7 +248,7 @@ describe('LoginPage', () => {
     it('kayittan gelindiginde basari banner"i gosterir', () => {
       renderLoginPage(jest.fn(), '/login?registered=1');
 
-      expect(screen.getByRole('status')).toHaveTextContent('Hesabiniz olusturuldu, giris yapin');
+      expect(screen.getByRole('status')).toHaveTextContent('Hesabınız oluşturuldu, giriş yapın');
     });
 
     it('dogrudan gelindiginde banner gostermez', () => {

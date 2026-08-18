@@ -11,8 +11,8 @@ interface StatusChipProps {
 
 const CHIP_BY_STATUS: Record<ReportStatus, { label: string; tone: string }> = {
   draft: { label: 'Taslak', tone: 'neutral' },
-  shared: { label: 'Paylasildi', tone: 'primary' },
-  approved: { label: 'Onaylandi', tone: 'success' },
+  shared: { label: 'Paylaşıldı', tone: 'primary' },
+  approved: { label: 'Onaylandı', tone: 'success' },
 };
 
 export function StatusChip({ status }: StatusChipProps): React.JSX.Element {

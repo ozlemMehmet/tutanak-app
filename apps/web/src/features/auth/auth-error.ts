@@ -8,8 +8,8 @@ import { ApiError } from '../../api/client';
  * yanlis" ayrimi, saldirgana gecerli hesaplari numaralandirma imkani verir (design.md §3
  * LoginPage error durumu — T-015 ile ayni gerekce).
  */
-export const INVALID_CREDENTIALS_MESSAGE = 'E-posta veya sifre hatali';
-export const RATE_LIMITED_MESSAGE = 'Cok fazla deneme yaptiniz, birazdan tekrar deneyin';
+export const INVALID_CREDENTIALS_MESSAGE = 'E-posta veya şifre hatalı';
+export const RATE_LIMITED_MESSAGE = 'Çok fazla deneme yaptınız, birazdan tekrar deneyin';
 
 const RATE_LIMITED_STATUS = 429;
 const UNAUTHENTICATED_STATUS = 401;

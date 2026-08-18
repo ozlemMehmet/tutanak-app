@@ -22,7 +22,7 @@ describe('Pagination', () => {
   it('ilk sayfada "Onceki" devre disidir', () => {
     render(<Pagination page={1} pageSize={20} total={45} onPageChange={noop} />);
 
-    expect(screen.getByRole('button', { name: 'Onceki sayfa' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Önceki sayfa' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Sonraki sayfa' })).toBeEnabled();
   });
 
@@ -30,7 +30,7 @@ describe('Pagination', () => {
     render(<Pagination page={3} pageSize={20} total={45} onPageChange={noop} />);
 
     expect(screen.getByRole('button', { name: 'Sonraki sayfa' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Onceki sayfa' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Önceki sayfa' })).toBeEnabled();
   });
 
   it('sonraki sayfa istegini bir sonraki sayfa numarasiyla bildirir', async () => {
@@ -46,7 +46,7 @@ describe('Pagination', () => {
     const onPageChange = jest.fn();
     render(<Pagination page={2} pageSize={20} total={45} onPageChange={onPageChange} />);
 
-    await userEvent.click(screen.getByRole('button', { name: 'Onceki sayfa' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Önceki sayfa' }));
 
     expect(onPageChange).toHaveBeenCalledWith(1);
   });

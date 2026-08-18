@@ -18,9 +18,9 @@ interface PublicReportPageProps {
   client: ApiClient;
 }
 
-const INVALID_LINK_MESSAGE = 'Bu baglanti gecersiz veya suresi dolmus';
-const RATE_LIMITED_MESSAGE = 'Cok fazla istek, birazdan tekrar deneyin';
-const GENERIC_ERROR_MESSAGE = 'Tutanak su anda goruntulenemiyor, birazdan tekrar deneyin';
+const INVALID_LINK_MESSAGE = 'Bu bağlantı geçersiz veya süresi dolmuş';
+const RATE_LIMITED_MESSAGE = 'Çok fazla istek, birazdan tekrar deneyin';
+const GENERIC_ERROR_MESSAGE = 'Tutanak şu anda görüntülenemiyor, birazdan tekrar deneyin';
 
 /** Hata ekrani metni sunucu mesajina gore degil, hata KODUNA gore secilir (CLAUDE.md §4.3). */
 function errorMessageOf(error: unknown): string {
@@ -47,8 +47,8 @@ function ApprovalBanner({ approval }: { approval?: Approval }): React.JSX.Elemen
   return (
     <p className="banner banner--success" role="status">
       {approval === undefined
-        ? 'Onaylandi'
-        : `Onaylandi — ${approval.approverEmail}, ${formatStamp(approval.approvedAt)}`}
+        ? 'Onaylandı'
+        : `Onaylandı — ${approval.approverEmail}, ${formatStamp(approval.approvedAt)}`}
     </p>
   );
 }
@@ -73,7 +73,7 @@ export function PublicReportPage({ client }: PublicReportPageProps): React.JSX.E
     // Uyari banner'i iskelet asamasinda gosterilmez: metni API'den gelir (design.md).
     return (
       <main className="page public-report">
-        <p className="skeleton-text">Tutanak yukleniyor...</p>
+        <p className="skeleton-text">Tutanak yükleniyor...</p>
       </main>
     );
   }
@@ -103,17 +103,17 @@ export function PublicReportPage({ client }: PublicReportPageProps): React.JSX.E
         <h1>{view.title}</h1>
         <p className="public-report__template">{view.templateName}</p>
         <p className="public-report__created">
-          Olusturulma: <time dateTime={view.createdAt}>{formatStamp(view.createdAt)}</time>
+          Oluşturulma: <time dateTime={view.createdAt}>{formatStamp(view.createdAt)}</time>
         </p>
       </header>
 
       {view.note !== '' && <p className="public-report__note">{view.note}</p>}
 
       <section className="public-report__photos">
-        <h2>Fotograflar</h2>
+        <h2>Fotoğraflar</h2>
         {view.photos.length === 0 ? (
           // Paylasim, PDF'ten farkli olarak fotografsiz da yapilabilir; akis engellenmez.
-          <p className="empty-state">Bu tutanakta henuz fotograf bulunmuyor</p>
+          <p className="empty-state">Bu tutanakta henüz fotoğraf bulunmuyor</p>
         ) : (
           <PhotoGrid photos={view.photos} />
         )}

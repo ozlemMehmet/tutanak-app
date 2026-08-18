@@ -28,11 +28,11 @@ describe('ApprovalForm', () => {
   it('istek suruyorken butonu devre disi birakir (cift gonderim onlenir)', () => {
     render(<ApprovalForm onApprove={jest.fn()} isPending error={null} />);
 
-    expect(screen.getByRole('button', { name: 'Onaylaniyor...' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Onaylanıyor...' })).toBeDisabled();
   });
 
   it('400 alan hatasini ilgili girdinin altinda gosterir (design.md inline alan hatasi)', () => {
-    const error = new ApiError('VALIDATION_ERROR', 'Girdi dogrulanamadi.', 400, [
+    const error = new ApiError('VALIDATION_ERROR', 'Girdi doğrulanamadı.', 400, [
       { field: 'approverEmail', message: 'gecerli bir e-posta adresi giriniz' },
     ]);
 

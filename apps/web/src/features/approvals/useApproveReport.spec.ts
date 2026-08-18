@@ -17,7 +17,7 @@ describe('isAlreadyApprovedError', () => {
   });
 
   it('dogrulama hatasini onay saymaz', () => {
-    const error = new ApiError('VALIDATION_ERROR', 'Girdi dogrulanamadi.', 400);
+    const error = new ApiError('VALIDATION_ERROR', 'Girdi doğrulanamadı.', 400);
 
     expect(isAlreadyApprovedError(error)).toBe(false);
   });

@@ -109,26 +109,26 @@ describe('AppRoutes', () => {
     it('/login rotasini token olmadan render eder', () => {
       renderAt('/login');
 
-      expect(screen.getByRole('heading', { name: 'Giris Yap' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Giriş Yap' })).toBeInTheDocument();
     });
 
     it('/register rotasini token olmadan render eder', () => {
       renderAt('/register');
 
-      expect(screen.getByRole('heading', { name: 'Kayit Ol' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Kayıt Ol' })).toBeInTheDocument();
     });
 
     it('/t/:token rotasini token olmadan render eder (kiraci akisi oturum gerektirmez)', () => {
       renderAt('/t/paylasim-tokeni');
 
-      expect(screen.getByText('Tutanak yukleniyor...')).toBeInTheDocument();
+      expect(screen.getByText('Tutanak yükleniyor...')).toBeInTheDocument();
       expect(screen.getByTestId('konum')).toHaveTextContent('/t/paylasim-tokeni');
     });
 
     it('/reports rotasini oturum acikken render eder', async () => {
       renderAt('/reports', { accessToken: 'token-abc' });
 
-      expect(await screen.findByRole('heading', { name: 'Tutanaklarim' })).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { name: 'Tutanaklarım' })).toBeInTheDocument();
     });
 
     it('/reports/new rotasini oturum acikken render eder (detay rotasina dusmez)', async () => {
@@ -152,7 +152,7 @@ describe('AppRoutes', () => {
     it('kok adresi tutanak listesine tasir', async () => {
       renderAt('/', { accessToken: 'token-abc' });
 
-      expect(await screen.findByRole('heading', { name: 'Tutanaklarim' })).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { name: 'Tutanaklarım' })).toBeInTheDocument();
       expect(screen.getByTestId('konum')).toHaveTextContent('/reports');
     });
 
@@ -175,10 +175,10 @@ describe('AppRoutes', () => {
       renderAt('/login', { client: { request } as unknown as ApiClient });
 
       await userEvent.type(screen.getByLabelText('E-posta'), 'selin@ornek.com');
-      await userEvent.type(screen.getByLabelText('Sifre'), 'cok-gizli-8');
-      await userEvent.click(screen.getByRole('button', { name: 'Giris Yap' }));
+      await userEvent.type(screen.getByLabelText('Şifre'), 'cok-gizli-8');
+      await userEvent.click(screen.getByRole('button', { name: 'Giriş Yap' }));
 
-      expect(await screen.findByRole('heading', { name: 'Tutanaklarim' })).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { name: 'Tutanaklarım' })).toBeInTheDocument();
       expect(request).toHaveBeenCalledWith('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email: 'selin@ornek.com', password: 'cok-gizli-8' }),
@@ -197,7 +197,7 @@ describe('AppRoutes', () => {
       (path, expectedTarget) => {
         renderAt(path);
 
-        expect(screen.getByRole('heading', { name: 'Giris Yap' })).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: 'Giriş Yap' })).toBeInTheDocument();
         expect(screen.getByTestId('konum')).toHaveTextContent(
           `/login?redirectTo=${encodeURIComponent(expectedTarget)}`,
         );
@@ -207,21 +207,21 @@ describe('AppRoutes', () => {
     it('token yokken korumali ekranin icerigini hic render etmez', () => {
       renderAt('/reports');
 
-      expect(screen.queryByRole('heading', { name: 'Tutanaklarim' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: 'Tutanaklarım' })).not.toBeInTheDocument();
     });
 
     it('token varken korumali ekran AppShell icinde kullanici e-postasini gosterir', async () => {
       renderAt('/reports', { accessToken: 'token-abc' });
 
       expect(await screen.findByText('selin@ornek.com')).toBeInTheDocument();
-      expect(screen.getByRole('heading', { name: 'Tutanaklarim' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Tutanaklarım' })).toBeInTheDocument();
     });
 
     it('genel rotalarda AppShell (ve dolayisiyla /me cagrisi) yoktur', () => {
       const request = defaultRequest();
       renderAt('/t/paylasim-tokeni', { client: { request } as unknown as ApiClient });
 
-      expect(screen.queryByRole('button', { name: 'Cikis' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Çıkış' })).not.toBeInTheDocument();
       expect(request).not.toHaveBeenCalledWith('/me');
     });
   });
@@ -251,22 +251,22 @@ describe('AppRoutes', () => {
       });
       expect(store.getAccessToken()).toBeNull();
       expect(window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY)).toBeNull();
-      expect(screen.getByRole('heading', { name: 'Giris Yap' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Giriş Yap' })).toBeInTheDocument();
     });
 
     it('Cikis token"i siler, /login"e goturur ve korumali rotaya donus yine /login"e dusurur', async () => {
       const { store } = renderAt('/reports', { accessToken: 'token-abc' });
       await screen.findByText('selin@ornek.com');
 
-      await userEvent.click(screen.getByRole('button', { name: 'Cikis' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Çıkış' }));
 
-      expect(screen.getByRole('heading', { name: 'Giris Yap' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Giriş Yap' })).toBeInTheDocument();
       expect(store.getAccessToken()).toBeNull();
       expect(window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY)).toBeNull();
 
       await userEvent.click(screen.getByRole('button', { name: 'test: korumali rotaya git' }));
 
-      expect(screen.getByRole('heading', { name: 'Giris Yap' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Giriş Yap' })).toBeInTheDocument();
       expect(screen.getByTestId('konum')).toHaveTextContent(
         `/login?redirectTo=${encodeURIComponent('/reports')}`,
       );

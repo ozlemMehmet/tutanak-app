@@ -58,7 +58,7 @@ export interface ApiClientOptions {
   onUnauthorized?: () => void;
 }
 
-const GENERIC_ERROR_MESSAGE = 'Beklenmeyen bir hata olustu, lutfen tekrar deneyin.';
+const GENERIC_ERROR_MESSAGE = 'Beklenmeyen bir hata oluştu, lütfen tekrar deneyin.';
 const UNAUTHORIZED_STATUS = 401;
 
 function isErrorEnvelope(body: unknown): body is ErrorEnvelope {

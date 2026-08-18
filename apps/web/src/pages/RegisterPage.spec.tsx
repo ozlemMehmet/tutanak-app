@@ -48,12 +48,12 @@ function renderRegisterPage(request: jest.Mock): { session: SessionStore } {
 
 async function fillForm(passwordConfirm = PASSWORD): Promise<void> {
   await userEvent.type(screen.getByLabelText('E-posta'), EMAIL);
-  await userEvent.type(screen.getByLabelText('Sifre'), PASSWORD);
-  await userEvent.type(screen.getByLabelText('Sifre (tekrar)'), passwordConfirm);
+  await userEvent.type(screen.getByLabelText('Şifre'), PASSWORD);
+  await userEvent.type(screen.getByLabelText('Şifre (tekrar)'), passwordConfirm);
 }
 
 const submit = async (): Promise<void> => {
-  await userEvent.click(screen.getByRole('button', { name: 'Hesap Olustur' }));
+  await userEvent.click(screen.getByRole('button', { name: 'Hesap Oluştur' }));
 };
 
 describe('RegisterPage', () => {
@@ -65,10 +65,10 @@ describe('RegisterPage', () => {
     it('e-posta, sifre ve sifre-tekrar alanlarini sunar', () => {
       renderRegisterPage(jest.fn());
 
-      expect(screen.getByRole('heading', { name: 'Kayit Ol' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Kayıt Ol' })).toBeInTheDocument();
       expect(screen.getByLabelText('E-posta')).toBeInTheDocument();
-      expect(screen.getByLabelText('Sifre')).toBeInTheDocument();
-      expect(screen.getByLabelText('Sifre (tekrar)')).toBeInTheDocument();
+      expect(screen.getByLabelText('Şifre')).toBeInTheDocument();
+      expect(screen.getByLabelText('Şifre (tekrar)')).toBeInTheDocument();
     });
 
     it('"En az 8 karakter" yardimci metnini hata olmadan da surekli gosterir', () => {
@@ -82,30 +82,30 @@ describe('RegisterPage', () => {
         .fn()
         .mockRejectedValue(
           new ApiError('EMAIL_ALREADY_REGISTERED', 'Bu e-posta zaten kayitli.', 409, [
-            { field: 'email', message: 'bu e-posta zaten kayitli' },
+            { field: 'email', message: 'bu e-posta zaten kayıtlı' },
           ]),
         );
       renderRegisterPage(request);
 
       await fillForm();
       await submit();
-      await screen.findByText('bu e-posta zaten kayitli');
+      await screen.findByText('bu e-posta zaten kayıtlı');
 
       expect(screen.getByText('En az 8 karakter')).toBeInTheDocument();
     });
   });
 
   describe('sifre tekrari yalnizca istemcide dogrulanir (kriter 6)', () => {
-    it('sifreler eslesmiyorsa istek GONDERMEZ ve alan bazli hata gosterir', async () => {
+    it('şifreler eşleşmiyorsa istek GONDERMEZ ve alan bazli hata gosterir', async () => {
       const request = jest.fn();
       renderRegisterPage(request);
 
       await fillForm('baska-sifre-9');
       await submit();
 
-      expect(await screen.findByText('sifreler eslesmiyor')).toBeInTheDocument();
+      expect(await screen.findByText('şifreler eşleşmiyor')).toBeInTheDocument();
       expect(request).not.toHaveBeenCalled();
-      expect(screen.getByLabelText('Sifre (tekrar)')).toHaveAttribute('aria-invalid', 'true');
+      expect(screen.getByLabelText('Şifre (tekrar)')).toHaveAttribute('aria-invalid', 'true');
     });
 
     it('istek govdesine sifre-tekrar alanini KOYMAZ (sozlesme yalnizca email+password)', async () => {
@@ -129,10 +129,10 @@ describe('RegisterPage', () => {
 
       await fillForm('baska-sifre-9');
       await submit();
-      await screen.findByText('sifreler eslesmiyor');
+      await screen.findByText('şifreler eşleşmiyor');
 
-      await userEvent.clear(screen.getByLabelText('Sifre (tekrar)'));
-      await userEvent.type(screen.getByLabelText('Sifre (tekrar)'), PASSWORD);
+      await userEvent.clear(screen.getByLabelText('Şifre (tekrar)'));
+      await userEvent.type(screen.getByLabelText('Şifre (tekrar)'), PASSWORD);
       await submit();
 
       await waitFor(() => {
@@ -147,7 +147,7 @@ describe('RegisterPage', () => {
         .fn()
         .mockRejectedValue(
           new ApiError('EMAIL_ALREADY_REGISTERED', 'Bu e-posta zaten kayitli.', 409, [
-            { field: 'email', message: 'bu e-posta zaten kayitli' },
+            { field: 'email', message: 'bu e-posta zaten kayıtlı' },
           ]),
         );
       renderRegisterPage(request);
@@ -155,7 +155,7 @@ describe('RegisterPage', () => {
       await fillForm();
       await submit();
 
-      const message = await screen.findByText('bu e-posta zaten kayitli');
+      const message = await screen.findByText('bu e-posta zaten kayıtlı');
       const emailInput = screen.getByLabelText('E-posta');
       expect(emailInput).toHaveAttribute('aria-invalid', 'true');
       expect(emailInput.getAttribute('aria-describedby')).toContain(message.getAttribute('id'));
@@ -173,7 +173,7 @@ describe('RegisterPage', () => {
       await submit();
 
       expect(await screen.findByRole('alert')).toHaveTextContent(
-        'Cok fazla deneme yaptiniz, birazdan tekrar deneyin',
+        'Çok fazla deneme yaptınız, birazdan tekrar deneyin',
       );
     });
   });
@@ -187,11 +187,11 @@ describe('RegisterPage', () => {
       await submit();
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: 'Hesap olusturuluyor...' })).toBeDisabled();
+        expect(screen.getByRole('button', { name: 'Hesap oluşturuluyor...' })).toBeDisabled();
       });
       expect(screen.getByLabelText('E-posta')).toBeDisabled();
-      expect(screen.getByLabelText('Sifre')).toBeDisabled();
-      expect(screen.getByLabelText('Sifre (tekrar)')).toBeDisabled();
+      expect(screen.getByLabelText('Şifre')).toBeDisabled();
+      expect(screen.getByLabelText('Şifre (tekrar)')).toBeDisabled();
     });
   });
 
@@ -218,9 +218,9 @@ describe('RegisterPage', () => {
       await submit();
 
       expect(await screen.findByRole('status')).toHaveTextContent(
-        'Hesabiniz olusturuldu, giris yapin',
+        'Hesabınız oluşturuldu, giriş yapın',
       );
-      expect(screen.getByRole('heading', { name: 'Giris Yap' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Giriş Yap' })).toBeInTheDocument();
     });
   });
 });

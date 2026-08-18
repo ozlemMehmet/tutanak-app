@@ -69,7 +69,7 @@ describe('useLogin', () => {
   it('401 INVALID_CREDENTIALS yanitinda hicbir token saklamaz', async () => {
     const request = jest
       .fn()
-      .mockRejectedValue(new ApiError('INVALID_CREDENTIALS', 'E-posta veya sifre hatali.', 401));
+      .mockRejectedValue(new ApiError('INVALID_CREDENTIALS', 'E-posta veya şifre hatalı.', 401));
     const { result, session } = renderUseLogin(request);
 
     result.current.mutate(CREDENTIALS);

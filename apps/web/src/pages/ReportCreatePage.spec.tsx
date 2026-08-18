@@ -43,7 +43,7 @@ const CREATED_REPORT: Report = {
 };
 
 const FIRST_TEMPLATE_NAME = /Giris\/Cikis Teslim Tutanagi/;
-const SUBMIT_LABEL = 'Taslak Olustur';
+const SUBMIT_LABEL = 'Taslak Oluştur';
 
 type Responder = () => Promise<unknown>;
 
@@ -137,7 +137,7 @@ describe('ReportCreatePage', () => {
       renderPage(createRequestMock());
 
       await screen.findAllByRole('radio');
-      const list = screen.getByRole('list', { name: 'Sablonlar' });
+      const list = screen.getByRole('list', { name: 'Şablonlar' });
       expect(within(list).getAllByRole('listitem')).toHaveLength(3);
     });
   });
@@ -168,7 +168,7 @@ describe('ReportCreatePage', () => {
 
       await screen.findAllByRole('radio');
 
-      expect(screen.getByLabelText('Baslik')).toBeDisabled();
+      expect(screen.getByLabelText('Başlık')).toBeDisabled();
       expect(screen.getByLabelText('Not (opsiyonel)')).toBeDisabled();
     });
 
@@ -177,7 +177,7 @@ describe('ReportCreatePage', () => {
 
       await selectFirstTemplate();
 
-      expect(screen.getByLabelText('Baslik')).toBeEnabled();
+      expect(screen.getByLabelText('Başlık')).toBeEnabled();
       expect(screen.getByLabelText('Not (opsiyonel)')).toBeEnabled();
     });
 
@@ -185,7 +185,7 @@ describe('ReportCreatePage', () => {
       renderPage(createRequestMock());
 
       await screen.findAllByRole('radio');
-      const steps = screen.getByRole('list', { name: 'Tutanak olusturma adimlari' });
+      const steps = screen.getByRole('list', { name: 'Tutanak oluşturma adımları' });
       expect(within(steps).getAllByRole('listitem')[0]).toHaveAttribute('aria-current', 'step');
 
       await selectFirstTemplate();
@@ -195,7 +195,7 @@ describe('ReportCreatePage', () => {
   });
 
   describe('gonderim kosullari (kriter 3)', () => {
-    it('sablon secilmeden Taslak Olustur butonu disabled kalir', async () => {
+    it('sablon secilmeden Taslak Oluştur butonu disabled kalir', async () => {
       renderPage(createRequestMock());
 
       await screen.findAllByRole('radio');
@@ -203,7 +203,7 @@ describe('ReportCreatePage', () => {
       expect(screen.getByRole('button', { name: SUBMIT_LABEL })).toBeDisabled();
     });
 
-    it('sablon secili ama baslik bosken Taslak Olustur butonu disabled kalir', async () => {
+    it('sablon secili ama baslik bosken Taslak Oluştur butonu disabled kalir', async () => {
       renderPage(createRequestMock());
 
       await selectFirstTemplate();
@@ -215,7 +215,7 @@ describe('ReportCreatePage', () => {
       renderPage(createRequestMock());
 
       await selectFirstTemplate();
-      await userEvent.type(screen.getByLabelText('Baslik'), '   ');
+      await userEvent.type(screen.getByLabelText('Başlık'), '   ');
 
       expect(screen.getByRole('button', { name: SUBMIT_LABEL })).toBeDisabled();
     });
@@ -239,7 +239,7 @@ describe('ReportCreatePage', () => {
       renderPage(createRequestMock());
 
       await selectFirstTemplate();
-      await userEvent.type(screen.getByLabelText('Baslik'), 'Bahce Kat Teslimi');
+      await userEvent.type(screen.getByLabelText('Başlık'), 'Bahce Kat Teslimi');
 
       expect(screen.getByRole('button', { name: SUBMIT_LABEL })).toBeEnabled();
     });
@@ -251,7 +251,7 @@ describe('ReportCreatePage', () => {
 
       await selectFirstTemplate();
 
-      const title = screen.getByLabelText('Baslik');
+      const title = screen.getByLabelText('Başlık');
       expect(title).toBeRequired();
       expect(title).toHaveAttribute('maxLength', '200');
     });
@@ -284,7 +284,7 @@ describe('ReportCreatePage', () => {
       renderPage(request);
 
       await selectFirstTemplate();
-      await userEvent.type(screen.getByLabelText('Baslik'), 'Bahce Kat Teslimi');
+      await userEvent.type(screen.getByLabelText('Başlık'), 'Bahce Kat Teslimi');
       await userEvent.type(screen.getByLabelText('Not (opsiyonel)'), 'kapi kolu kirik');
       await userEvent.click(screen.getByRole('button', { name: SUBMIT_LABEL }));
 
@@ -304,7 +304,7 @@ describe('ReportCreatePage', () => {
       renderPage(createRequestMock());
 
       await selectFirstTemplate();
-      await userEvent.type(screen.getByLabelText('Baslik'), 'Bahce Kat Teslimi');
+      await userEvent.type(screen.getByLabelText('Başlık'), 'Bahce Kat Teslimi');
       await userEvent.click(screen.getByRole('button', { name: SUBMIT_LABEL }));
 
       await waitFor(() => {
@@ -320,13 +320,13 @@ describe('ReportCreatePage', () => {
       renderPage(request);
 
       await selectFirstTemplate();
-      await userEvent.type(screen.getByLabelText('Baslik'), 'Bahce Kat Teslimi');
+      await userEvent.type(screen.getByLabelText('Başlık'), 'Bahce Kat Teslimi');
       await userEvent.click(screen.getByRole('button', { name: SUBMIT_LABEL }));
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: 'Taslak olusturuluyor...' })).toBeDisabled();
+        expect(screen.getByRole('button', { name: 'Taslak oluşturuluyor...' })).toBeDisabled();
       });
-      expect(screen.getByLabelText('Baslik')).toBeDisabled();
+      expect(screen.getByLabelText('Başlık')).toBeDisabled();
       expect(screen.getByRole('radio', { name: FIRST_TEMPLATE_NAME })).toBeDisabled();
     });
   });
@@ -336,22 +336,22 @@ describe('ReportCreatePage', () => {
       const request = createRequestMock({
         create: () =>
           Promise.reject(
-            new ApiError('VALIDATION_ERROR', 'Girdi dogrulanamadi.', 400, [
-              { field: 'title', message: 'baslik zorunludur' },
+            new ApiError('VALIDATION_ERROR', 'Girdi doğrulanamadı.', 400, [
+              { field: 'title', message: 'başlık zorunludur' },
             ]),
           ),
       });
       renderPage(request);
 
       await selectFirstTemplate();
-      await userEvent.type(screen.getByLabelText('Baslik'), 'B');
+      await userEvent.type(screen.getByLabelText('Başlık'), 'B');
       await userEvent.click(screen.getByRole('button', { name: SUBMIT_LABEL }));
 
-      const title = await screen.findByLabelText('Baslik');
+      const title = await screen.findByLabelText('Başlık');
       await waitFor(() => {
         expect(title).toHaveAttribute('aria-invalid', 'true');
       });
-      const errorId = screen.getByText('baslik zorunludur').getAttribute('id');
+      const errorId = screen.getByText('başlık zorunludur').getAttribute('id');
       expect(title.getAttribute('aria-describedby')).toContain(errorId);
     });
 
@@ -359,18 +359,18 @@ describe('ReportCreatePage', () => {
       const request = createRequestMock({
         create: () =>
           Promise.reject(
-            new ApiError('VALIDATION_ERROR', 'Girdi dogrulanamadi.', 400, [
-              { field: 'title', message: 'baslik zorunludur' },
+            new ApiError('VALIDATION_ERROR', 'Girdi doğrulanamadı.', 400, [
+              { field: 'title', message: 'başlık zorunludur' },
             ]),
           ),
       });
       renderPage(request);
 
       await selectFirstTemplate();
-      await userEvent.type(screen.getByLabelText('Baslik'), 'B');
+      await userEvent.type(screen.getByLabelText('Başlık'), 'B');
       await userEvent.click(screen.getByRole('button', { name: SUBMIT_LABEL }));
 
-      await screen.findByText('baslik zorunludur');
+      await screen.findByText('başlık zorunludur');
       expect(screen.getByTestId('konum')).toHaveTextContent('/reports/new');
     });
 
@@ -378,7 +378,7 @@ describe('ReportCreatePage', () => {
       const request = createRequestMock({
         create: () =>
           Promise.reject(
-            new ApiError('VALIDATION_ERROR', 'Girdi dogrulanamadi.', 400, [
+            new ApiError('VALIDATION_ERROR', 'Girdi doğrulanamadı.', 400, [
               { field: 'note', message: 'not en fazla 5000 karakter olabilir' },
             ]),
           ),
@@ -386,7 +386,7 @@ describe('ReportCreatePage', () => {
       renderPage(request);
 
       await selectFirstTemplate();
-      await userEvent.type(screen.getByLabelText('Baslik'), 'Bahce Kat Teslimi');
+      await userEvent.type(screen.getByLabelText('Başlık'), 'Bahce Kat Teslimi');
       await userEvent.click(screen.getByRole('button', { name: SUBMIT_LABEL }));
 
       const note = await screen.findByLabelText('Not (opsiyonel)');
@@ -409,11 +409,11 @@ describe('ReportCreatePage', () => {
       renderPage(createRequestMock(templateNotFound()));
 
       await selectFirstTemplate();
-      await userEvent.type(screen.getByLabelText('Baslik'), 'Bahce Kat Teslimi');
+      await userEvent.type(screen.getByLabelText('Başlık'), 'Bahce Kat Teslimi');
       await userEvent.click(screen.getByRole('button', { name: SUBMIT_LABEL }));
 
       expect(await screen.findByRole('alert')).toHaveTextContent(
-        'Secilen sablon artik gecerli degil, sayfayi yenileyin',
+        'Seçilen şablon artık geçerli değil, sayfayı yenileyin',
       );
     });
 
@@ -422,7 +422,7 @@ describe('ReportCreatePage', () => {
       renderPage(request);
 
       await selectFirstTemplate();
-      await userEvent.type(screen.getByLabelText('Baslik'), 'Bahce Kat Teslimi');
+      await userEvent.type(screen.getByLabelText('Başlık'), 'Bahce Kat Teslimi');
       await userEvent.click(screen.getByRole('button', { name: SUBMIT_LABEL }));
 
       await waitFor(() => {
@@ -442,7 +442,7 @@ describe('ReportCreatePage', () => {
       renderPage(request);
 
       await selectFirstTemplate();
-      await userEvent.type(screen.getByLabelText('Baslik'), 'Bahce Kat Teslimi');
+      await userEvent.type(screen.getByLabelText('Başlık'), 'Bahce Kat Teslimi');
       await userEvent.click(screen.getByRole('button', { name: SUBMIT_LABEL }));
 
       await waitFor(() => {
@@ -466,7 +466,7 @@ describe('ReportCreatePage', () => {
         }),
       );
 
-      expect(await screen.findByRole('alert')).toHaveTextContent('Sablonlar yuklenemedi');
+      expect(await screen.findByRole('alert')).toHaveTextContent('Şablonlar yüklenemedi');
       expect(screen.getByRole('button', { name: 'Tekrar Dene' })).toBeInTheDocument();
     });
 
@@ -502,7 +502,7 @@ describe('ReportCreatePage', () => {
       renderPage(request, { uretimYenidenDeneme: true });
 
       expect(await screen.findByRole('alert', undefined, { timeout: 3_000 })).toHaveTextContent(
-        'Sablonlar yuklenemedi',
+        'Şablonlar yüklenemedi',
       );
       expect(screen.getByRole('button', { name: 'Tekrar Dene' })).toBeInTheDocument();
     });
@@ -510,7 +510,7 @@ describe('ReportCreatePage', () => {
     it('sozlesme disi bos liste donerse savunmaci olarak hata banner"i gosterir', async () => {
       renderPage(createRequestMock({ templates: () => Promise.resolve([]) }));
 
-      expect(await screen.findByRole('alert')).toHaveTextContent('Sablonlar yuklenemedi');
+      expect(await screen.findByRole('alert')).toHaveTextContent('Şablonlar yüklenemedi');
       expect(screen.getByRole('button', { name: SUBMIT_LABEL })).toBeDisabled();
     });
   });

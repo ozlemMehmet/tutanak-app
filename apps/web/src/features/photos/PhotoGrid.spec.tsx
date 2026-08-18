@@ -18,7 +18,7 @@ describe('PhotoGrid', () => {
   it('fotograf yokken bos durum metnini gosterir', () => {
     render(<PhotoGrid photos={[]} />);
 
-    expect(screen.getByText('Henuz fotograf eklenmedi')).toBeInTheDocument();
+    expect(screen.getByText('Henüz fotoğraf eklenmedi')).toBeInTheDocument();
   });
 
   it('her fotografi kendi damgasiyla birlikte listeler (kabul kriteri 6)', () => {

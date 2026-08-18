@@ -33,7 +33,7 @@ export function PhotoSection({
 
   return (
     <section className="photo-section">
-      <h2>Fotograflar</h2>
+      <h2>Fotoğraflar</h2>
 
       {canAddPhoto && (
         <PhotoCaptureInput
@@ -44,7 +44,7 @@ export function PhotoSection({
       )}
 
       {canAddPhoto && isLimitReached && (
-        <p className="photo-section__limit">Bu tutanakta fotograf ust sinirina ulastiniz</p>
+        <p className="photo-section__limit">Bu tutanakta fotoğraf üst sınırına ulaştınız</p>
       )}
 
       {upload.isError && (
@@ -53,11 +53,11 @@ export function PhotoSection({
         </p>
       )}
 
-      {photosQuery.isPending && <p className="skeleton-text">Fotograflar yukleniyor...</p>}
+      {photosQuery.isPending && <p className="skeleton-text">Fotoğraflar yükleniyor...</p>}
 
       {photosQuery.isError && (
         <div className="banner banner--danger" role="alert">
-          <p>Fotograflar yuklenemedi</p>
+          <p>Fotoğraflar yüklenemedi</p>
           <button
             type="button"
             className="button button--ghost"

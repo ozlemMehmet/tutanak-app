@@ -64,7 +64,7 @@ describe('App yonlendirmesi', () => {
 
     render(<App client={client} session={createSessionStore(window.localStorage)} />);
 
-    expect(screen.getByRole('heading', { name: 'Giris Yap' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Giriş Yap' })).toBeInTheDocument();
     expect(window.location.search).toBe(`?redirectTo=${encodeURIComponent('/reports/r-1')}`);
   });
 });
@@ -79,6 +79,6 @@ describe('ReportDetailPage', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Tutanak bulunamadi');
+    expect(screen.getByRole('alert')).toHaveTextContent('Tutanak bulunamadı');
   });
 });

@@ -3,11 +3,11 @@
 // dallanma HATA KODU uzerinden yapilir, mesaj metnine gore degil (CLAUDE.md §4.3).
 import { ApiError } from '../../api/client';
 
-const RETRY_MESSAGE = 'Yukleme basarisiz, tekrar deneyin';
+const RETRY_MESSAGE = 'Yükleme başarısız, tekrar deneyin';
 
 const MESSAGE_BY_CODE: Record<string, string> = {
-  UNSUPPORTED_MEDIA_FORMAT: 'Desteklenmeyen dosya turu',
-  FILE_TOO_LARGE: 'Dosya cok buyuk, en fazla 10 MB',
+  UNSUPPORTED_MEDIA_FORMAT: 'Desteklenmeyen dosya türü',
+  FILE_TOO_LARGE: 'Dosya çok büyük, en fazla 10 MB',
   STORAGE_UNAVAILABLE: RETRY_MESSAGE,
 };
 

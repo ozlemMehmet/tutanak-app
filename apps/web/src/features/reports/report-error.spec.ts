@@ -24,24 +24,24 @@ describe('toReportFormError', () => {
 
   it('400 VALIDATION_ERROR detayini ilgili alana baglar', () => {
     const result = toReportFormError(
-      new ApiError('VALIDATION_ERROR', 'Girdi dogrulanamadi.', 400, [
-        { field: 'title', message: 'baslik zorunludur' },
+      new ApiError('VALIDATION_ERROR', 'Girdi doğrulanamadı.', 400, [
+        { field: 'title', message: 'başlık zorunludur' },
       ]),
       OPTIONS,
     );
 
-    expect(result).toEqual({ banner: null, fields: { title: 'baslik zorunludur' } });
+    expect(result).toEqual({ banner: null, fields: { title: 'başlık zorunludur' } });
   });
 
   it('formda karsiligi olmayan alan detayini banner"a dusurur', () => {
     const result = toReportFormError(
-      new ApiError('VALIDATION_ERROR', 'Girdi dogrulanamadi.', 400, [
+      new ApiError('VALIDATION_ERROR', 'Girdi doğrulanamadı.', 400, [
         { field: 'templateId', message: 'gecerli bir sablon seciniz' },
       ]),
       OPTIONS,
     );
 
-    expect(result).toEqual({ banner: 'Girdi dogrulanamadi.', fields: {} });
+    expect(result).toEqual({ banner: 'Girdi doğrulanamadı.', fields: {} });
   });
 
   it('404 TEMPLATE_NOT_FOUND icin sabit sablon banner metnini doner', () => {

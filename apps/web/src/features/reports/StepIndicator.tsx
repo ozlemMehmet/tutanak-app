@@ -9,7 +9,7 @@ interface StepIndicatorProps {
 
 export function StepIndicator({ steps, activeIndex }: StepIndicatorProps): React.JSX.Element {
   return (
-    <ol className="step-indicator" aria-label="Tutanak olusturma adimlari">
+    <ol className="step-indicator" aria-label="Tutanak oluşturma adımları">
       {steps.map((step, index) => (
         <li
           key={step}

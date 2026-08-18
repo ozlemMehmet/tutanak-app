@@ -33,8 +33,8 @@ describe('ReportCard', () => {
 
     expect(screen.getByText('Bahce Kat Teslimi')).toBeInTheDocument();
     expect(screen.getByText('Giris/Cikis Teslim Tutanagi')).toBeInTheDocument();
-    expect(screen.getByText('Paylasildi')).toBeInTheDocument();
-    expect(screen.getByText('3 fotograf')).toBeInTheDocument();
+    expect(screen.getByText('Paylaşıldı')).toBeInTheDocument();
+    expect(screen.getByText('3 fotoğraf')).toBeInTheDocument();
   });
 
   it('olusturma tarihini okunur bicimde ve makine okunur damgayla gosterir', () => {
@@ -50,7 +50,7 @@ describe('ReportCard', () => {
   it('fotograf sayisi sifirken de gosterilir', () => {
     renderCard({ ...REPORT, photoCount: 0 });
 
-    expect(screen.getByText('0 fotograf')).toBeInTheDocument();
+    expect(screen.getByText('0 fotoğraf')).toBeInTheDocument();
   });
 
   it('kartin tamami tutanagin detay rotasina baglanir', () => {

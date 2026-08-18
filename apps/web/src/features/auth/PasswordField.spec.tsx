@@ -8,7 +8,7 @@ describe('PasswordField', () => {
     render(
       <PasswordField
         id="sifre"
-        label="Sifre"
+        label="Şifre"
         value="gizli"
         onChange={jest.fn()}
         disabled={false}
@@ -16,15 +16,15 @@ describe('PasswordField', () => {
       />,
     );
 
-    expect(screen.getByLabelText('Sifre')).toHaveAttribute('type', 'password');
-    expect(screen.getByRole('button', { name: 'Sifreyi goster' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Şifre')).toHaveAttribute('type', 'password');
+    expect(screen.getByRole('button', { name: 'Şifreyi göster' })).toBeInTheDocument();
   });
 
   it('goster kontrolu sifreyi okunur yapar, tekrar tiklanınca gizler', async () => {
     render(
       <PasswordField
         id="sifre"
-        label="Sifre"
+        label="Şifre"
         value="gizli"
         onChange={jest.fn()}
         disabled={false}
@@ -32,11 +32,11 @@ describe('PasswordField', () => {
       />,
     );
 
-    await userEvent.click(screen.getByRole('button', { name: 'Sifreyi goster' }));
-    expect(screen.getByLabelText('Sifre')).toHaveAttribute('type', 'text');
+    await userEvent.click(screen.getByRole('button', { name: 'Şifreyi göster' }));
+    expect(screen.getByLabelText('Şifre')).toHaveAttribute('type', 'text');
 
-    await userEvent.click(screen.getByRole('button', { name: 'Sifreyi gizle' }));
-    expect(screen.getByLabelText('Sifre')).toHaveAttribute('type', 'password');
+    await userEvent.click(screen.getByRole('button', { name: 'Şifreyi gizle' }));
+    expect(screen.getByLabelText('Şifre')).toHaveAttribute('type', 'password');
   });
 
   it('yazilan degeri cagirana bildirir', async () => {
@@ -44,7 +44,7 @@ describe('PasswordField', () => {
     render(
       <PasswordField
         id="sifre"
-        label="Sifre"
+        label="Şifre"
         value=""
         onChange={onChange}
         disabled={false}
@@ -52,7 +52,7 @@ describe('PasswordField', () => {
       />,
     );
 
-    await userEvent.type(screen.getByLabelText('Sifre'), 'a');
+    await userEvent.type(screen.getByLabelText('Şifre'), 'a');
 
     expect(onChange).toHaveBeenCalledWith('a');
   });
@@ -61,7 +61,7 @@ describe('PasswordField', () => {
     render(
       <PasswordField
         id="sifre"
-        label="Sifre"
+        label="Şifre"
         value="gizli"
         onChange={jest.fn()}
         disabled
@@ -69,15 +69,15 @@ describe('PasswordField', () => {
       />,
     );
 
-    expect(screen.getByLabelText('Sifre')).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Sifreyi goster' })).toBeDisabled();
+    expect(screen.getByLabelText('Şifre')).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Şifreyi göster' })).toBeDisabled();
   });
 
   it('yardimci metni girdiye `aria-describedby` ile baglar', () => {
     render(
       <PasswordField
         id="sifre"
-        label="Sifre"
+        label="Şifre"
         value=""
         onChange={jest.fn()}
         disabled={false}
@@ -86,7 +86,7 @@ describe('PasswordField', () => {
       />,
     );
 
-    const input = screen.getByLabelText('Sifre');
+    const input = screen.getByLabelText('Şifre');
     const hintId = screen.getByText('En az 8 karakter').getAttribute('id');
     expect(hintId).not.toBeNull();
     expect(input.getAttribute('aria-describedby')).toContain(hintId);
@@ -96,7 +96,7 @@ describe('PasswordField', () => {
     render(
       <PasswordField
         id="sifre"
-        label="Sifre"
+        label="Şifre"
         value=""
         onChange={jest.fn()}
         disabled={false}
@@ -106,7 +106,7 @@ describe('PasswordField', () => {
       />,
     );
 
-    const input = screen.getByLabelText('Sifre');
+    const input = screen.getByLabelText('Şifre');
     expect(input).toHaveAttribute('aria-invalid', 'true');
     const errorId = screen.getByText('en az 8 karakter olmalidir').getAttribute('id');
     expect(input.getAttribute('aria-describedby')).toContain(errorId);
@@ -118,7 +118,7 @@ describe('PasswordField', () => {
     render(
       <PasswordField
         id="sifre"
-        label="Sifre"
+        label="Şifre"
         value=""
         onChange={jest.fn()}
         disabled={false}
@@ -126,23 +126,23 @@ describe('PasswordField', () => {
       />,
     );
 
-    expect(screen.getByLabelText('Sifre')).not.toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByLabelText('Şifre')).not.toHaveAttribute('aria-invalid', 'true');
   });
 
   it('birden fazla sifre alani ayirt edilebilsin diye kontrol adi ozellestirilebilir', () => {
     render(
       <PasswordField
         id="sifre-tekrar"
-        label="Sifre (tekrar)"
+        label="Şifre (tekrar)"
         value=""
         onChange={jest.fn()}
         disabled={false}
         autoComplete="new-password"
-        showToggleLabel="Sifre tekrarini goster"
-        hideToggleLabel="Sifre tekrarini gizle"
+        showToggleLabel="Şifre tekrarını göster"
+        hideToggleLabel="Şifre tekrarını gizle"
       />,
     );
 
-    expect(screen.getByRole('button', { name: 'Sifre tekrarini goster' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Şifre tekrarını göster' })).toBeInTheDocument();
   });
 });

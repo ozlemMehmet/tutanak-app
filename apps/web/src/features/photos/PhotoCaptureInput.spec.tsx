@@ -1,5 +1,5 @@
 // T-006 kabul kriteri 7: fotograf ekleme arayuzu mobil tarayicida cihaz kamerasini
-// DOGRUDAN acan bir giris sunar; cekilen kare onizlenir ve "Yukle" ile sunucuya gonderilir.
+// DOGRUDAN acan bir giris sunar; cekilen kare onizlenir ve "Yükle" ile sunucuya gonderilir.
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PhotoCaptureInput } from './PhotoCaptureInput';
@@ -12,7 +12,7 @@ describe('PhotoCaptureInput', () => {
   const capturedFrame = (): File => new File(['kare'], 'kamera.jpg', { type: 'image/jpeg' });
 
   const cameraInput = (): HTMLInputElement =>
-    screen.getByLabelText<HTMLInputElement>('Fotograf Ekle');
+    screen.getByLabelText<HTMLInputElement>('Fotoğraf Ekle');
 
   beforeEach(() => {
     createObjectURL = jest.fn().mockReturnValue(OBJECT_URL);
@@ -36,28 +36,28 @@ describe('PhotoCaptureInput', () => {
 
     await userEvent.upload(cameraInput(), capturedFrame());
 
-    const preview = await screen.findByAltText('Cekilen fotografin onizlemesi');
+    const preview = await screen.findByAltText('Çekilen fotoğrafın önizlemesi');
     expect(preview).toHaveAttribute('src', OBJECT_URL);
-    expect(screen.getByRole('button', { name: 'Yukle' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Yükle' })).toBeEnabled();
   });
 
-  it('onizleme yokken "Yukle" butonu gosterilmez', () => {
+  it('onizleme yokken "Yükle" butonu gosterilmez', () => {
     render(<PhotoCaptureInput onUpload={jest.fn()} isUploading={false} />);
 
-    expect(screen.queryByRole('button', { name: 'Yukle' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Yükle' })).not.toBeInTheDocument();
   });
 
-  it('"Yukle" cekilen kareyi sunucuya gonderir ve onizlemeyi temizler', async () => {
+  it('"Yükle" cekilen kareyi sunucuya gonderir ve onizlemeyi temizler', async () => {
     const onUpload = jest.fn().mockResolvedValue(undefined);
     const frame = capturedFrame();
     render(<PhotoCaptureInput onUpload={onUpload} isUploading={false} />);
     await userEvent.upload(cameraInput(), frame);
 
-    await userEvent.click(screen.getByRole('button', { name: 'Yukle' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Yükle' }));
 
     expect(onUpload).toHaveBeenCalledWith(frame);
     await waitFor(() => {
-      expect(screen.queryByAltText('Cekilen fotografin onizlemesi')).not.toBeInTheDocument();
+      expect(screen.queryByAltText('Çekilen fotoğrafın önizlemesi')).not.toBeInTheDocument();
     });
     expect(revokeObjectURL).toHaveBeenCalledWith(OBJECT_URL);
   });
@@ -67,21 +67,21 @@ describe('PhotoCaptureInput', () => {
     render(<PhotoCaptureInput onUpload={onUpload} isUploading={false} />);
     await userEvent.upload(cameraInput(), capturedFrame());
 
-    await userEvent.click(screen.getByRole('button', { name: 'Yukle' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Yükle' }));
 
     await waitFor(() => {
       expect(onUpload).toHaveBeenCalledTimes(1);
     });
-    expect(screen.getByAltText('Cekilen fotografin onizlemesi')).toBeInTheDocument();
+    expect(screen.getByAltText('Çekilen fotoğrafın önizlemesi')).toBeInTheDocument();
   });
 
-  it('"Vazgec" onizlemeyi kaldirir ve object URL"i serbest birakir', async () => {
+  it('"Vazgeç" onizlemeyi kaldirir ve object URL"i serbest birakir', async () => {
     render(<PhotoCaptureInput onUpload={jest.fn()} isUploading={false} />);
     await userEvent.upload(cameraInput(), capturedFrame());
 
-    await userEvent.click(screen.getByRole('button', { name: 'Vazgec' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Vazgeç' }));
 
-    expect(screen.queryByAltText('Cekilen fotografin onizlemesi')).not.toBeInTheDocument();
+    expect(screen.queryByAltText('Çekilen fotoğrafın önizlemesi')).not.toBeInTheDocument();
     expect(revokeObjectURL).toHaveBeenCalledWith(OBJECT_URL);
   });
 
@@ -91,8 +91,8 @@ describe('PhotoCaptureInput', () => {
 
     rerender(<PhotoCaptureInput onUpload={jest.fn()} isUploading />);
 
-    expect(screen.getByRole('button', { name: 'Yukleniyor...' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Vazgec' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Yükleniyor...' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Vazgeç' })).toBeDisabled();
   });
 
   it('devre disi birakildiginda kamera girisi kullanilamaz', () => {
@@ -106,7 +106,7 @@ describe('PhotoCaptureInput', () => {
 
     await userEvent.upload(cameraInput(), []);
 
-    expect(screen.queryByAltText('Cekilen fotografin onizlemesi')).not.toBeInTheDocument();
+    expect(screen.queryByAltText('Çekilen fotoğrafın önizlemesi')).not.toBeInTheDocument();
     expect(createObjectURL).not.toHaveBeenCalled();
   });
 });

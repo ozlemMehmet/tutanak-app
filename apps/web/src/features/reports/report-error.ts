@@ -3,8 +3,8 @@
 import { ApiError } from '../../api/client';
 
 /** design.md §3 ReportCreatePage error durumu: metin birebir sartnameden gelir. */
-export const TEMPLATE_NOT_FOUND_MESSAGE = 'Secilen sablon artik gecerli degil, sayfayi yenileyin';
-export const DRAFT_FALLBACK_MESSAGE = 'Taslak olusturulamadi, birazdan tekrar deneyin';
+export const TEMPLATE_NOT_FOUND_MESSAGE = 'Seçilen şablon artık geçerli değil, sayfayı yenileyin';
+export const DRAFT_FALLBACK_MESSAGE = 'Taslak oluşturulamadı, birazdan tekrar deneyin';
 
 const TEMPLATE_NOT_FOUND_CODE = 'TEMPLATE_NOT_FOUND';
 

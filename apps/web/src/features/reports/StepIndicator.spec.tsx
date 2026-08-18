@@ -2,7 +2,7 @@
 import { render, screen } from '@testing-library/react';
 import { StepIndicator } from './StepIndicator';
 
-const STEPS = ['Sablon secimi', 'Tutanak bilgileri'] as const;
+const STEPS = ['Şablon seçimi', 'Tutanak bilgileri'] as const;
 
 describe('StepIndicator', () => {
   it('tum adimlari sirali liste olarak gosterir', () => {
@@ -10,7 +10,7 @@ describe('StepIndicator', () => {
 
     const items = screen.getAllByRole('listitem');
     expect(items).toHaveLength(2);
-    expect(items[0]).toHaveTextContent('1. Sablon secimi');
+    expect(items[0]).toHaveTextContent('1. Şablon seçimi');
     expect(items[1]).toHaveTextContent('2. Tutanak bilgileri');
   });
 

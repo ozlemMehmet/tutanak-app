@@ -148,7 +148,7 @@ describe('createApiClient', () => {
         {
           error: {
             code: 'INVALID_CREDENTIALS',
-            message: 'E-posta veya sifre hatali.',
+            message: 'E-posta veya şifre hatalı.',
             traceId: 'iz-1',
           },
         },

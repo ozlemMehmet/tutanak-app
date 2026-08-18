@@ -19,7 +19,7 @@ interface ReportCreatePageProps {
   client: ApiClient;
 }
 
-const STEPS = ['Sablon secimi', 'Tutanak bilgileri'] as const;
+const STEPS = ['Şablon seçimi', 'Tutanak bilgileri'] as const;
 const FORM_FIELDS = ['title', 'note'] as const;
 
 /** Sinirlar api-contract.yaml → CreateReportRequest ile birebirdir (CLAUDE.md §3.6). */
@@ -28,7 +28,7 @@ const NOTE_MAX_LENGTH = 5000;
 
 /** Sozlesme "tam olarak 3 kayit" garanti eder; iskelet sayisi bunu yansitir (design.md). */
 const TEMPLATE_SKELETON_COUNT = 3;
-const TEMPLATE_LIST_ERROR_MESSAGE = 'Sablonlar yuklenemedi';
+const TEMPLATE_LIST_ERROR_MESSAGE = 'Şablonlar yüklenemedi';
 
 export function ReportCreatePage({ client }: ReportCreatePageProps): React.JSX.Element {
   const navigate = useNavigate();
@@ -98,7 +98,7 @@ export function ReportCreatePage({ client }: ReportCreatePageProps): React.JSX.E
         noValidate
       >
         <fieldset className="report-create__step">
-          <legend>1. Sablon secin</legend>
+          <legend>1. Şablon seçin</legend>
 
           {templatesQuery.isPending && (
             <ul className="template-list" aria-hidden="true">
@@ -128,7 +128,7 @@ export function ReportCreatePage({ client }: ReportCreatePageProps): React.JSX.E
           )}
 
           {templates.length > 0 && (
-            <ul className="template-list" aria-label="Sablonlar">
+            <ul className="template-list" aria-label="Şablonlar">
               {templates.map((template) => (
                 <TemplateCard
                   key={template.id}
@@ -147,7 +147,7 @@ export function ReportCreatePage({ client }: ReportCreatePageProps): React.JSX.E
 
           <div className="form-field">
             <label className="form-field__label" htmlFor="report-title">
-              Baslik
+              Başlık
             </label>
             <input
               id="report-title"
@@ -203,7 +203,7 @@ export function ReportCreatePage({ client }: ReportCreatePageProps): React.JSX.E
             className="button button--primary report-create__submit"
             disabled={!canSubmit}
           >
-            {createDraft.isPending ? 'Taslak olusturuluyor...' : 'Taslak Olustur'}
+            {createDraft.isPending ? 'Taslak oluşturuluyor...' : 'Taslak Oluştur'}
           </button>
         </fieldset>
       </form>

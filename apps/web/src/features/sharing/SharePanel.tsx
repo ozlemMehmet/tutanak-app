@@ -12,7 +12,7 @@ interface SharePanelProps {
   reportId: string;
 }
 
-const GENERIC_ERROR_MESSAGE = 'Beklenmeyen bir hata olustu, lutfen tekrar deneyin.';
+const GENERIC_ERROR_MESSAGE = 'Beklenmeyen bir hata oluştu, lütfen tekrar deneyin.';
 
 function errorMessageOf(error: unknown): string {
   if (error instanceof ApiError || error instanceof Error) {
@@ -52,20 +52,20 @@ export function SharePanel({ client, reportId }: SharePanelProps): React.JSX.Ele
 
   return (
     <section className="share-panel">
-      <h2>Paylasim</h2>
+      <h2>Paylaşım</h2>
       {!isOpen && (
         <button type="button" className="button button--primary" onClick={openPanel}>
-          Paylas
+          Paylaş
         </button>
       )}
 
       {isOpen && createLink.isPending && (
-        <p className="skeleton-text">Paylasim linki hazirlaniyor...</p>
+        <p className="skeleton-text">Paylaşım linki hazırlanıyor...</p>
       )}
 
       {isOpen && createLink.isError && (
         <div className="banner banner--danger" role="alert">
-          <p>Paylasim linki olusturulamadi</p>
+          <p>Paylaşım linki oluşturulamadı</p>
           <button
             type="button"
             className="button button--ghost"
@@ -83,7 +83,7 @@ export function SharePanel({ client, reportId }: SharePanelProps): React.JSX.Ele
           <div className="share-link-box">
             <input
               className="share-link-box__url"
-              aria-label="Paylasim linki"
+              aria-label="Paylaşım linki"
               readOnly
               value={createLink.data.url}
             />
@@ -97,10 +97,10 @@ export function SharePanel({ client, reportId }: SharePanelProps): React.JSX.Ele
               Kopyala
             </button>
           </div>
-          {copyState === 'copied' && <p className="share-panel__copied">Kopyalandi</p>}
+          {copyState === 'copied' && <p className="share-panel__copied">Kopyalandı</p>}
           {copyState === 'failed' && (
             <p className="toast toast--warning" role="status">
-              Kopyalanamadi — linki yukaridaki kutudan elle secip kopyalayabilirsiniz.
+              Kopyalanamadı — linki yukarıdaki kutudan elle seçip kopyalayabilirsiniz.
             </p>
           )}
 
@@ -112,11 +112,11 @@ export function SharePanel({ client, reportId }: SharePanelProps): React.JSX.Ele
             target="_blank"
             rel="noreferrer"
           >
-            WhatsApp ile Paylas
+            WhatsApp ile Paylaş
           </a>
 
           <form className="share-panel__email-form" onSubmit={submitEmail}>
-            <label htmlFor="share-recipient-email">Alici e-posta</label>
+            <label htmlFor="share-recipient-email">Alıcı e-posta</label>
             <input
               id="share-recipient-email"
               type="email"
@@ -127,19 +127,19 @@ export function SharePanel({ client, reportId }: SharePanelProps): React.JSX.Ele
               }}
             />
             <button type="submit" className="button button--primary" disabled={sendEmail.isPending}>
-              E-posta Gonder
+              E-posta Gönder
             </button>
           </form>
 
           {sendEmail.data?.status === 'sent' && (
             <p className="toast toast--success" role="status">
-              E-posta gonderildi ({sendEmail.data.recipientEmail})
+              E-posta gönderildi ({sendEmail.data.recipientEmail})
             </p>
           )}
           {sendEmail.data?.status === 'failed' && (
             <p className="toast toast--warning" role="status">
-              E-postayi gonderemedik ({sendEmail.data.errorMessage ?? 'bilinmeyen neden'}). Link her
-              zaman gecerli — WhatsApp veya kopyalama ile paylasabilirsiniz.
+              E-postayı gönderemedik ({sendEmail.data.errorMessage ?? 'bilinmeyen neden'}). Link her
+              zaman geçerli — WhatsApp veya kopyalama ile paylaşabilirsiniz.
             </p>
           )}
           {sendEmail.isError && (

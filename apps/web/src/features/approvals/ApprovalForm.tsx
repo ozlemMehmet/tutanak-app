@@ -42,7 +42,7 @@ export function ApprovalForm({
     // `noValidate`: dogrulamanin tek kaynagi sunucu sozlesmesidir (bos/gecersiz e-posta
     // 400 + alan hatasi doner) — tarayici ve sunucu mesajlari ikilestirilmez.
     <form className="approval-form" onSubmit={submit} noValidate>
-      <h2>Tutanagi onayla</h2>
+      <h2>Tutanağı onayla</h2>
       <label htmlFor="approver-email">E-posta adresiniz</label>
       <input
         id="approver-email"
@@ -60,7 +60,7 @@ export function ApprovalForm({
         </p>
       )}
       <button type="submit" className="button button--primary" disabled={isPending}>
-        {isPending ? 'Onaylaniyor...' : 'Onayla'}
+        {isPending ? 'Onaylanıyor...' : 'Onayla'}
       </button>
     </form>
   );

@@ -36,7 +36,7 @@ function renderPanel(request: jest.Mock): void {
 }
 
 const openPanel = async (): Promise<void> => {
-  await userEvent.click(screen.getByRole('button', { name: 'Paylas' }));
+  await userEvent.click(screen.getByRole('button', { name: 'Paylaş' }));
 };
 
 describe('SharePanel', () => {
@@ -46,7 +46,7 @@ describe('SharePanel', () => {
 
     await openPanel();
 
-    expect(await screen.findByLabelText('Paylasim linki')).toHaveValue(SHARE_LINK.url);
+    expect(await screen.findByLabelText('Paylaşım linki')).toHaveValue(SHARE_LINK.url);
     expect(request).toHaveBeenCalledWith('/reports/r-1/share-link', { method: 'POST' });
   });
 
@@ -55,7 +55,7 @@ describe('SharePanel', () => {
 
     await openPanel();
 
-    const whatsAppLink = await screen.findByRole('link', { name: 'WhatsApp ile Paylas' });
+    const whatsAppLink = await screen.findByRole('link', { name: 'WhatsApp ile Paylaş' });
     expect(whatsAppLink).toHaveAttribute('href', SHARE_LINK.whatsAppUrl);
   });
 
@@ -68,7 +68,7 @@ describe('SharePanel', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Kopyala' }));
 
     expect(writeText).toHaveBeenCalledWith(SHARE_LINK.url);
-    expect(await screen.findByText('Kopyalandi')).toBeInTheDocument();
+    expect(await screen.findByText('Kopyalandı')).toBeInTheDocument();
   });
 
   it.each([
@@ -81,8 +81,8 @@ describe('SharePanel', () => {
     await openPanel();
     await userEvent.click(await screen.findByRole('button', { name: 'Kopyala' }));
 
-    expect(await screen.findByText(/Kopyalanamadi/)).toBeInTheDocument();
-    expect(screen.queryByText('Kopyalandi')).not.toBeInTheDocument();
+    expect(await screen.findByText(/Kopyalanamadı/)).toBeInTheDocument();
+    expect(screen.queryByText('Kopyalandı')).not.toBeInTheDocument();
   });
 
   it('link uretimi basarisiz olursa hata banner"i ve Tekrar Dene gosterir (design.md error durumu)', async () => {
@@ -94,9 +94,9 @@ describe('SharePanel', () => {
 
     await openPanel();
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Paylasim linki olusturulamadi');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Paylaşım linki oluşturulamadı');
     await userEvent.click(screen.getByRole('button', { name: 'Tekrar Dene' }));
-    expect(await screen.findByLabelText('Paylasim linki')).toHaveValue(SHARE_LINK.url);
+    expect(await screen.findByLabelText('Paylaşım linki')).toHaveValue(SHARE_LINK.url);
   });
 
   it('e-posta formu gonderimden ONCE linki (idempotent) yeniden uretir ve sent sonucunu gosterir', async () => {
@@ -109,10 +109,10 @@ describe('SharePanel', () => {
     renderPanel(request);
 
     await openPanel();
-    await userEvent.type(await screen.findByLabelText('Alici e-posta'), 'kiraci@ornek.test');
-    await userEvent.click(screen.getByRole('button', { name: 'E-posta Gonder' }));
+    await userEvent.type(await screen.findByLabelText('Alıcı e-posta'), 'kiraci@ornek.test');
+    await userEvent.click(screen.getByRole('button', { name: 'E-posta Gönder' }));
 
-    expect(await screen.findByText('E-posta gonderildi (kiraci@ornek.test)')).toBeInTheDocument();
+    expect(await screen.findByText('E-posta gönderildi (kiraci@ornek.test)')).toBeInTheDocument();
     // Design.md is kurali: e-posta cagrisindan once share-link POST'u (idempotent) yapilir;
     // boylece 404 SHARE_LINK_NOT_FOUND kullaniciya hicbir zaman yansimaz.
     const paths = (request.mock.calls as [string][]).map(([path]) => path);
@@ -128,24 +128,24 @@ describe('SharePanel', () => {
       return Promise.resolve({
         ...SENT_DELIVERY,
         status: 'failed',
-        errorMessage: 'E-posta saglayicisina ulasilamadi.',
+        errorMessage: 'E-posta sağlayıcısına ulaşılamadı.',
       });
     });
     renderPanel(request);
 
     await openPanel();
-    await userEvent.type(await screen.findByLabelText('Alici e-posta'), 'kiraci@ornek.test');
-    await userEvent.click(screen.getByRole('button', { name: 'E-posta Gonder' }));
+    await userEvent.type(await screen.findByLabelText('Alıcı e-posta'), 'kiraci@ornek.test');
+    await userEvent.click(screen.getByRole('button', { name: 'E-posta Gönder' }));
 
-    const warning = await screen.findByText(/E-postayi gonderemedik/);
-    expect(warning).toHaveTextContent('E-posta saglayicisina ulasilamadi.');
+    const warning = await screen.findByText(/E-postayı gönderemedik/);
+    expect(warning).toHaveTextContent('E-posta sağlayıcısına ulaşılamadı.');
     expect(warning).toHaveTextContent(
-      'Link her zaman gecerli — WhatsApp veya kopyalama ile paylasabilirsiniz.',
+      'Link her zaman geçerli — WhatsApp veya kopyalama ile paylaşabilirsiniz.',
     );
     // Uyari danger degil warning tonundadir (kullanicinin akisini durdurmamali).
     expect(warning).toHaveClass('toast--warning');
     // Link kutusu ve WhatsApp butonu kullanilabilir kalir.
-    expect(screen.getByLabelText('Paylasim linki')).toHaveValue(SHARE_LINK.url);
+    expect(screen.getByLabelText('Paylaşım linki')).toHaveValue(SHARE_LINK.url);
   });
 
   it('istek reddedilirse (orn. 401) hata mesajini danger tonunda gosterir', async () => {
@@ -153,16 +153,16 @@ describe('SharePanel', () => {
       if (path === '/reports/r-1/share-link') {
         return Promise.resolve(SHARE_LINK);
       }
-      return Promise.reject(new Error('Beklenmeyen bir hata olustu, lutfen tekrar deneyin.'));
+      return Promise.reject(new Error('Beklenmeyen bir hata oluştu, lütfen tekrar deneyin.'));
     });
     renderPanel(request);
 
     await openPanel();
-    await userEvent.type(await screen.findByLabelText('Alici e-posta'), 'kiraci@ornek.test');
-    await userEvent.click(screen.getByRole('button', { name: 'E-posta Gonder' }));
+    await userEvent.type(await screen.findByLabelText('Alıcı e-posta'), 'kiraci@ornek.test');
+    await userEvent.click(screen.getByRole('button', { name: 'E-posta Gönder' }));
 
     await waitFor(() => {
-      expect(screen.getByText('Beklenmeyen bir hata olustu, lutfen tekrar deneyin.')).toHaveClass(
+      expect(screen.getByText('Beklenmeyen bir hata oluştu, lütfen tekrar deneyin.')).toHaveClass(
         'toast--danger',
       );
     });

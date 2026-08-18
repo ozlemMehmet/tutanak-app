@@ -132,14 +132,14 @@ describe('ReportDetailPage', () => {
       const { client } = fakeClient({ report: detail({ status: 'shared' }) });
       renderPage(client);
 
-      expect(await screen.findByText('Paylasildi')).toHaveClass('status-chip');
+      expect(await screen.findByText('Paylaşıldı')).toHaveClass('status-chip');
     });
 
     it('detay yuklenirken iskelet gosterir', () => {
       const { client } = fakeClient({ report: () => new Promise<ReportDetail>(() => undefined) });
       renderPage(client);
 
-      expect(screen.getByText('Tutanak yukleniyor...')).toBeInTheDocument();
+      expect(screen.getByText('Tutanak yükleniyor...')).toBeInTheDocument();
     });
 
     it('detay cekilemezse hata banner"i ve tekrar deneme sunar', async () => {
@@ -152,7 +152,7 @@ describe('ReportDetailPage', () => {
       });
       renderPage(client);
 
-      expect(await screen.findByRole('alert')).toHaveTextContent('Tutanak yuklenemedi');
+      expect(await screen.findByRole('alert')).toHaveTextContent('Tutanak yüklenemedi');
 
       isServerDown = false;
       await userEvent.click(screen.getByRole('button', { name: 'Tekrar Dene' }));
@@ -164,14 +164,14 @@ describe('ReportDetailPage', () => {
   });
 
   describe('PDF indirme (kriter 2 ve 3)', () => {
-    it('PDF Indir eylemi GET /reports/{id}/pdf cagirir ve donen icerigi dosya olarak sunar', async () => {
+    it('PDF İndir eylemi GET /reports/{id}/pdf cagirir ve donen icerigi dosya olarak sunar', async () => {
       const click = jest.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {
         /* jsdom indirme baslatmaz */
       });
       const { client, requestFile } = fakeClient({});
       renderPage(client);
 
-      await userEvent.click(await screen.findByRole('button', { name: 'PDF Indir' }));
+      await userEvent.click(await screen.findByRole('button', { name: 'PDF İndir' }));
 
       await waitFor(() => {
         expect(requestFile).toHaveBeenCalledWith(`/reports/${REPORT_ID}/pdf`);
@@ -193,7 +193,7 @@ describe('ReportDetailPage', () => {
       requestFile.mockResolvedValue({ blob: new Blob(['%PDF-1.7']), fileName: null });
       renderPage(client);
 
-      await userEvent.click(await screen.findByRole('button', { name: 'PDF Indir' }));
+      await userEvent.click(await screen.findByRole('button', { name: 'PDF İndir' }));
 
       await waitFor(() => {
         expect(downloads).toEqual([`tutanak-${REPORT_ID}.pdf`]);
@@ -201,7 +201,7 @@ describe('ReportDetailPage', () => {
       click.mockRestore();
     });
 
-    it('fotograf yokken PDF Indir disabled olur ve yardimci metin gosterilir', async () => {
+    it('fotograf yokken PDF İndir disabled olur ve yardimci metin gosterilir', async () => {
       const { client, requestFile } = fakeClient({
         report: detail({ photoCount: 0, photos: [] }),
         photos: [],
@@ -209,9 +209,9 @@ describe('ReportDetailPage', () => {
       renderPage(client);
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: 'PDF Indir' })).toBeDisabled();
+        expect(screen.getByRole('button', { name: 'PDF İndir' })).toBeDisabled();
       });
-      expect(screen.getByText('PDF olusturmak icin en az 1 fotograf ekleyin')).toBeInTheDocument();
+      expect(screen.getByText('PDF oluşturmak için en az 1 fotoğraf ekleyin')).toBeInTheDocument();
       // 400 REPORT_HAS_NO_PHOTOS kullaniciya hic yansimaz: istek hic atilmaz.
       expect(requestFile).not.toHaveBeenCalled();
     });
@@ -221,9 +221,9 @@ describe('ReportDetailPage', () => {
       requestFile.mockReturnValue(new Promise(() => undefined));
       renderPage(client);
 
-      await userEvent.click(await screen.findByRole('button', { name: 'PDF Indir' }));
+      await userEvent.click(await screen.findByRole('button', { name: 'PDF İndir' }));
 
-      const pendingButton = await screen.findByRole('button', { name: 'PDF hazirlaniyor...' });
+      const pendingButton = await screen.findByRole('button', { name: 'PDF hazırlanıyor...' });
       expect(pendingButton).toBeDisabled();
       await userEvent.click(pendingButton);
       expect(requestFile).toHaveBeenCalledTimes(1);
@@ -241,9 +241,9 @@ describe('ReportDetailPage', () => {
       renderPage(client);
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: 'PDF Indir' })).toBeDisabled();
+        expect(screen.getByRole('button', { name: 'PDF İndir' })).toBeDisabled();
       });
-      expect(screen.getByText('Fotograflar yukleniyor...')).toBeInTheDocument();
+      expect(screen.getByText('Fotoğraflar yükleniyor...')).toBeInTheDocument();
     });
 
     it('PDF uretimi 502 dondugunde sartnamedeki toast gosterilir', async () => {
@@ -251,10 +251,10 @@ describe('ReportDetailPage', () => {
       requestFile.mockRejectedValue(new ApiError('STORAGE_UNAVAILABLE', 'depolama yok', 502));
       renderPage(client);
 
-      await userEvent.click(await screen.findByRole('button', { name: 'PDF Indir' }));
+      await userEvent.click(await screen.findByRole('button', { name: 'PDF İndir' }));
 
       expect(await screen.findByRole('alert')).toHaveTextContent(
-        'PDF olusturulamadi, tekrar deneyin',
+        'PDF oluşturulamadı, tekrar deneyin',
       );
     });
   });
@@ -274,12 +274,12 @@ describe('ReportDetailPage', () => {
 
       request.mockRejectedValueOnce(new ApiError('FILE_TOO_LARGE', 'sunucu metni', 400));
       await userEvent.upload(
-        screen.getByLabelText('Fotograf Ekle'),
+        screen.getByLabelText('Fotoğraf Ekle'),
         new File(['kare'], 'kamera.jpg', { type: 'image/jpeg' }),
       );
-      await userEvent.click(screen.getByRole('button', { name: 'Yukle' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Yükle' }));
 
-      expect(await screen.findByRole('alert')).toHaveTextContent('Dosya cok buyuk, en fazla 10 MB');
+      expect(await screen.findByRole('alert')).toHaveTextContent('Dosya çok büyük, en fazla 10 MB');
     });
 
     it('depolama arizasinda (502) tekrar denemeye yonlendiren toast gosterir', async () => {
@@ -289,13 +289,13 @@ describe('ReportDetailPage', () => {
 
       request.mockRejectedValueOnce(new ApiError('STORAGE_UNAVAILABLE', 'depolama yok', 502));
       await userEvent.upload(
-        screen.getByLabelText('Fotograf Ekle'),
+        screen.getByLabelText('Fotoğraf Ekle'),
         new File(['kare'], 'kamera.jpg', { type: 'image/jpeg' }),
       );
-      await userEvent.click(screen.getByRole('button', { name: 'Yukle' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Yükle' }));
 
       expect(await screen.findByRole('alert')).toHaveTextContent(
-        'Yukleme basarisiz, tekrar deneyin',
+        'Yükleme başarısız, tekrar deneyin',
       );
     });
   });
@@ -311,7 +311,7 @@ describe('ReportDetailPage', () => {
       renderPage(client);
 
       const banner = await screen.findByRole('status');
-      expect(banner).toHaveTextContent('Bu tutanak onaylandi');
+      expect(banner).toHaveTextContent('Bu tutanak onaylandı');
       expect(banner).toHaveTextContent('kiraci@ornek.test');
       expect(banner).toHaveTextContent(formatStamp(APPROVED_AT));
     });
@@ -320,7 +320,7 @@ describe('ReportDetailPage', () => {
       const { client } = fakeClient({ report: detail({ status: 'approved' }) });
       renderPage(client);
 
-      expect(await screen.findByRole('status')).toHaveTextContent('Bu tutanak onaylandi');
+      expect(await screen.findByRole('status')).toHaveTextContent('Bu tutanak onaylandı');
     });
 
     it('fotograf ekleme arayuzunu hic gostermez, galeri salt-okunur kalir', async () => {
@@ -331,8 +331,8 @@ describe('ReportDetailPage', () => {
       await waitFor(() => {
         expect(screen.getAllByRole('img')).toHaveLength(1);
       });
-      expect(screen.queryByLabelText('Fotograf Ekle')).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: 'Yukle' })).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Fotoğraf Ekle')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Yükle' })).not.toBeInTheDocument();
     });
   });
 
@@ -353,14 +353,14 @@ describe('ReportDetailPage', () => {
       });
       renderPage(client);
 
-      await userEvent.click(await screen.findByRole('button', { name: 'Paylas' }));
-      const panel = await screen.findByRole('textbox', { name: 'Paylasim linki' });
+      await userEvent.click(await screen.findByRole('button', { name: 'Paylaş' }));
+      const panel = await screen.findByRole('textbox', { name: 'Paylaşım linki' });
       expect(panel).toHaveValue('https://app.test/t/tkn');
 
-      await userEvent.type(screen.getByLabelText('Alici e-posta'), 'kiraci@ornek.test');
-      await userEvent.click(screen.getByRole('button', { name: 'E-posta Gonder' }));
+      await userEvent.type(screen.getByLabelText('Alıcı e-posta'), 'kiraci@ornek.test');
+      await userEvent.click(screen.getByRole('button', { name: 'E-posta Gönder' }));
 
-      expect(await screen.findByRole('status')).toHaveTextContent('E-posta gonderildi');
+      expect(await screen.findByRole('status')).toHaveTextContent('E-posta gönderildi');
       const paths = request.mock.calls.map((call) => (call as [string])[0]);
       const emailIndex = paths.indexOf(`/reports/${REPORT_ID}/share-link/email`);
       expect(paths.slice(0, emailIndex)).toContain(`/reports/${REPORT_ID}/share-link`);
@@ -380,6 +380,6 @@ describe('ReportDetailPage', () => {
       </QueryClientProvider>,
     );
 
-    expect(within(screen.getByRole('alert')).getByText('Tutanak bulunamadi')).toBeInTheDocument();
+    expect(within(screen.getByRole('alert')).getByText('Tutanak bulunamadı')).toBeInTheDocument();
   });
 });

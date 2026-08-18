@@ -14,8 +14,8 @@ interface LoginPageProps {
 }
 
 const FORM_FIELDS = ['email', 'password'] as const;
-const FALLBACK_ERROR_MESSAGE = 'Giris yapilamadi, birazdan tekrar deneyin';
-const REGISTERED_BANNER_MESSAGE = 'Hesabiniz olusturuldu, giris yapin';
+const FALLBACK_ERROR_MESSAGE = 'Giriş yapılamadı, birazdan tekrar deneyin';
+const REGISTERED_BANNER_MESSAGE = 'Hesabınız oluşturuldu, giriş yapın';
 
 export function LoginPage({ client }: LoginPageProps): React.JSX.Element {
   const [searchParams] = useSearchParams();
@@ -52,7 +52,7 @@ export function LoginPage({ client }: LoginPageProps): React.JSX.Element {
   return (
     <main className="page auth-page">
       <p className="auth-page__brand">Tutanak</p>
-      <h1>Giris Yap</h1>
+      <h1>Giriş Yap</h1>
 
       {isJustRegistered && (
         <p className="banner banner--info" role="status">
@@ -94,7 +94,7 @@ export function LoginPage({ client }: LoginPageProps): React.JSX.Element {
 
         <PasswordField
           id="login-password"
-          label="Sifre"
+          label="Şifre"
           value={password}
           onChange={setPassword}
           disabled={signIn.isPending}
@@ -107,12 +107,12 @@ export function LoginPage({ client }: LoginPageProps): React.JSX.Element {
           className="button button--primary auth-form__submit"
           disabled={signIn.isPending}
         >
-          {signIn.isPending ? 'Giris yapiliyor...' : 'Giris Yap'}
+          {signIn.isPending ? 'Giriş yapılıyor...' : 'Giriş Yap'}
         </button>
       </form>
 
       <p className="auth-page__alternative">
-        Hesabiniz yok mu? <Link to="/register">Kayit olun</Link>
+        Hesabınız yok mu? <Link to="/register">Kayıt olun</Link>
       </p>
     </main>
   );
