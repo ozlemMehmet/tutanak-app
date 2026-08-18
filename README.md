@@ -102,6 +102,40 @@ npm run test --workspace @tutanak/api
 npm run test --workspace @tutanak/web
 ```
 
+### Tarayici seviyesinde yerlesim testleri (Playwright)
+
+Birim/jsdom testleri yerlesim GORMEZ (`getBoundingClientRect()` jsdom'da her zaman 0 doner,
+CSS cascade uygulanmaz, viewport kavrami yoktur). "Icerik masaustunde kenardan kenara
+yayiliyor" sinifi bu yuzden ayri bir suite ile, gercek tarayicida ve iki viewport'ta
+(`1280x900` masaustu, `390x844` mobil) olculur: `apps/web/e2e/`.
+
+Suite CALISAN bir yigin ister (web `http://localhost:5173`, API `http://localhost:3000/api/v1`)
+ve yigini kendisi baslatmaz:
+
+```bash
+cp .env.example .env
+docker compose up -d          # db + minio + api + web ayaga kalkar
+npx playwright install chromium   # tarayici bir kez indirilir
+npm run test:browser          # iki viewport (masaustu + mobil)
+```
+
+Tek bir viewport'u kosmak icin:
+
+```bash
+npm run test:browser --workspace @tutanak/web -- --project=masaustu
+```
+
+Suite oturumu ekran uzerinden gercek `POST /auth/register` + `POST /auth/login` akisiyla kurar
+(sabit kullanici yoktur) ve olcumu bu oturumla yapar. Farkli bir adrese karsi kosmak icin
+`E2E_BASE_URL` verilir:
+
+```bash
+E2E_BASE_URL=http://localhost:8080 npm run test:browser
+```
+
+Suite CI'a **bagli degildir**: calisan yigin gerektirdigi icin ayri bir job ister
+(bkz. `factory/05-dev/H-006-devlog.md`).
+
 ## Kalite ve Build Komutlari
 
 ```bash
