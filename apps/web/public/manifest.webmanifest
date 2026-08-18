@@ -1,7 +1,7 @@
 {
-  "name": "Emlak Teslim Tutanagi",
+  "name": "Emlak Teslim Tutanağı",
   "short_name": "Tutanak",
-  "description": "Emlak teslim tutanaklarini sahada olusturup paylasmak icin mobil oncelikli uygulama",
+  "description": "Emlak teslim tutanaklarını sahada oluşturup paylaşmak için mobil öncelikli uygulama",
   "lang": "tr",
   "dir": "ltr",
   "start_url": "/",
