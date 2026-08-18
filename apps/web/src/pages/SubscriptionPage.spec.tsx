@@ -28,7 +28,7 @@ const ACTIVE: Subscription = {
   currentPeriodEnd: '2026-09-14T09:30:00.000Z',
 };
 
-const PENDING_WAITING_TEXT = 'Odeme sonucu bekleniyor, abonelik henuz aktif degil';
+const PENDING_WAITING_TEXT = 'Ödeme sonucu bekleniyor, abonelik henüz aktif değil';
 
 const CHECKOUT = {
   transactionReference: 'txn-1',
@@ -235,7 +235,7 @@ describe('SubscriptionPage', () => {
     renderPage({
       checkoutResult: () =>
         Promise.reject(
-          new ApiError('PAYMENT_PROVIDER_ERROR', 'Odeme saglayicisina ulasilamadi.', 502),
+          new ApiError('PAYMENT_PROVIDER_ERROR', 'Ödeme sağlayıcısına ulaşılamadı.', 502),
         ),
     });
 
@@ -333,7 +333,7 @@ describe('SubscriptionPage pending yoklamasi (H-003)', () => {
     subscription = ACTIVE;
     await advancePollStep(0);
 
-    expect(await screen.findByText('Aboneliginiz aktif')).toBeInTheDocument();
+    expect(await screen.findByText('Aboneliğiniz aktif')).toBeInTheDocument();
     expect(screen.queryByText(PENDING_WAITING_TEXT)).not.toBeInTheDocument();
   });
 
@@ -376,7 +376,7 @@ describe('SubscriptionPage pending yoklamasi (H-003)', () => {
     await screen.findByText(PENDING_WAITING_TEXT);
     subscription = ACTIVE;
     await advancePollStep(0);
-    expect(await screen.findByText('Aboneliginiz aktif')).toBeInTheDocument();
+    expect(await screen.findByText('Aboneliğiniz aktif')).toBeInTheDocument();
     const callsAfterActive = meCallCount(request);
 
     await act(async () => {
@@ -422,8 +422,8 @@ describe('SubscriptionPage pending yoklamasi (H-003)', () => {
 
     const timeoutMessage = await screen.findByTestId('abonelik-bekleme-zaman-asimi');
     // Odeme alindiysa ne olacagi VE alinmadiysa ne yapilacagi ayni metinde soylenir.
-    expect(timeoutMessage).toHaveTextContent(/kisa sure icinde aktiflesir/);
-    expect(timeoutMessage).toHaveTextContent(/alinmadiysa/);
+    expect(timeoutMessage).toHaveTextContent(/kısa süre içinde aktifleşir/);
+    expect(timeoutMessage).toHaveTextContent(/alınmadıysa/);
     expect(screen.queryByText(PENDING_WAITING_TEXT)).not.toBeInTheDocument();
   });
 });
