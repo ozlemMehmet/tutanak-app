@@ -163,6 +163,17 @@ const DIAGNOSTIC_CALLEE_PATTERNS: readonly RegExp[] = [
  * Gerekcesiz yazilan isaret (`// ascii-tr-ok:`) gecerli DEGILDIR ve bulguyu susturmaz
  * (CLAUDE.md §9: "uyari bastirma gerekce ister").
  */
+/**
+ * Kullaniciya donuk HTML nitelikleri icin kaliplar, MODUL DUZEYINDE bir kez derlenir.
+ * Her etiket icin yeniden `new RegExp` kurmak, tarayicinin maliyetini dosya buyudukce
+ * gereksiz yere buyutuyordu. `matchAll` kendi ic kopyasini kullandigi icin paylasilan
+ * `lastIndex` sorunu olusmaz.
+ */
+const HTML_ATTRIBUTE_PATTERNS: readonly (readonly [string, RegExp])[] =
+  USER_FACING_HTML_ATTRIBUTES.map(
+    (attribute) => [attribute, new RegExp(`\\b${attribute}\\s*=\\s*"([^"]*)"`, 'gi')] as const,
+  );
+
 const SUPPRESSION_MARKER = /(?:\/\/|\/\*|<!--|#)\s*ascii-tr-ok:[ \t]*\S+/;
 
 /** Bir bulgu: hangi dosyanin hangi satirinda, hangi katlanmis kelime. */
@@ -371,8 +382,7 @@ function extractFromHtml(source: string): ExtractedText[] {
     if (between.trim() !== '') {
       extracted.push({ text: between, line: lineOf(cleaned, cursor) });
     }
-    for (const attribute of USER_FACING_HTML_ATTRIBUTES) {
-      const attributePattern = new RegExp(`\\b${attribute}\\s*=\\s*"([^"]*)"`, 'gi');
+    for (const [, attributePattern] of HTML_ATTRIBUTE_PATTERNS) {
       for (const found of tagText.matchAll(attributePattern)) {
         const value = found[1] ?? '';
         extracted.push({ text: value, line: lineOf(cleaned, tagStart + found.index) });
@@ -461,10 +471,15 @@ function collectFiles(repoRoot: string, target: string): string[] {
 
 /** Taranacak dosyalarin (depo koku'ne gore) listesi. */
 export function collectScannedFiles(repoRoot: string): string[] {
-  return SCAN_TARGETS.flatMap((target) => collectFiles(repoRoot, target))
-    .map((path) => toPosixPath(relative(repoRoot, join(repoRoot, path))))
-    .filter(isScannedFile)
-    .sort();
+  return (
+    SCAN_TARGETS.flatMap((target) => collectFiles(repoRoot, target))
+      .map((path) => toPosixPath(relative(repoRoot, join(repoRoot, path))))
+      .filter(isScannedFile)
+      // Karsilastirici ZORUNLU: varsayilan `sort()` elemanlari UTF-16 kod birimine gore
+      // siralar. Yollar ASCII olsa da bu dosyanin isi Turkce metin; deterministik ve
+      // yerelden bagimsiz bir siralama, ciktinin makinelerden bagimsiz ayni kalmasini saglar.
+      .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
+  );
 }
 
 /** Tum yuzeyleri tarar; bulgu yoksa bos dizi doner. */
